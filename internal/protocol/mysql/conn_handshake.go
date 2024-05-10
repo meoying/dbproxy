@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"encoding/binary"
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/consts"
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/ecodeclub/ekit/randx"
 )
 
@@ -67,5 +69,5 @@ func (mc *Conn) auth() error {
 	}
 
 	// 写回 OK 响应
-	return mc.writeOkPacket()
+	return mc.writePacket(packet.BuildOKResp(consts.ServerStatusAutoCommit))
 }

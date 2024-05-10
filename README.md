@@ -17,6 +17,9 @@
 
 ## 附录
 
+## AutoCommit 
+为了兼容 MySQL 协议，因此我们网关会假装自己处于一种 auto commit 状态
+
 ## MySQL 服务器发起 handshake 的数据例子
 
 原始数据：
