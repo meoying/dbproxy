@@ -2,7 +2,6 @@ package packet
 
 import (
 	"encoding/binary"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/consts"
 )
 
 // 构造返回给客户端响应的 packet
@@ -25,7 +24,7 @@ func BuildErrRespPacket(err ErrorResp) []byte {
 	return res
 }
 
-func BuildOKResp(status consts.SeverStatus) []byte {
+func BuildOKResp(status SeverStatus) []byte {
 	// 头部的四个字节保留，不需要填充
 	res := make([]byte, 4, 11)
 	// 0 代表OK响应

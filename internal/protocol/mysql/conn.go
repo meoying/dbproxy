@@ -2,11 +2,12 @@ package mysql
 
 import (
 	"fmt"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/cmd"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/consts"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"net"
 	"time"
+
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/cmd"
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
 // Conn 代表了 MySQL 的一个连接
@@ -21,6 +22,8 @@ type Conn struct {
 	sequence     uint8
 	id           uint32
 	executors    map[byte]cmd.Executor
+
+	clientFlags flags.CapabilityFlags
 }
 
 func newConn(id uint32, rc net.Conn) *Conn {
@@ -31,7 +34,8 @@ func newConn(id uint32, rc net.Conn) *Conn {
 		writeTimeout: time.Second * 3,
 		id:           id,
 		executors: map[byte]cmd.Executor{
-			consts.CmdPing.Byte(): &cmd.PingExecutor{},
+			cmd.CmdPing.Byte():  &cmd.PingExecutor{},
+			cmd.CmdQuery.Byte(): &cmd.QueryExecutor{},
 		},
 	}
 }
@@ -57,7 +61,10 @@ func (mc *Conn) Loop() error {
 		exec, ok := mc.executors[pkt[0]]
 		var resp []byte
 		if ok {
-			resp, err = exec.Exec(pkt)
+			cmdCtx := &cmd.Context{
+				CapabilityFlags: mc.clientFlags,
+			}
+			resp, err = exec.Exec(cmdCtx, pkt)
 			if err != nil {
 				return err
 			}

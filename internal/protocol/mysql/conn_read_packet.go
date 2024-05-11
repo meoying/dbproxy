@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+
 	"gitee.com/meoying/dbproxy/internal/errs"
 )
 
@@ -40,7 +41,6 @@ func (mc *Conn) readPacket() ([]byte, error) {
 				_ = mc.Close()
 				return nil, fmt.Errorf("%w，当前报文长度为 0，但未读到前面报文", errs.ErrInvalidConn)
 			}
-
 			return prevData, nil
 		}
 

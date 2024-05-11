@@ -17,10 +17,42 @@
 
 ## 附录
 
-## AutoCommit 
+### interpolateParams=false
+
+在做类似的数据库代理的时候，有一个很麻烦的问题，就是 PrepareStatement 处理。
+
+在目前不支持 PrepareStatement 的情况下，必须设置在 DSN 里面加上参数 interpolateParams=true。例如：
+```go
+	// 必须加上 interpolateParams=true
+const dsn = "root:root@tcp(local.ubuntu:13316)/webook?interpolateParams=true"
+```
+这样从客户端传过来的 SQL 就是完整的 SQL。否则，驱动会用 prepare statement 来执行语句。
+
+举个例子来说，在设置了`interpolateParams=true`的情况下，查询：
+```go
+	_, err = db.Query("SELECT * FROM `users` WHERE id=?", 1)
+```
+等价于：
+```go
+	_, err = db.Query("SELECT * FROM `users` WHERE id=1")
+```
+但是这个存在 SQL 注入的极低的风险，SQL 的驱动会尽量帮我们转义处理各种特殊字符，以规避潜在的 SQL 注入的风险。
+
+同时要注意，在 GO 驱动里面就是 interpolateParams=true，在别的驱动里面我不是特别清楚，你需要阅读文档。
+
+### 弱校验
+网关在实现过程中并没有类似于 MySQL 服务端那样执行强校验。
+
+例如说在报文格式上，我们默认收到的报文是符合 MySQL 报文格式的。如果不符合 MySQL 报文格式，也就是说这是一个非法报文，可能出现的情况是：
+- 发生 panic
+- 解析得到错误数据，出现难以预料的后果
+
+通过假设我们这里收到的都是合法的报文，可以省略掉很多累赘的代码。这个假设是非常合理的，因为我们预期你的网关应该是运行在一个可控的环境下，也就是说总是用合法的 MySQL 驱动来连接网关，那么产生的报文是必然正确的。
+
+### AutoCommit 
 为了兼容 MySQL 协议，因此我们网关会假装自己处于一种 auto commit 状态
 
-## MySQL 服务器发起 handshake 的数据例子
+### MySQL 服务器发起 handshake 的数据例子
 
 原始数据：
 ```shell

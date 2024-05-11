@@ -3,11 +3,12 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"testing"
+	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"testing"
-	"time"
 )
 
 type ServerTestSuite struct {

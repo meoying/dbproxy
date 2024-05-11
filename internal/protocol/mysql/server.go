@@ -1,11 +1,12 @@
 package mysql
 
 import (
-	"github.com/ecodeclub/ekit/syncx"
-	"github.com/hashicorp/go-multierror"
 	"log/slog"
 	"net"
 	"sync"
+
+	"github.com/ecodeclub/ekit/syncx"
+	"github.com/hashicorp/go-multierror"
 )
 
 type Server struct {

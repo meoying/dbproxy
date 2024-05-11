@@ -2,7 +2,8 @@ package mysql
 
 import (
 	"encoding/binary"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/consts"
+
+	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
 	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/ecodeclub/ekit/randx"
 )
@@ -19,7 +20,7 @@ func (mc *Conn) startHandshake() error {
 	// 报文比较复杂
 	data := make([]byte, 1)
 	// 设置协议版本
-	data[0] = minProtocolVersion
+	data[0] = flags.minProtocolVersion
 	// 这里我们将自己定义为是 8.4.0 的版本
 	data = append(data, []byte("8.4.0")...)
 	// 版本结束标记位
@@ -63,11 +64,11 @@ func (mc *Conn) readHandshakeResp() ([]byte, error) {
 
 func (mc *Conn) auth() error {
 	// 后续真的执行鉴权，就要处理这里读取到的 data
-	_, err := mc.readHandshakeResp()
+	resp, err := mc.readHandshakeResp()
 	if err != nil {
 		return err
 	}
-
+	mc.clientFlags = flags.CapabilityFlags((packet.HandshakeResp)(resp).ClientFlags())
 	// 写回 OK 响应
-	return mc.writePacket(packet.BuildOKResp(consts.ServerStatusAutoCommit))
+	return mc.writePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
 }

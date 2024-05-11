@@ -2,8 +2,9 @@ package mysql
 
 import (
 	"fmt"
-	"gitee.com/meoying/dbproxy/internal/errs"
 	"time"
+
+	"gitee.com/meoying/dbproxy/internal/errs"
 )
 
 // Write packet buffer 'data'
@@ -18,11 +19,11 @@ func (mc *Conn) writePacket(data []byte) error {
 
 	for {
 		var size int
-		if pktLen >= maxPacketSize {
+		if pktLen >= flags.maxPacketSize {
 			data[0] = 0xff
 			data[1] = 0xff
 			data[2] = 0xff
-			size = maxPacketSize
+			size = flags.maxPacketSize
 		} else {
 			data[0] = byte(pktLen)
 			data[1] = byte(pktLen >> 8)
@@ -41,7 +42,7 @@ func (mc *Conn) writePacket(data []byte) error {
 		n, err := mc.conn.Write(data[:4+size])
 		if err == nil && n == 4+size {
 			mc.sequence++
-			if size != maxPacketSize {
+			if size != flags.maxPacketSize {
 				return nil
 			}
 			pktLen -= size

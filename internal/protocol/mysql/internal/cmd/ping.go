@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/consts"
 	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
@@ -12,6 +11,6 @@ type PingExecutor struct {
 }
 
 // Exec 默认返回处于 AutoCommit 状态
-func (p *PingExecutor) Exec(payload []byte) ([]byte, error) {
-	return packet.BuildOKResp(consts.ServerStatusAutoCommit), nil
+func (p *PingExecutor) Exec(ctx *Context, payload []byte) ([]byte, error) {
+	return packet.BuildOKResp(packet.ServerStatusAutoCommit), nil
 }

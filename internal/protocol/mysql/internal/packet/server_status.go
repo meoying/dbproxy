@@ -1,4 +1,4 @@
-package consts
+package packet
 
 // SeverStatus MySQL 中代表服务器状态的枚举
 // https://dev.mysql.com/doc/dev/mysql-server/latest/mysql__com_8h.html#a1d854e841086925be1883e4d7b4e8cad

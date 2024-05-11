@@ -1,4 +1,4 @@
-package consts
+package cmd
 
 type Cmd byte
 
