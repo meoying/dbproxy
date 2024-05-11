@@ -19,11 +19,11 @@ func (mc *Conn) writePacket(data []byte) error {
 
 	for {
 		var size int
-		if pktLen >= flags.maxPacketSize {
+		if pktLen >= maxPacketSize {
 			data[0] = 0xff
 			data[1] = 0xff
 			data[2] = 0xff
-			size = flags.maxPacketSize
+			size = maxPacketSize
 		} else {
 			data[0] = byte(pktLen)
 			data[1] = byte(pktLen >> 8)
@@ -42,7 +42,7 @@ func (mc *Conn) writePacket(data []byte) error {
 		n, err := mc.conn.Write(data[:4+size])
 		if err == nil && n == 4+size {
 			mc.sequence++
-			if size != flags.maxPacketSize {
+			if size != maxPacketSize {
 				return nil
 			}
 			pktLen -= size

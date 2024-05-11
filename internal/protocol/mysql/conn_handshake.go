@@ -20,7 +20,7 @@ func (mc *Conn) startHandshake() error {
 	// 报文比较复杂
 	data := make([]byte, 1)
 	// 设置协议版本
-	data[0] = flags.minProtocolVersion
+	data[0] = minProtocolVersion
 	// 这里我们将自己定义为是 8.4.0 的版本
 	data = append(data, []byte("8.4.0")...)
 	// 版本结束标记位
