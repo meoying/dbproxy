@@ -15,8 +15,7 @@ type QueryExecutor struct {
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query.html
 func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) ([]byte, error) {
 	// 获取 params 的值
-	//return nil, nil
-	return exec.resp([]string{"id", "name"}, [][]any{{"1", "小李"}, {"1", "小明"}})
+	return nil, nil
 }
 
 // resp 根据执行结果返回转换成对应的格式并返回
