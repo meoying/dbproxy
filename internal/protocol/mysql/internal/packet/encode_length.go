@@ -54,7 +54,8 @@ func EncodeStringLenenc(str string) []byte {
 
 // EncodeIntLenenc 对字符串进行 int<lenenc> 编码
 func EncodeIntLenenc(value uint64) []byte {
-	var encodedValue []byte
+	// 减少切片扩容按4+8容量去声明
+	encodedValue := make([]byte, 4, 12)
 
 	switch {
 	case value < 0xFB:

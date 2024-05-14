@@ -13,7 +13,7 @@ type QueryExecutor struct {
 // Exec
 // Query 命令的 payload 格式在
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query.html
-func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) ([]byte, error) {
+func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) ([][]byte, error) {
 	// 获取 params 的值
 	return nil, nil
 }
@@ -21,30 +21,28 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) ([]byte, error) {
 // resp 根据执行结果返回转换成对应的格式并返回
 // response 的 text_resultset的格式在
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset.html
-func (exec *QueryExecutor) resp(cols []string, rows [][]any) ([]byte, error) {
-	// text_resultset 由两部分组成
-	// the column definitions (a.k.a. the metadata) 字段含义
-	// the actual rows 实际行数据
-
-	var p []byte
+func (exec *QueryExecutor) resp(cols []string, rows [][]any) ([][]byte, error) {
+	// text_resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
+	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
+	var packetArr [][]byte
 
 	// 写入字段数量
-	p = packet.EncodeIntLenenc(uint64(len(cols)))
+	packetArr = append(packetArr, packet.EncodeIntLenenc(uint64(len(cols))))
 	// 写入字段描述包
 	for _, c := range cols {
-		p = append(p, packet.BuildColumnDefinitionPacket(c)...)
+		packetArr = append(packetArr, packet.BuildColumnDefinitionPacket(c))
 	}
-	p = append(p, packet.BuildEOFPacket()...)
+	packetArr = append(packetArr, packet.BuildEOFPacket())
 
 	// 写入真实每行数据
 	for _, row := range rows {
 		for _, v := range row {
-			p = append(p, packet.BuildRowPacket(v)...)
+			packetArr = append(packetArr, packet.BuildRowPacket(v))
 		}
 	}
-	p = append(p, packet.BuildEOFPacket()...)
+	packetArr = append(packetArr, packet.BuildEOFPacket())
 
-	return nil, nil
+	return packetArr, nil
 }
 
 func (exec *QueryExecutor) paramIsNull(bitMap []byte, idx uint64) bool {

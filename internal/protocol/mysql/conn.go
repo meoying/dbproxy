@@ -64,7 +64,8 @@ func (mc *Conn) Loop() error {
 			cmdCtx := &cmd.Context{
 				CapabilityFlags: mc.clientFlags,
 			}
-			resp, err = exec.Exec(cmdCtx, pkt)
+			// TODO 这里返回的是一个[][]byte多个包，目前一时没有想到怎么去改writePacket这个方法去组装到一起，所以先写了一个备注
+			_, err := exec.Exec(cmdCtx, pkt)
 			if err != nil {
 				return err
 			}

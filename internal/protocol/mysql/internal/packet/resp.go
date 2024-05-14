@@ -44,13 +44,22 @@ func BuildOKResp(status SeverStatus) []byte {
 // BuildEOFPacket 生成一个结束符包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_eof_packet.html
 func BuildEOFPacket() []byte {
-	return []byte{0xfe, 0x00, 0x00}
+	// 头部的四个字节保留，不需要填充
+	res := make([]byte, 4, 9)
+	// 代表eof包
+	res = append(res, 0xfe)
+	// 00 00代表没有警告
+	res = append(res, []byte{0x00, 0x00}...)
+	// 22 00 代表服务状态
+	res = append(res, []byte{0x22, 0x00}...)
+	return res
 }
 
 // BuildColumnDefinitionPacket 构建字段描述包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
 func BuildColumnDefinitionPacket(col string) []byte {
-	var p []byte
+	// 减少切片扩容
+	p := make([]byte, 4, 32)
 
 	// catalog string<lenenc> 目录
 	p = append(p, EncodeStringLenenc("def")...)
@@ -88,7 +97,7 @@ func BuildColumnDefinitionPacket(col string) []byte {
 func BuildRowPacket(value any) []byte {
 	// 字段值为null 默认返回0xFB
 	if value == nil {
-		return []byte{0xFB}
+		return []byte{0x00, 0x00, 0x00, 0x00, 0xFB}
 	}
 	// 字段值 string<lenenc>
 	data := fmt.Sprintf("%v", value)
