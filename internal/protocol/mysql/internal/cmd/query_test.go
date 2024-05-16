@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"database/sql"
 	"testing"
 
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestQueryExecutor_parseQuery(t *testing.T) {
@@ -52,24 +49,10 @@ func TestQueryExecutor_parseQuery(t *testing.T) {
 		},
 	}
 	exec := &QueryExecutor{}
-	ctx := &Context{
-		// 只设置一个
-		CapabilityFlags: flags.CapabilityFlags(flags.ClientQueryAttributes),
-	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			que := exec.parseQuery(ctx, tc.payload)
+			que := exec.parseQuery(tc.payload)
 			assert.Equal(t, tc.wantQue, que)
 		})
 	}
-}
-
-// TestGeneratePayload 我用来辅助生成 payload
-func TestGeneratePayload(t *testing.T) {
-	// 必须加上 interpolateParams=true
-	const dsn = "root:root@tcp(local.ubuntu:13316)/webook?interpolateParams=true"
-	db, err := sql.Open("mysql", dsn)
-	require.NoError(t, err)
-	_, err = db.Query("SELECT * FROM `users` WHERE id=?", 1)
-	require.NoError(t, err)
 }

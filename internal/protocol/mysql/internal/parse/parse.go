@@ -2,8 +2,8 @@ package parse
 
 import (
 	"fmt"
-	parser "gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/parse/parse"
 	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/meoying/dbproxy/internal/protocol/mysql/internal/parse/parse"
 )
 
 type DemoVisitor struct {

@@ -1,4 +1,4 @@
-package mysql
+package connection
 
 const (
 	// maxPacketSize 单一报文最大长度
