@@ -1,6 +1,6 @@
 package packet
 
-import "gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
+import "github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
 
 // MySQLTypeLength 计算该类型在 packet 里面占据的长度
 // 第一个是类型长度

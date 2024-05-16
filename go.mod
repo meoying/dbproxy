@@ -1,4 +1,4 @@
-module gitee.com/meoying/dbproxy
+module github.com/meoying/dbproxy
 
 go 1.21
 

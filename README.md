@@ -15,6 +15,10 @@
 
 因此本项目就是要构造一个新的代理实现，同时支持这三种形态。
 
+## TODO
+- 支持 prepare statement
+- 支持 multiple statement
+
 ## 附录
 
 ### interpolateParams=false

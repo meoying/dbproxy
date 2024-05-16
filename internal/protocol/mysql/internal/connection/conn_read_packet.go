@@ -1,20 +1,19 @@
-package mysql
+package connection
 
 import (
 	"fmt"
 
-	"gitee.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/errs"
 )
 
 // readPacket 读取一个完整报文，已经去除了头部字段，只剩下 payload 字段
 func (mc *Conn) readPacket() ([]byte, error) {
 	var prevData []byte
 	for {
-		// 读取头部的四个字节，其中三个字节是长度，一个字节
+		// 读取头部的四个字节，其中三个字节是长度，一个字节是 sequence
 		data := make([]byte, 4)
 		_, err := mc.conn.Read(data)
 		if err != nil {
-			_ = mc.Close()
 			return nil, fmt.Errorf("%w，读取报文头部失败 %w", errs.ErrInvalidConn, err)
 		}
 
@@ -38,7 +37,6 @@ func (mc *Conn) readPacket() ([]byte, error) {
 		if pktLen == 0 {
 			// there was no previous packet
 			if prevData == nil {
-				_ = mc.Close()
 				return nil, fmt.Errorf("%w，当前报文长度为 0，但未读到前面报文", errs.ErrInvalidConn)
 			}
 			return prevData, nil
@@ -48,7 +46,6 @@ func (mc *Conn) readPacket() ([]byte, error) {
 		body := make([]byte, pktLen)
 		_, err = mc.conn.Read(body)
 		if err != nil {
-			_ = mc.Close()
 			return nil, fmt.Errorf("%w，读取报文体失败 %w", errs.ErrInvalidConn, err)
 		}
 

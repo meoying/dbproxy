@@ -1,11 +1,11 @@
-package mysql
+package connection
 
 import (
 	"encoding/binary"
 
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
-	"gitee.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/ecodeclub/ekit/randx"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
 // 开始初始化
@@ -26,8 +26,8 @@ func (mc *Conn) startHandshake() error {
 	// 版本结束标记位
 	data = append(data, 0)
 
-	// thread id 或者说 connection id
-	data = binary.LittleEndian.AppendUint32(data, mc.id)
+	// thread Id 或者说 connection Id
+	data = binary.LittleEndian.AppendUint32(data, mc.Id)
 
 	// auth-plugin-data 一般来说就是 21 个字符
 	// 其中 8 个放在 auth-plugin-data-part1
@@ -53,7 +53,7 @@ func (mc *Conn) startHandshake() error {
 	// auth plugin name，但是我们作为一个网关，暂时还没啥支持的，
 	// 后续要支持不同的 auth name
 	// data = append(data)
-	return mc.writePacket(data)
+	return mc.WritePacket(data)
 }
 
 // readHandshakeResp 读取客户端在 startHandshake 中返回来的响应
@@ -70,5 +70,5 @@ func (mc *Conn) auth() error {
 	}
 	mc.clientFlags = flags.CapabilityFlags((packet.HandshakeResp)(resp).ClientFlags())
 	// 写回 OK 响应
-	return mc.writePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	return mc.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
 }

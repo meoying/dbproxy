@@ -1,4 +1,4 @@
-package mysql
+package connection
 
 import (
 	"encoding/binary"
