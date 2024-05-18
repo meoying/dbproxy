@@ -39,3 +39,19 @@ const (
 	MySQLTypeString     MySQLType = 254
 	MySQLTypeGeometry   MySQLType = 255
 )
+
+// 各字段类型的最大长度
+const (
+	MySqlMaxLengthTinyInt   uint32 = 4
+	MySqlMaxLengthSmallInt  uint32 = 6
+	MySqlMaxLengthMediumInt uint32 = 9
+	MySqlMaxLengthInt       uint32 = 11
+	MySqlMaxLengthBigInt    uint32 = 20
+	MySqlMaxLengthVarChar   uint32 = 40
+)
+
+// 字符编码类型
+const (
+	CharSetUtf8mb4GeneralCi uint32 = 45
+	CharSetBinary           uint32 = 63
+)

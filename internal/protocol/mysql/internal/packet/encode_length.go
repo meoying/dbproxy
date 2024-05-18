@@ -55,7 +55,7 @@ func EncodeStringLenenc(str string) []byte {
 // EncodeIntLenenc 对字符串进行 int<lenenc> 编码
 func EncodeIntLenenc(value uint64) []byte {
 	// 减少切片扩容按4+8容量去声明
-	encodedValue := make([]byte, 4, 12)
+	encodedValue := make([]byte, 0, 12)
 
 	switch {
 	case value < 0xFB:
@@ -97,7 +97,7 @@ func uint64ToBytes(value uint64) []byte {
 
 // UintLengthEncode 用于编码无符号整数的长度和内容
 func UintLengthEncode(value uint32, length int) []byte {
-	encodedValue := make([]byte, length)
+	encodedValue := make([]byte, 4)
 	binary.LittleEndian.PutUint32(encodedValue, value)
-	return encodedValue
+	return encodedValue[:length]
 }
