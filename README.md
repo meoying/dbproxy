@@ -21,7 +21,17 @@
 
 ## 附录
 
-## 使用 ANTLR 插件来生成 AST 语法树内容
+### 使用 ANTLR 插件来生成 AST 语法树内容
+你有两种方式来生成 ANTLR 代码。
+- 直接在本地安装 ANTLR：参考 [antlr4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md)
+- 使用 Goland IDE 中的 ANTLR4 插件
+
+如下图，右键点击 MySqlParser.g4 文件，选择配置：
+![ANTLR 插件配置](.doc/img/antlr4-plugin-cfg.png)
+
+而后则是：
+
+![ANTLR 生成](.doc/img/antlr4-plugin-gen.png)
 
 ### interpolateParams=false
 
