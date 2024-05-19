@@ -1,8 +1,9 @@
 package packet
 
 import (
+	"database/sql"
 	"encoding/binary"
-	"fmt"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
 )
 
 // 构造返回给客户端响应的 packet
@@ -57,7 +58,7 @@ func BuildEOFPacket() []byte {
 
 // BuildColumnDefinitionPacket 构建字段描述包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
-func BuildColumnDefinitionPacket(col string) []byte {
+func BuildColumnDefinitionPacket(col *sql.ColumnType) []byte {
 	// 减少切片扩容
 	p := make([]byte, 4, 32)
 
@@ -70,17 +71,17 @@ func BuildColumnDefinitionPacket(col string) []byte {
 	// orgTable string<lenenc> 物理数据表名
 	p = append(p, EncodeStringLenenc("users")...)
 	// name string<lenenc> 虚拟字段名
-	p = append(p, EncodeStringLenenc(col)...)
+	p = append(p, EncodeStringLenenc(col.Name())...)
 	// orgName string<lenenc> 物理字段名
-	p = append(p, EncodeStringLenenc(col)...)
+	p = append(p, EncodeStringLenenc(col.Name())...)
 	// 固定长度
 	p = append(p, 0x0c)
-	// character_set int<2> 编码，先固定为utf8mb3_general_ci
-	p = append(p, UintLengthEncode(uint32(33), 2)...)
-	// column_length int<4> 字段长度
-	p = append(p, UintLengthEncode(uint32(len(col)), 4)...)
+	// character_set int<2> 编码
+	p = append(p, UintLengthEncode(getMysqlTypeCharSet(col.DatabaseTypeName()), 2)...)
+	// column_length int<4> 字段类型最大长度
+	p = append(p, UintLengthEncode(getMysqlTypeMaxLength(col.DatabaseTypeName()), 4)...)
 	// type int<1> 字段类型
-	p = append(p, 3)
+	p = append(p, uint16ToBytes(mapMySQLTypeToEnum(col.DatabaseTypeName()))...)
 	// flags int<2> 标志
 	p = append(p, UintLengthEncode(0, 2)...)
 	// decimals int<1> 小数点
@@ -94,12 +95,59 @@ func BuildColumnDefinitionPacket(col string) []byte {
 
 // BuildRowPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildRowPacket(value any) []byte {
-	// 字段值为null 默认返回0xFB
-	if value == nil {
-		return []byte{0x00, 0x00, 0x00, 0x00, 0xFB}
+func BuildRowPacket(value ...any) []byte {
+	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
+	// 减少切片扩容
+	//return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
+	p := make([]byte, 4, 20)
+	for _, v := range value {
+		// 字段值为null 默认返回0xFB
+		if value == nil {
+			p = append(p, 0xFB)
+		} else {
+			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
+			data := string(*(v.(*[]uint8)))
+
+			p = append(p, EncodeStringLenenc(data)...)
+		}
 	}
-	// 字段值 string<lenenc>
-	data := fmt.Sprintf("%v", value)
-	return EncodeStringLenenc(data)
+
+	return p
+}
+
+// getMysqlTypeMaxLength 获取字段类型最大长度
+func getMysqlTypeMaxLength(dataType string) uint32 {
+	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
+	switch dataType {
+	case "INT":
+		return query.MySqlMaxLengthInt
+	case "VARCHAR":
+		return query.MySqlMaxLengthVarChar
+	default:
+		return 0
+	}
+}
+
+func getMysqlTypeCharSet(dataType string) uint32 {
+	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
+	switch dataType {
+	case "VARCHAR":
+		return query.CharSetUtf8mb4GeneralCi
+	default:
+		return query.CharSetBinary
+	}
+}
+
+// mapMySQLTypeToEnum 字段类型转字段枚举
+func mapMySQLTypeToEnum(dataType string) uint16 {
+	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
+	switch dataType {
+	case "INT":
+		return uint16(query.MySQLTypeLong)
+	case "VARCHAR":
+		return uint16(query.MySQLTypeVarString)
+
+	default:
+		return 999 // 未知类型
+	}
 }

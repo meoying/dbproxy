@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"github.com/meoying/dbproxy/internal/plugin"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
@@ -31,7 +32,7 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 		errResp := packet.BuildErInternalError(err.Error())
 		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
-	cols, err := result.Rows.Columns()
+	cols, err := result.Rows.ColumnTypes()
 	if err != nil {
 		errResp := packet.BuildErInternalError(err.Error())
 		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
@@ -39,6 +40,11 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 	var data [][]any
 	for result.Rows.Next() {
 		row := make([]any, len(cols))
+		// 这里需要用到指针给Scan，不然会报错
+		for i := range row {
+			var v []byte
+			row[i] = &v
+		}
 		err = result.Rows.Scan(row...)
 		if err != nil {
 			errResp := packet.BuildErInternalError(err.Error())
@@ -65,13 +71,14 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 // resp 根据执行结果返回转换成对应的格式并返回
 // response 的 text_resultset的格式在
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset.html
-func (exec *QueryExecutor) resp(cols []string, rows [][]any) ([][]byte, error) {
+func (exec *QueryExecutor) resp(cols []*sql.ColumnType, rows [][]any) ([][]byte, error) {
 	// text_resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
 	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
 	var packetArr [][]byte
 
 	// 写入字段数量
-	packetArr = append(packetArr, packet.EncodeIntLenenc(uint64(len(cols))))
+	colLenPack := append([]byte{0, 0, 0, 0}, packet.EncodeIntLenenc(uint64(len(cols)))...)
+	packetArr = append(packetArr, colLenPack)
 	// 写入字段描述包
 	for _, c := range cols {
 		packetArr = append(packetArr, packet.BuildColumnDefinitionPacket(c))
@@ -80,9 +87,7 @@ func (exec *QueryExecutor) resp(cols []string, rows [][]any) ([][]byte, error) {
 
 	// 写入真实每行数据
 	for _, row := range rows {
-		for _, v := range row {
-			packetArr = append(packetArr, packet.BuildRowPacket(v))
-		}
+		packetArr = append(packetArr, packet.BuildRowPacket(row...))
 	}
 	packetArr = append(packetArr, packet.BuildEOFPacket())
 
