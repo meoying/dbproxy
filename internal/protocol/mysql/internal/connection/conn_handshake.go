@@ -57,7 +57,7 @@ func (mc *Conn) startHandshake() error {
 }
 
 // readHandshakeResp 读取客户端在 startHandshake 中返回来的响应
-func (mc *Conn) readHandshakeResp() ([]byte, error) {
+func (mc *Conn) readHandshakeResp() (packet.HandshakeResp, error) {
 	data, err := mc.readPacket()
 	return data, err
 }
@@ -68,7 +68,8 @@ func (mc *Conn) auth() error {
 	if err != nil {
 		return err
 	}
-	mc.clientFlags = flags.CapabilityFlags((packet.HandshakeResp)(resp).ClientFlags())
+	mc.clientFlags = flags.CapabilityFlags(resp.ClientFlags())
+	mc.characterSet = resp.CharacterSet()
 	// 写回 OK 响应
 	return mc.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
 }

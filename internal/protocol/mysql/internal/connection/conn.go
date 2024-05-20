@@ -28,7 +28,8 @@ type Conn struct {
 	onCmd      OnCmd
 	cmdTimeout time.Duration
 
-	clientFlags flags.CapabilityFlags
+	clientFlags  flags.CapabilityFlags
+	characterSet uint32
 }
 
 func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
@@ -77,4 +78,8 @@ func (mc *Conn) Close() error {
 
 func (mc *Conn) ClientCapabilityFlags() flags.CapabilityFlags {
 	return mc.clientFlags
+}
+
+func (mc *Conn) CharacterSet() uint32 {
+	return mc.characterSet
 }
