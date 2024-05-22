@@ -57,7 +57,7 @@ func BuildEOFPacket() []byte {
 
 // BuildColumnDefinitionPacket 构建字段描述包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
-func BuildColumnDefinitionPacket(col *sql.ColumnType) []byte {
+func BuildColumnDefinitionPacket(col *sql.ColumnType, charset uint32) []byte {
 	// 减少切片扩容
 	p := make([]byte, 4, 32)
 
@@ -77,7 +77,7 @@ func BuildColumnDefinitionPacket(col *sql.ColumnType) []byte {
 	// 固定长度
 	p = append(p, 0x0c)
 	// character_set int<2> 编码
-	p = append(p, UintLengthEncode(getMysqlTypeCharSet(col.DatabaseTypeName()), 2)...)
+	p = append(p, UintLengthEncode(charset, 2)...)
 	// column_length int<4> 字段类型最大长度
 	p = append(p, UintLengthEncode(getMysqlTypeMaxLength(col.DatabaseTypeName()), 4)...)
 	// type int<1> 字段类型
@@ -125,16 +125,6 @@ func getMysqlTypeMaxLength(dataType string) uint32 {
 		return MySqlMaxLengthVarChar
 	default:
 		return 0
-	}
-}
-
-func getMysqlTypeCharSet(dataType string) uint32 {
-	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
-	switch dataType {
-	case "VARCHAR":
-		return CharSetUtf8mb4GeneralCi
-	default:
-		return CharSetBinary
 	}
 }
 

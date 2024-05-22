@@ -9,3 +9,7 @@ type HandshakeResp []byte
 func (h HandshakeResp) ClientFlags() uint32 {
 	return binary.LittleEndian.Uint32(h[5:9])
 }
+
+func (h HandshakeResp) CharacterSet() uint32 {
+	return uint32(h[9])
+}
