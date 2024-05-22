@@ -2,14 +2,14 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
-	"github.com/meoying/dbproxy/internal/plugin/forward"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/cmd"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"log/slog"
 	"net"
 	"sync"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/cmd"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/hashicorp/go-multierror"
@@ -27,16 +27,20 @@ type Server struct {
 	closeOnce sync.Once
 }
 
-// NewServer 暂时写死
-func NewServer(addr string, db *sql.DB) *Server {
+// NewServer
+// 插件机制，需要进一步考虑细化
+// 这里默认 plugin 已经完成了初始化
+func NewServer(addr string, plugins []plugin.Plugin) *Server {
+	var hdl plugin.Handler
+	for i := len(plugins) - 1; i >= 0; i-- {
+		hdl = plugins[i].Join(hdl)
+	}
 	return &Server{
 		logger: slog.Default(),
 		addr:   addr,
 		executors: map[byte]cmd.Executor{
-			cmd.CmdPing.Byte(): &cmd.PingExecutor{},
-			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(&forward.Handler{
-				DB: db,
-			}),
+			cmd.CmdPing.Byte():  &cmd.PingExecutor{},
+			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl),
 		},
 	}
 }
@@ -74,13 +78,7 @@ func (s *Server) omCmd(ctx context.Context, conn *connection.Conn, payload []byt
 	// 第一个字节是命令
 	exec, ok := s.executors[payload[0]]
 	if ok {
-		cmdCtx := &cmd.Context{
-			Context:         ctx,
-			Conn:            conn,
-			CapabilityFlags: conn.ClientCapabilityFlags(),
-			CharacterSet:    conn.CharacterSet(),
-		}
-		return exec.Exec(cmdCtx, payload)
+		return exec.Exec(ctx, conn, payload)
 	}
 	// 返回不支持的命令的响应
 	err := conn.WritePacket(packet.BuildErrRespPacket(packet.ER_XAER_INVAL))
