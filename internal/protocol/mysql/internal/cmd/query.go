@@ -67,7 +67,7 @@ func (exec *QueryExecutor) Exec(
 		data = append(data, row)
 	}
 
-	resp, err := exec.resp(cols, data, ctx.CharacterSet)
+	resp, err := exec.resp(cols, data, conn.CharacterSet())
 	if err != nil {
 		errResp := packet.BuildErInternalError(err.Error())
 		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
