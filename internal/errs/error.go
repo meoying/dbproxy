@@ -1,6 +1,8 @@
 package errs
 
-import "errors"
+import (
+	"errors"
+)
 
 var ErrInvalidConn = errors.New("异常连接")
 var ErrPktSync = errors.New("报文乱序")

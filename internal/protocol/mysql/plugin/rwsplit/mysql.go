@@ -9,7 +9,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/internal/context"
 )
 
 type Handler struct {
@@ -22,7 +21,7 @@ type Handler struct {
 // 1. SELECT 语句：默认走从库
 // 2. 其它语句：默认走主库
 // 3. 在 SELECT 语句中 proxy hint 中使用了 useMaster 的标记，则走主库
-func (h *Handler) Handle(ctx *pcontext.pcontext) (*plugin.Result, error) {
+func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	dml := ctx.ParsedQuery.FirstDML()
 	sql := dml.GetChildren()[0]
 
