@@ -1,4 +1,4 @@
-package query
+package packet
 
 // MySQLType MySQL 的数据类型
 type MySQLType uint16

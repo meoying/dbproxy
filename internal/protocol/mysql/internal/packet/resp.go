@@ -3,7 +3,6 @@ package packet
 import (
 	"database/sql"
 	"encoding/binary"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
 )
 
 // 构造返回给客户端响应的 packet
@@ -64,12 +63,13 @@ func BuildColumnDefinitionPacket(col *sql.ColumnType) []byte {
 
 	// catalog string<lenenc> 目录
 	p = append(p, EncodeStringLenenc("def")...)
+	// 这部分暂时用不到，所以全部写死
 	// schema string<lenenc> 数据库
-	p = append(p, EncodeStringLenenc("test")...)
+	p = append(p, EncodeStringLenenc("unsupported")...)
 	// table string<lenenc> 虚拟数据表名
-	p = append(p, EncodeStringLenenc("users")...)
+	p = append(p, EncodeStringLenenc("unsupported")...)
 	// orgTable string<lenenc> 物理数据表名
-	p = append(p, EncodeStringLenenc("users")...)
+	p = append(p, EncodeStringLenenc("unsupported")...)
 	// name string<lenenc> 虚拟字段名
 	p = append(p, EncodeStringLenenc(col.Name())...)
 	// orgName string<lenenc> 物理字段名
@@ -120,9 +120,9 @@ func getMysqlTypeMaxLength(dataType string) uint32 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
 	switch dataType {
 	case "INT":
-		return query.MySqlMaxLengthInt
+		return MySqlMaxLengthInt
 	case "VARCHAR":
-		return query.MySqlMaxLengthVarChar
+		return MySqlMaxLengthVarChar
 	default:
 		return 0
 	}
@@ -132,9 +132,9 @@ func getMysqlTypeCharSet(dataType string) uint32 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
 	switch dataType {
 	case "VARCHAR":
-		return query.CharSetUtf8mb4GeneralCi
+		return CharSetUtf8mb4GeneralCi
 	default:
-		return query.CharSetBinary
+		return CharSetBinary
 	}
 }
 
@@ -143,9 +143,9 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
 	switch dataType {
 	case "INT":
-		return uint16(query.MySQLTypeLong)
+		return uint16(MySQLTypeLong)
 	case "VARCHAR":
-		return uint16(query.MySQLTypeVarString)
+		return uint16(MySQLTypeVarString)
 
 	default:
 		return 999 // 未知类型

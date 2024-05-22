@@ -1,41 +1,55 @@
 package cmd
 
 import (
+	"context"
 	"database/sql"
-	"github.com/meoying/dbproxy/internal/plugin"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/query"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 )
 
 var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
-	plugin plugin.Plugin
+	hdl plugin.Handler
 }
 
-func NewQueryExecutor(plugin plugin.Plugin) *QueryExecutor {
+func NewQueryExecutor(hdl plugin.Handler) *QueryExecutor {
 	return &QueryExecutor{
-		plugin: plugin,
+		hdl: hdl,
 	}
 }
 
 // Exec
 // Query 命令的 payload 格式在
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query.html
-func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
+func (exec *QueryExecutor) Exec(
+	ctx context.Context,
+	conn *connection.Conn,
+	payload []byte) error {
 	que := exec.parseQuery(payload)
+	pctx := &pcontext.Context{
+		Context: ctx,
+		Query:   que,
+		ParsedQuery: pcontext.ParsedQuery{
+			Root: ast.Parse(que),
+		},
+	}
 	// 在这里执行 que，并且写回响应
-	result, err := exec.plugin.Handle(ctx, que.SQL)
+	result, err := exec.hdl.Handle(pctx)
 	if err != nil {
 		// 回写错误响应
 		// 先返回系统错误
 		errResp := packet.BuildErInternalError(err.Error())
-		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
+		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 	cols, err := result.Rows.ColumnTypes()
 	if err != nil {
 		errResp := packet.BuildErInternalError(err.Error())
-		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
+		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 	var data [][]any
 	for result.Rows.Next() {
@@ -48,7 +62,7 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 		err = result.Rows.Scan(row...)
 		if err != nil {
 			errResp := packet.BuildErInternalError(err.Error())
-			return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
+			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 		}
 		data = append(data, row)
 	}
@@ -56,13 +70,13 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 	resp, err := exec.resp(cols, data)
 	if err != nil {
 		errResp := packet.BuildErInternalError(err.Error())
-		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
+		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 	for _, pkt := range resp {
-		err = ctx.Conn.WritePacket(pkt)
+		err = conn.WritePacket(pkt)
 		if err != nil {
 			errResp := packet.BuildErInternalError(err.Error())
-			return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
+			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 		}
 	}
 	return nil
@@ -94,9 +108,7 @@ func (exec *QueryExecutor) resp(cols []*sql.ColumnType, rows [][]any) ([][]byte,
 	return packetArr, nil
 }
 
-func (exec *QueryExecutor) parseQuery(payload []byte) query.Query {
+func (exec *QueryExecutor) parseQuery(payload []byte) string {
 	// 第一个字节是 cmd
-	return query.Query{
-		SQL: string(payload[1:]),
-	}
+	return string(payload[1:])
 }

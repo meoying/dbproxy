@@ -3,8 +3,6 @@ package datasource
 import (
 	"context"
 	"database/sql"
-
-	"github.com/meoying/dbproxy/internal/query"
 )
 
 type Executor interface {
@@ -31,4 +29,9 @@ type DataSource interface {
 	Close() error
 }
 
-type Query = query.Query
+type Query struct {
+	SQL        string
+	Args       []any
+	DB         string
+	Datasource string
+}

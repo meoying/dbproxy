@@ -15,9 +15,24 @@
 
 因此本项目就是要构造一个新的代理实现，同时支持这三种形态。
 
+## proxy hint 的设计和用法
+在数据库查询的处理过程中，有些时候用户希望在代理这边记录一些额外的事情。
+
+例如说一个常见的需要是希望将代理这边的日志、trace 一并上报。在这种情况下，客户端就会传入一个 trace id 或者 transaction id 之类的东西。
+
+那么代理为了解决这个问题，引入了一个所谓的 proxy hint（提示）的特性。这是借助了 SQL 的注释来实现的。
+语法形式：
+```sql
+SELECT /* @key1 value */ * FROM users;
+UPDATE /* @key1 value */ * users SET name ='123';
+DELETE /* @key1 value1 */ FROM users WHERE name = '123';
+INSERT /* @key1 value1 */ INTO users VALUES (1, 'Tom');
+```
+
 ## TODO
 - 支持 prepare statement
 - 支持 multiple statement
+- 支持 SSL 协议
 
 ## 附录
 

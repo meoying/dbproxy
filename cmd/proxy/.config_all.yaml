@@ -1,0 +1,21 @@
+# 全部配置及其对应的描述
+
+# 代理 server 有关的配置
+server:
+  # 服务器启动监听的端口
+  addr: ":8306"
+
+
+# 使用的插件的配置，我们会按照插件的顺序进行加载和初始化
+plugins:
+  # 插件所在的位置，必须是一个目录
+  # 如果后续的 item 没有指定位置，则默认从这个目录下加载
+  location: "./plugins"
+  items:
+    # 一个叫做 forward 的插件
+    - name: "log"
+      location: "./plugins/log"
+    - name: "forward"
+      # 如果配置了，则必须是一个文件
+      # 在没有配置的情况下，默认是 $location/$name.so => ./plugins/forward.so
+      # location: "./plugins/word"

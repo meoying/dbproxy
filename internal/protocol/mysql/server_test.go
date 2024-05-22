@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/forward"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -21,7 +24,10 @@ func (s *ServerTestSuite) SetupSuite() {
 	// 这里用真实的 DB，因为你要转发过去来测试
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/mysql")
 	require.NoError(s.T(), err)
-	server := NewServer(":8306", db)
+	plugins := []plugin.Plugin{
+		&forward.Plugin{},
+	}
+	server := NewServer(":8306", plugins)
 	s.realDB = db
 	s.server = server
 	go func() {
