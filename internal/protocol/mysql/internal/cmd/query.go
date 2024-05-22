@@ -53,7 +53,7 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 		data = append(data, row)
 	}
 
-	resp, err := exec.resp(cols, data)
+	resp, err := exec.resp(cols, data, ctx.CharacterSet)
 	if err != nil {
 		errResp := packet.BuildErInternalError(err.Error())
 		return ctx.Conn.WritePacket(packet.BuildErrRespPacket(errResp))
@@ -71,7 +71,7 @@ func (exec *QueryExecutor) Exec(ctx *Context, payload []byte) error {
 // resp 根据执行结果返回转换成对应的格式并返回
 // response 的 text_resultset的格式在
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset.html
-func (exec *QueryExecutor) resp(cols []*sql.ColumnType, rows [][]any) ([][]byte, error) {
+func (exec *QueryExecutor) resp(cols []*sql.ColumnType, rows [][]any, charset uint32) ([][]byte, error) {
 	// text_resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
 	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
 	var packetArr [][]byte
@@ -81,7 +81,7 @@ func (exec *QueryExecutor) resp(cols []*sql.ColumnType, rows [][]any) ([][]byte,
 	packetArr = append(packetArr, colLenPack)
 	// 写入字段描述包
 	for _, c := range cols {
-		packetArr = append(packetArr, packet.BuildColumnDefinitionPacket(c))
+		packetArr = append(packetArr, packet.BuildColumnDefinitionPacket(c, charset))
 	}
 	packetArr = append(packetArr, packet.BuildEOFPacket())
 

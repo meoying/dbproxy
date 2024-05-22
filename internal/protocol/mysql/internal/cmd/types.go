@@ -16,5 +16,6 @@ type Context struct {
 	context.Context
 	// CapabilityFlags 客户端支持的功能特性
 	CapabilityFlags flags.CapabilityFlags
+	CharacterSet    uint32
 	Conn            *connection.Conn
 }

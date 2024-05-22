@@ -75,8 +75,10 @@ func (s *Server) omCmd(ctx context.Context, conn *connection.Conn, payload []byt
 	exec, ok := s.executors[payload[0]]
 	if ok {
 		cmdCtx := &cmd.Context{
-			Context: ctx,
-			Conn:    conn,
+			Context:         ctx,
+			Conn:            conn,
+			CapabilityFlags: conn.ClientCapabilityFlags(),
+			CharacterSet:    conn.CharacterSet(),
 		}
 		return exec.Exec(cmdCtx, payload)
 	}
