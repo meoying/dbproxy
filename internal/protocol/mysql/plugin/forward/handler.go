@@ -33,3 +33,9 @@ func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 		Result: res,
 	}, err
 }
+
+func NewHandler(ds datasource.DataSource) *Handler {
+	return &Handler{
+		ds: ds,
+	}
+}

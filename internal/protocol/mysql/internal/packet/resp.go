@@ -106,7 +106,7 @@ func BuildRowPacket(value ...any) []byte {
 			p = append(p, 0xFB)
 		} else {
 			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
-			data := string(*(v.(*[]uint8)))
+			data := string(*(v.(*[]byte)))
 
 			p = append(p, EncodeStringLenenc(data)...)
 		}
