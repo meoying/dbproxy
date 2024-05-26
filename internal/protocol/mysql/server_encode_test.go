@@ -15,8 +15,6 @@ import (
 // 2. 所有的字段都是最小值
 // 3. 所有的字段都是最大值
 // 确保客户端收到的和服务端传递的是一样的。
-// TODO 问题点：我们返回的结果和服务端返回的结果不一样，也没有搞懂为什么有些字段能转成整数，有些却还是原来的[]byte
-// got [1 [49] [50] [51] 4 5 [54]] want [1 1 2 3 4 5 6]
 func (s *ServerTestSuite) TestIntTypes() {
 	testCases := []struct {
 		name    string
@@ -26,15 +24,19 @@ func (s *ServerTestSuite) TestIntTypes() {
 	}{
 		{
 			name: "随意整数",
-			sql:  "SELECT * FROM test_int_type where id = 1",
+			sql:  "SELECT * FROM test_int_type WHERE id = 1",
 		},
 		{
 			name: "最大整数",
-			sql:  "SELECT * FROM test_int_type where id = 2",
+			sql:  "SELECT * FROM test_int_type WHERE id = 2",
 		},
 		{
 			name: "最小整数",
-			sql:  "SELECT * FROM test_int_type where id = 3",
+			sql:  "SELECT * FROM test_int_type WHERE id = 3",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_int_type WHERE id = 4",
 		},
 	}
 
@@ -70,8 +72,6 @@ func (s *ServerTestSuite) TestIntTypes() {
 
 // 测试 MySQL 的浮点的类型
 // 确保客户端收到的和服务端传递的是一样的。
-// TODO 问题点：我们返回的结果和服务端返回的结果不一样，也没有搞懂为什么有些字段能转成整数，有些却还是原来的[]byte，但浮点型服务端也会返回[]byte
-// got [1 [54 54 46 54 54] [57 57 57 46 57 57 57] [51 51 46 51 51] [49 50 51 52 53 54 46 55 56] [49 50 51 52 53 46 54 55 56 57]] want [1 66.66 999.999 [51 51 46 51 51] [49 50 51 52 53 54 46 55 56] 12345.6789]
 func (s *ServerTestSuite) TestFloatTypes() {
 	testCases := []struct {
 		name    string
@@ -81,7 +81,11 @@ func (s *ServerTestSuite) TestFloatTypes() {
 	}{
 		{
 			name: "随意浮点数",
-			sql:  "SELECT * FROM test_float_type where id = 1",
+			sql:  "SELECT * FROM test_float_type WHERE id = 1",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_float_type WHERE id = 2",
 		},
 	}
 
@@ -128,7 +132,11 @@ func (s *ServerTestSuite) TestStringTypes() {
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT * FROM test_string_type where id = 1",
+			sql:  "SELECT * FROM test_string_type WHERE id = 1",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_string_type WHERE id = 2",
 		},
 	}
 
@@ -173,7 +181,11 @@ func (s *ServerTestSuite) TestDateTypes() {
 	}{
 		{
 			name: "随意日期",
-			sql:  "SELECT * FROM test_date_type where id = 1",
+			sql:  "SELECT * FROM test_date_type WHERE id = 1",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_date_type WHERE id = 2",
 		},
 	}
 
@@ -218,7 +230,11 @@ func (s *ServerTestSuite) TestGeographyTypes() {
 	}{
 		{
 			name: "随意地理位置",
-			sql:  "SELECT * FROM test_geography_type where id = 1",
+			sql:  "SELECT * FROM test_geography_type WHERE id = 1",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_geography_type WHERE id = 2",
 		},
 	}
 
@@ -263,7 +279,11 @@ func (s *ServerTestSuite) TestFilePathTypes() {
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT * FROM test_file_path_type where id = 1",
+			sql:  "SELECT * FROM test_file_path_type WHERE id = 1",
+		},
+		{
+			name: "NULL值",
+			sql:  "SELECT * FROM test_file_path_type WHERE id = 2",
 		},
 	}
 

@@ -102,13 +102,12 @@ func BuildRowPacket(value ...any) []byte {
 	p := make([]byte, 4, 20)
 	for _, v := range value {
 		// 字段值为null 默认返回0xFB
-		if value == nil {
+		data := *(v.(*[]byte))
+		if data == nil {
 			p = append(p, 0xFB)
 		} else {
 			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
-			data := string(*(v.(*[]byte)))
-
-			p = append(p, EncodeStringLenenc(data)...)
+			p = append(p, EncodeStringLenenc(string(data))...)
 		}
 	}
 
@@ -130,14 +129,56 @@ func getMysqlTypeMaxLength(dataType string) uint32 {
 
 // mapMySQLTypeToEnum 字段类型转字段枚举
 func mapMySQLTypeToEnum(dataType string) uint16 {
-	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
 	switch dataType {
+	case "TINYINT":
+		return uint16(MySQLTypeTiny)
+	case "SMALLINT":
+		return uint16(MySQLTypeShort)
+	case "MEDIUMINT":
+		return uint16(MySQLTypeInt24)
 	case "INT":
 		return uint16(MySQLTypeLong)
+	case "BIGINT":
+		return uint16(MySQLTypeLongLong)
+	case "FLOAT":
+		return uint16(MySQLTypeFloat)
+	case "DOUBLE":
+		return uint16(MySQLTypeDouble)
+	case "DECIMAL":
+		return uint16(MySQLTypeNewDecimal)
+	case "CHAR":
+		return uint16(MySQLTypeString)
 	case "VARCHAR":
 		return uint16(MySQLTypeVarString)
-
+	case "TEXT":
+		return uint16(MySQLTypeBlob)
+	case "ENUM":
+		return uint16(MySQLTypeString)
+	case "SET":
+		return uint16(MySQLTypeString)
+	case "BINARY":
+		return uint16(MySQLTypeString)
+	case "VARBINARY":
+		return uint16(MySQLTypeVarString)
+	case "JSON":
+		return uint16(MySQLTypeJSON)
+	case "BIT":
+		return uint16(MySQLTypeBit)
+	case "DATE":
+		return uint16(MySQLTypeDate)
+	case "DATETIME":
+		return uint16(MySQLTypeDatetime)
+	case "TIMESTAMP":
+		return uint16(MySQLTypeTimestamp)
+	case "TIME":
+		return uint16(MySQLTypeTime)
+	case "YEAR":
+		return uint16(MySQLTypeYear)
+	case "GEOMETRY":
+		return uint16(MySQLTypeGeometry)
+	case "BLOB":
+		return uint16(MySQLTypeBlob)
 	default:
-		return 999 // 未知类型
+		return uint16(MySQLTypeVarString) // 未知类型
 	}
 }
