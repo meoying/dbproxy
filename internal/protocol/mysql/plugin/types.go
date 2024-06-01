@@ -2,9 +2,9 @@ package plugin
 
 import (
 	"database/sql"
-
 	"github.com/ecodeclub/ekit/sqlx"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 )
 
 // Plugin 代表的是插件
@@ -19,6 +19,7 @@ type Plugin interface {
 	Init(cfg []byte) error
 	// Join 加入处理链条。你需要返回你当前处理步骤
 	Join(next Handler) Handler
+	NewVisitor() map[string]visitor.Visitor
 }
 
 type HandleFunc func(ctx *pcontext.Context) (*Result, error)

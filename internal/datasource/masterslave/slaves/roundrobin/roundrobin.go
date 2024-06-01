@@ -25,7 +25,7 @@ import (
 
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 
-	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 )
 
 type Slaves struct {

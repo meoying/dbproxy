@@ -3,11 +3,11 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"github.com/meoying/dbproxy/internal/datasource/single"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/forward"
 	"testing"
 	"time"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/forward"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
@@ -17,16 +17,15 @@ import (
 type ServerTestSuite struct {
 	suite.Suite
 	server *Server
-	realDB *single.DB
+	realDB *sql.DB
 }
 
 func (s *ServerTestSuite) SetupSuite() {
 	// 这里用真实的 DB，因为你要转发过去来测试
-	db, err := single.OpenDB("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/mysql")
 	require.NoError(s.T(), err)
-	hdl := forward.NewHandler(db)
 	plugins := []plugin.Plugin{
-		forward.NewPlugin(hdl),
+		&forward.Plugin{},
 	}
 	server := NewServer(":8306", plugins)
 	s.realDB = db

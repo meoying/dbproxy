@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"log/slog"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
@@ -8,6 +9,11 @@ import (
 )
 
 type Plugin struct {
+}
+
+func (p *Plugin) NewVisitor() map[string]visitor.Visitor {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (p *Plugin) Name() string {

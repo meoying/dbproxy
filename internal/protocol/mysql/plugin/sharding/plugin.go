@@ -1,15 +1,43 @@
 package sharding
 
 import (
+	"errors"
+	"fmt"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
+	"log"
 )
 
 type Plugin struct {
 	ds        datasource.DataSource
 	algorithm sharding.Algorithm
+}
+
+func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
+	return &Plugin{
+		ds:        ds,
+		algorithm: algorithm,
+	}
+}
+
+func (p *Plugin) NewVisitor() map[string]visitor.Visitor {
+	visitors := []visitor.Visitor{
+		visitor.NewInsertVisitor(),
+		visitor.NewsSelectVisitor(),
+		visitor.NewCheckVisitor(),
+	}
+	visitorMap := make(map[string]visitor.Visitor, 16)
+	for _, v := range visitors {
+		visitorMap[p.getVisitorName(v)] = v
+	}
+	return visitorMap
+}
+func (p *Plugin) getVisitorName(v visitor.Visitor) string {
+	return fmt.Sprintf("sharding_%s", v.Name())
 }
 
 func (p *Plugin) Name() string {
@@ -31,6 +59,44 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		// 如果是 INSERT，则是拿到 VALUE 或者 VALUES 的部分
 		// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 		// 3. 调用 p.ds.Exec 或者 p.ds.Query
-		panic("implement me")
+		if next != nil {
+			next.Handle(ctx)
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				log.Println("分库分表查询失败")
+			}
+		}()
+		checkVisitor, ok := ctx.Visitors["sharding_CheckVisitor"]
+		if !ok {
+			return nil, errors.New("缺少checkVisitor")
+		}
+		nameResp := checkVisitor.VisitRoot(ctx.ParsedQuery.Root.(*parser.RootContext))
+		switch nameResp.(string) {
+		case visitor.InsertSql:
+			handler, err := NewInsertBuilder(p.algorithm, p.ds, ctx)
+			if err != nil {
+				return nil, err
+			}
+			res := handler.Exec(ctx.Context)
+			if res.Err() != nil {
+				return nil, res.Err()
+			}
+			return &plugin.Result{
+				Result: res,
+			}, nil
+		case visitor.SelectSql:
+			handler, err := NewSelectHandler(p.algorithm, p.ds, ctx)
+			if err != nil {
+				return nil, err
+			}
+			res, err := handler.GetMulti(ctx.Context)
+			return &plugin.Result{
+				Rows: res,
+			}, err
+		default:
+			return nil, errors.New("未知语句")
+		}
+
 	})
 }

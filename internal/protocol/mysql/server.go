@@ -22,7 +22,6 @@ type Server struct {
 
 	conns     syncx.Map[uint32, *connection.Conn]
 	executors map[byte]cmd.Executor
-
 	// 关闭
 	closeOnce sync.Once
 }
@@ -34,13 +33,14 @@ func NewServer(addr string, plugins []plugin.Plugin) *Server {
 	var hdl plugin.Handler
 	for i := len(plugins) - 1; i >= 0; i-- {
 		hdl = plugins[i].Join(hdl)
+
 	}
 	return &Server{
-		logger: slog.Default(),
-		addr:   addr,
+		logger:   slog.Default(),
+		addr:     addr,
 		executors: map[byte]cmd.Executor{
 			cmd.CmdPing.Byte():  &cmd.PingExecutor{},
-			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl),
+			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl, plugins),
 		},
 	}
 }

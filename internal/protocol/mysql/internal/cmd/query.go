@@ -3,23 +3,25 @@ package cmd
 import (
 	"context"
 	"database/sql"
-
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 )
 
 var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
-	hdl plugin.Handler
+	plugins []plugin.Plugin
+	hdl      plugin.Handler
 }
 
-func NewQueryExecutor(hdl plugin.Handler) *QueryExecutor {
+func NewQueryExecutor(hdl plugin.Handler, plugins []plugin.Plugin) *QueryExecutor {
 	return &QueryExecutor{
-		hdl: hdl,
+		hdl:      hdl,
+		plugins: plugins,
 	}
 }
 
@@ -30,14 +32,22 @@ func (exec *QueryExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
+	visitorMap := make(map[string]visitor.Visitor,32)
+	for _,p := range exec.plugins {
+		for name,v := range p.NewVisitor() {
+			visitorMap[name] = v
+		}
+	}
 	que := exec.parseQuery(payload)
 	pctx := &pcontext.Context{
-		Context: ctx,
-		Query:   que,
+		Context:  ctx,
+		Query:    que,
+		Visitors: visitorMap,
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(que),
 		},
 	}
+
 	// 在这里执行 que，并且写回响应
 	result, err := exec.hdl.Handle(pctx)
 	if err != nil {
