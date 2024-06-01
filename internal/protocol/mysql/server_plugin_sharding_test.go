@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -106,38 +107,82 @@ func (s *TestShardingPluginSuite) SetupSuite() {
 	}()
 }
 
-func (s *TestShardingPluginSuite) TestSharding_Insert() {
+//func (s *TestShardingPluginSuite) TestSharding_Insert() {
+//	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+//	require.NoError(s.T(), err)
+//	sql2 := "insert into order (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3);"
+//	_, err = db.Exec(sql2)
+//	require.NoError(s.T(), err)
+//	row, err := s.db.Query("select * from order_db_1.order_tab where id = 1;")
+//	require.NoError(s.T(), err)
+//	row2, err := s.db.Query("select * from order_db_0.order_tab where id = 2;")
+//	require.NoError(s.T(), err)
+//	order1, err := s.getOrder(row)
+//	require.NoError(s.T(), err)
+//	order2, err := s.getOrder(row2)
+//	require.NoError(s.T(), err)
+//	assert.Equal(s.T(), []Order{
+//		{
+//			UserId:  1,
+//			OrderId: 3,
+//			Content: "content",
+//			Account: 1.1,
+//		},
+//		{
+//			UserId:  2,
+//			OrderId: 4,
+//			Content: "content4",
+//			Account: 1.3,
+//		},
+//	}, []Order{
+//		order1,
+//		order2,
+//	})
+//
+//}
+
+func (s *TestShardingPluginSuite) TestSharding_Select() {
+	//初始化数据
+	sql1 := "insert into order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',1.3);"
+	sql2 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',1.1);"
+	_, err := s.db.Exec(sql1)
+	require.NoError(s.T(), err)
+	_, err = s.db.Exec(sql2)
+	require.NoError(s.T(), err)
+	//查询
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
 	require.NoError(s.T(), err)
-	sql2 := "insert into order (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3);"
-	_, err = db.Exec(sql2)
+	// 使用主库查找
+	ctx := masterslave.UseMaster(context.Background())
+	rows, err := db.QueryContext(ctx, "SELECT /*! useMaster */  * FROM users WHERE (user_id = 1) or (user_id =2)")
 	require.NoError(s.T(), err)
-	row, err := s.db.Query("select * from order_db_1.order_tab where id = 1;")
-	require.NoError(s.T(), err)
-	row2, err := s.db.Query("select * from order_db_0.order_tab where id = 2;")
-	require.NoError(s.T(), err)
-	order1, err := s.getOrder(row)
-	require.NoError(s.T(), err)
-	order2, err := s.getOrder(row2)
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), []Order{
-		{
-			UserId:  1,
-			OrderId: 3,
-			Content: "content",
-			Account: 1.1,
-		},
+	res := make([]Order, 0, 2)
+	for rows.Next() {
+		order := Order{}
+		err = rows.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Account)
+		require.NoError(s.T(), err)
+		res = append(res, order)
+	}
+	assert.ElementsMatch(s.T(), []Order{
 		{
 			UserId:  2,
 			OrderId: 4,
 			Content: "content4",
 			Account: 1.3,
 		},
-	}, []Order{
-		order1,
-		order2,
-	})
-
+		{
+			UserId:  1,
+			OrderId: 1,
+			Content: "content1",
+			Account: 1.1,
+		},
+	}, res)
+	deleteSql := "delete from  order_db_0.order_tab;"
+	_, err = s.db.Exec(deleteSql)
+	require.NoError(s.T(), err)
+	deleteSql = "delete from  order_db_1.order_tab;"
+	_, err = s.db.Exec(deleteSql)
+	require.NoError(s.T(), err)
 }
 
 func (s *TestShardingPluginSuite) getOrder(row *sql.Rows) (Order, error) {

@@ -15,12 +15,12 @@ var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
 	plugins []plugin.Plugin
-	hdl      plugin.Handler
+	hdl     plugin.Handler
 }
 
 func NewQueryExecutor(hdl plugin.Handler, plugins []plugin.Plugin) *QueryExecutor {
 	return &QueryExecutor{
-		hdl:      hdl,
+		hdl:     hdl,
 		plugins: plugins,
 	}
 }
@@ -32,9 +32,9 @@ func (exec *QueryExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	visitorMap := make(map[string]visitor.Visitor,32)
-	for _,p := range exec.plugins {
-		for name,v := range p.NewVisitor() {
+	visitorMap := make(map[string]visitor.Visitor, 32)
+	for _, p := range exec.plugins {
+		for name, v := range p.NewVisitor() {
 			visitorMap[name] = v
 		}
 	}

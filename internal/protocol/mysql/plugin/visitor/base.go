@@ -30,6 +30,7 @@ type BaseVisitor struct {
 	parser.BaseMySqlParserVisitor
 }
 
+
 type ValMeta struct {
 	Val any
 	Typ reflect.Kind
@@ -104,6 +105,8 @@ func (b *BaseVisitor)VisitFullColumnNameExpressionAtom(ctx *parser.FullColumnNam
 func (b *BaseVisitor) removeQuote(str string)string {
 	return strings.Trim(str,"`")
 }
+
+
 func (b *BaseVisitor)hasQuote(str string )bool {
 	return strings.HasPrefix(str,"`" )
 }

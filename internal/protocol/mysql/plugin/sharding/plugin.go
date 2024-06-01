@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"log"
+	"strings"
 )
 
 type Plugin struct {
@@ -29,6 +31,7 @@ func (p *Plugin) NewVisitor() map[string]visitor.Visitor {
 		visitor.NewInsertVisitor(),
 		visitor.NewsSelectVisitor(),
 		visitor.NewCheckVisitor(),
+		visitor.NewHintVisitor(),
 	}
 	visitorMap := make(map[string]visitor.Visitor, 16)
 	for _, v := range visitors {
@@ -86,6 +89,13 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 				Result: res,
 			}, nil
 		case visitor.SelectSql:
+			hintVisit := ctx.Visitors["sharding_HintVisitor"]
+			hint := hintVisit.Visit(ctx.ParsedQuery.Root)
+
+			if strings.Contains(hint.(string), "useMaster") {
+				qctx := masterslave.UseMaster(ctx.Context)
+				ctx.Context = qctx
+			}
 			handler, err := NewSelectHandler(p.algorithm, p.ds, ctx)
 			if err != nil {
 				return nil, err

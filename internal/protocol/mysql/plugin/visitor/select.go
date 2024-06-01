@@ -14,8 +14,6 @@ type SelectVal struct {
 }
 
 type SelectVisitor struct {
-	Err       error
-	SelectVal SelectVal
 	*BaseVisitor
 }
 
