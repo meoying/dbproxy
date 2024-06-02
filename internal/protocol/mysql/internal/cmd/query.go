@@ -37,7 +37,9 @@ func (exec *QueryExecutor) Exec(
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(que),
 		},
+		InTransition: conn.InTransition,
 	}
+
 	// 在这里执行 que，并且写回响应
 	result, err := exec.hdl.Handle(pctx)
 	if err != nil {
@@ -46,40 +48,47 @@ func (exec *QueryExecutor) Exec(
 		errResp := packet.BuildErInternalError(err.Error())
 		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
-	cols, err := result.Rows.ColumnTypes()
-	if err != nil {
-		errResp := packet.BuildErInternalError(err.Error())
-		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
+	if result.ChangeTransaction {
+		conn.InTransition = true
 	}
-	var data [][]any
-	for result.Rows.Next() {
-		row := make([]any, len(cols))
-		// 这里需要用到指针给Scan，不然会报错
-		for i := range row {
-			var v []byte
-			row[i] = &v
-		}
-		err = result.Rows.Scan(row...)
+	if result.Rows != nil {
+		cols, err := result.Rows.ColumnTypes()
 		if err != nil {
 			errResp := packet.BuildErInternalError(err.Error())
 			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 		}
-		data = append(data, row)
+		var data [][]any
+		for result.Rows.Next() {
+			row := make([]any, len(cols))
+			// 这里需要用到指针给Scan，不然会报错
+			for i := range row {
+				var v []byte
+				row[i] = &v
+			}
+			err = result.Rows.Scan(row...)
+			if err != nil {
+				errResp := packet.BuildErInternalError(err.Error())
+				return conn.WritePacket(packet.BuildErrRespPacket(errResp))
+			}
+			data = append(data, row)
+		}
+
+		resp, err := exec.resp(cols, data, conn.CharacterSet())
+		if err != nil {
+			errResp := packet.BuildErInternalError(err.Error())
+			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
+		}
+		for _, pkt := range resp {
+			err = conn.WritePacket(pkt)
+			if err != nil {
+				errResp := packet.BuildErInternalError(err.Error())
+				return conn.WritePacket(packet.BuildErrRespPacket(errResp))
+			}
+		}
 	}
 
-	resp, err := exec.resp(cols, data, conn.CharacterSet())
-	if err != nil {
-		errResp := packet.BuildErInternalError(err.Error())
-		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
-	}
-	for _, pkt := range resp {
-		err = conn.WritePacket(pkt)
-		if err != nil {
-			errResp := packet.BuildErInternalError(err.Error())
-			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
-		}
-	}
-	return nil
+	// TODO 如果是插入、更新、删除行为应该把影响行数和最后插入ID给传进去
+	return conn.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
 }
 
 // resp 根据执行结果返回转换成对应的格式并返回
