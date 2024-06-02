@@ -31,12 +31,7 @@ type SelectHandler struct {
 }
 
 func NewSelectHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (*SelectHandler, error) {
-	visitors := ctx.Visitors
-	// 获取insert，visitor
-	selectVisitor, ok := visitors["sharding_SelectVisitor"]
-	if !ok {
-		return nil, errors.New("SelectVisitor未找到")
-	}
+	selectVisitor := visitor.NewsSelectVisitor()
 	resp := selectVisitor.Visit(ctx.ParsedQuery.Root)
 	baseVal := resp.(visitor.BaseVal)
 	if baseVal.Err != nil {

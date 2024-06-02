@@ -12,7 +12,6 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"
@@ -636,10 +635,7 @@ func TestShardingSelector_onlyDataSource_Build(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -1265,10 +1261,7 @@ func TestShardingSelector_onlyTable_Build(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -1931,10 +1924,7 @@ func TestShardingSelector_onlyDB_Build(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -2717,7 +2707,7 @@ func TestShardingSelector_all_Build(t *testing.T) {
 		},
 		{
 			name: "where not in and eq",
-			sql:  "SELECT `order_id`,`content` FROM  WHERE (`user_id` NOT IN (12,35,101)) AND (`user_id`=234);",
+			sql:  "SELECT `order_id`,`content` FROM order  WHERE (`user_id` NOT IN (12,35,101)) AND (`user_id`=234);",
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE (`user_id` NOT IN (?,?,?)) AND (`user_id`=?);",
@@ -2926,10 +2916,7 @@ func TestShardingSelector_all_Build(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -3854,10 +3841,7 @@ func TestShardingSelector_Build(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -3948,10 +3932,7 @@ func TestShardingSelector_GetMulti(t *testing.T) {
 			tc.mockOrder(mock, mock2)
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_SelectVisitor": visitor.NewsSelectVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},

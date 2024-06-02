@@ -12,7 +12,6 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"
@@ -143,10 +142,7 @@ func TestShardingInsert_Build(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"sharding_InsertVisitor": visitor.NewInsertVisitor(),
-				},
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},
@@ -256,9 +252,6 @@ func (s *ShardingInsertSuite) TestShardingInsert_Exec() {
 			tc.mockDb()
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Visitors: map[string]visitor.Visitor{
-					"insertVisitor": visitor.NewInsertVisitor(),
-				},
 				Query: tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),

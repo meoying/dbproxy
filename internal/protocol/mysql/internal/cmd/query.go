@@ -8,20 +8,17 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 )
 
 var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
-	plugins []plugin.Plugin
 	hdl     plugin.Handler
 }
 
-func NewQueryExecutor(hdl plugin.Handler, plugins []plugin.Plugin) *QueryExecutor {
+func NewQueryExecutor(hdl plugin.Handler) *QueryExecutor {
 	return &QueryExecutor{
 		hdl:     hdl,
-		plugins: plugins,
 	}
 }
 
@@ -32,17 +29,10 @@ func (exec *QueryExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	visitorMap := make(map[string]visitor.Visitor, 32)
-	for _, p := range exec.plugins {
-		for name, v := range p.NewVisitor() {
-			visitorMap[name] = v
-		}
-	}
 	que := exec.parseQuery(payload)
 	pctx := &pcontext.Context{
 		Context:  ctx,
 		Query:    que,
-		Visitors: visitorMap,
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(que),
 		},

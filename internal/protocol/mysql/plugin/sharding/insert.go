@@ -25,12 +25,7 @@ type InsertHandler struct {
 }
 
 func NewInsertBuilder(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (*InsertHandler, error) {
-	visitors := ctx.Visitors
-	// 获取insert，visitor
-	insertVisitor, ok := visitors["sharding_InsertVisitor"]
-	if !ok {
-		return nil, errors.New("InsertVisitor未找到")
-	}
+	insertVisitor := visitor.NewInsertVisitor()
 	resp := insertVisitor.Visit(ctx.ParsedQuery.Root)
 	baseVal := resp.(visitor.BaseVal)
 	if baseVal.Err != nil {

@@ -26,19 +26,6 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 	}
 }
 
-func (p *Plugin) NewVisitor() map[string]visitor.Visitor {
-	visitors := []visitor.Visitor{
-		visitor.NewInsertVisitor(),
-		visitor.NewsSelectVisitor(),
-		visitor.NewCheckVisitor(),
-		visitor.NewHintVisitor(),
-	}
-	visitorMap := make(map[string]visitor.Visitor, 16)
-	for _, v := range visitors {
-		visitorMap[p.getVisitorName(v)] = v
-	}
-	return visitorMap
-}
 func (p *Plugin) getVisitorName(v visitor.Visitor) string {
 	return fmt.Sprintf("sharding_%s", v.Name())
 }
@@ -70,10 +57,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 				log.Println("分库分表查询失败")
 			}
 		}()
-		checkVisitor, ok := ctx.Visitors["sharding_CheckVisitor"]
-		if !ok {
-			return nil, errors.New("缺少checkVisitor")
-		}
+		checkVisitor := visitor.NewCheckVisitor()
 		nameResp := checkVisitor.VisitRoot(ctx.ParsedQuery.Root.(*parser.RootContext))
 		switch nameResp.(string) {
 		case visitor.InsertSql:
@@ -89,9 +73,8 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 				Result: res,
 			}, nil
 		case visitor.SelectSql:
-			hintVisit := ctx.Visitors["sharding_HintVisitor"]
+			hintVisit := visitor.NewHintVisitor()
 			hint := hintVisit.Visit(ctx.ParsedQuery.Root)
-
 			if strings.Contains(hint.(string), "useMaster") {
 				qctx := masterslave.UseMaster(ctx.Context)
 				ctx.Context = qctx

@@ -40,7 +40,7 @@ func NewServer(addr string, plugins []plugin.Plugin) *Server {
 		addr:     addr,
 		executors: map[byte]cmd.Executor{
 			cmd.CmdPing.Byte():  &cmd.PingExecutor{},
-			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl, plugins),
+			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl),
 		},
 	}
 }
