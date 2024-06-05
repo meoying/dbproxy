@@ -2,28 +2,23 @@ package visitor
 
 import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestSelectVisitor(t *testing.T) {
+func TestDeleteVisitor(t *testing.T) {
 	testcases := []struct {
 		name    string
 		sql     string
-		wantVal SelectVal
+		wantVal DeleteVal
 		wantErr error
 	}{
 		{
 			name: "单个比较符",
-			sql:  "select id from t1 where id > 11",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id > 11",
+			wantVal: DeleteVal{
+
 				Predicate: Predicate{
 					Left: Column{
 						Name: "id",
@@ -35,13 +30,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "单个比较符 >=",
-			sql:  "select id from t1 where id >= 11",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id >= 11",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Column{
 						Name: "id",
@@ -53,13 +43,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "单个比较符，一侧为计算表达式",
-			sql:  "select id from t1 where id + 1 >= 11",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id + 1 >= 11",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Column{
@@ -75,13 +60,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "单个比较符，一侧为二元计算表达式",
-			sql:  "select id from t1 where id +1 + 1 >= 11",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id +1 + 1 >= 11",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Predicate{
@@ -101,13 +81,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "单个比较符，两侧为一元计算表达式",
-			sql:  "select id from t1 where id +1 >= a * 1",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id +1 >= a * 1",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Column{
@@ -129,13 +104,9 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "like查询",
-			sql:  "select id from t1 where name like '%n%';",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where name like '%n%';",
+			wantVal: DeleteVal{
+
 				Predicate: Predicate{
 					Left: Column{
 						Name: "name",
@@ -147,13 +118,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "in 查询",
-			sql:  "select id from t1 where id in (1,2,3,4);",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id in (1,2,3,4);",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Column{
 						Name: "id",
@@ -167,13 +133,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "Not in查询",
-			sql:  "select id from t1 where id not in (1,2,3,4);",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where id not in (1,2,3,4);",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Column{
 						Name: "id",
@@ -187,13 +148,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "and 查询",
-			sql:  "select id from t1 where a > 10 and b < 10;",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where a > 10 and b < 10;",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Column{
@@ -215,13 +171,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "有多个逻辑运算符",
-			sql:  "select id from t1 where (a > 10 or b <=10)  and b like '%name%';",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where (a > 10 or b <=10)  and b like '%name%';",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Predicate{
@@ -253,13 +204,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "有多个逻辑运算符",
-			sql:  "select id from t1 where (a > 10 or b <=10)  and (b like '%name%');",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where (a > 10 or b <=10)  and (b like '%name%');",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Predicate{
@@ -291,13 +237,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "括号里套括号",
-			sql:  "select id from t1 where (a > 10 or (b <=10 and c > 0 ))  and (b like '%name%');",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where (a > 10 or (b <=10 and c > 0 ))  and (b like '%name%');",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Predicate{
 						Left: Predicate{
@@ -339,13 +280,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "not 查询",
-			sql:  "select id from t1 where not (id > 10 and c < 19);",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where not (id > 10 and c < 19);",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Raw(""),
 					Op:   operator.OpNot,
@@ -371,13 +307,8 @@ func TestSelectVisitor(t *testing.T) {
 		},
 		{
 			name: "where 的变量名含有 `` ",
-			sql:  "select id from t1 where `id` > 11",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-				},
+			sql:  "delete from t1 where `id` > 11",
+			wantVal: DeleteVal{
 				Predicate: Predicate{
 					Left: Column{
 						Name: "id",
@@ -388,52 +319,22 @@ func TestSelectVisitor(t *testing.T) {
 			},
 		},
 		{
-			name: "select 列中包含`",
-			sql:  "select `id`,`name` from  t1;",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name: "id",
-					},
-					{
-						Name: "name",
-					},
-				},
-			},
-		},
-		{
-			name: "select 列为 *",
-			sql:  "select * from t1;",
-			wantVal: SelectVal{
-				Cols: []Column{},
-			},
-		},
-		{
-			name: "select 列中有别名",
-			sql:  "select id as a from t1;",
-			wantVal: SelectVal{
-				Cols: []Column{
-					{
-						Name:  "id",
-						Alias: "a",
-					},
-				},
-			},
+			name:    "没有where条件",
+			sql:     "delete from t1;",
+			wantVal: DeleteVal{},
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := ast.Parse(tc.sql)
-			selectV := &SelectVisitor{
-				BaseVisitor: &BaseVisitor{},
-			}
-			resp := selectV.VisitRoot(root.(*parser.RootContext))
+			selectV := NewDeleteVisitor()
+			resp := selectV.Visit(root)
 			res := resp.(BaseVal)
 			assert.Equal(t, tc.wantErr, res.Err)
 			if res.Err != nil {
 				return
 			}
-			actual := res.Data.(SelectVal)
+			actual := res.Data.(DeleteVal)
 			assert.Equal(t, tc.wantVal, actual)
 		})
 	}

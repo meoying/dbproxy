@@ -1,12 +1,18 @@
 package sharding
 
 import (
+	"context"
+	"database/sql"
 	"errors"
+	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/valyala/bytebufferpool"
+	"go.uber.org/multierr"
+	"sync"
 )
 
-var NewErrUnsupportedExpressionType =errors.New("不支持 Expression")
+var NewErrUnsupportedExpressionType = errors.New("不支持 Expression")
 
 type builder struct {
 	buffer *bytebufferpool.ByteBuffer
@@ -127,7 +133,8 @@ func (b *builder) buildExpr(expr visitor.Expr) error {
 	}
 	return nil
 }
-func (b *builder) buildIns(is  visitor.Values) error {
+
+func (b *builder) buildIns(is visitor.Values) error {
 	b.writeByte('(')
 	for idx, inVal := range is.Vals {
 		if idx > 0 {
@@ -140,4 +147,25 @@ func (b *builder) buildIns(is  visitor.Values) error {
 	}
 	b.writeByte(')')
 	return nil
+}
+
+func exec(ctx context.Context, db datasource.DataSource,qs []sharding.Query)sharding.Result  {
+	errList := make([]error, len(qs))
+	resList := make([]sql.Result, len(qs))
+	var wg sync.WaitGroup
+	locker := &sync.RWMutex{}
+	wg.Add(len(qs))
+	for idx, q := range qs {
+		go func(idx int, q sharding.Query) {
+			defer wg.Done()
+			res, er := db.Exec(ctx, q)
+			locker.Lock()
+			errList[idx] = er
+			resList[idx] = res
+			locker.Unlock()
+		}(idx, q)
+	}
+	wg.Wait()
+	shardingRes := sharding.NewResult(resList, multierr.Combine(errList...))
+	return shardingRes
 }

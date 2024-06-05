@@ -2,7 +2,6 @@ package sharding
 
 import (
 	"errors"
-	"fmt"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
@@ -24,10 +23,6 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 		ds:        ds,
 		algorithm: algorithm,
 	}
-}
-
-func (p *Plugin) getVisitorName(v visitor.Visitor) string {
-	return fmt.Sprintf("sharding_%s", v.Name())
 }
 
 func (p *Plugin) Name() string {
@@ -87,6 +82,18 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 			return &plugin.Result{
 				Rows: res,
 			}, err
+		case visitor.DeleteSql:
+			handler, err := NewDeleteHandler(p.algorithm, p.ds, ctx)
+			if err != nil {
+				return nil, err
+			}
+			res := handler.Exec(ctx.Context)
+			if res.Err() != nil {
+				return nil, res.Err()
+			}
+			return &plugin.Result{
+				Result: res,
+			}, nil
 		default:
 			return nil, errors.New("未知语句")
 		}

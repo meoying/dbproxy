@@ -218,7 +218,7 @@ func (s *ShardingInsertSuite) TestShardingInsert_Exec() {
 			sql:  "insert into order (`uid`,`order_id`,`content`,`account`) values (1,1,'1',1.0),(2,2,'2',2.0),(3,3,'3',3.0);",
 			mockDb: func() {
 				s.mock02.MatchExpectationsInOrder(false)
-				s.mock02.ExpectExec(regexp.QuoteMeta("INSERT INTO `order_db_1`.`order_tab_1`(`uid`,`order_id`,`content`,`account`) VALUES(?,?,?,?);")).WithArgs(1, 1, "1", 1.0).WillReturnResult(sqlmock.NewResult(1, 1))
+				s.mock02.ExpectExec(regexp.QuoteMeta("INSERT INTO   `order_db_1`.`order_tab_1`(`uid`,`order_id`,`content`,`account`) VALUES(?,?,?,?);")).WithArgs(1, 1, "1", 1.0).WillReturnResult(sqlmock.NewResult(1, 1))
 				s.mock02.ExpectExec(regexp.QuoteMeta("INSERT INTO `order_db_1`.`order_tab_0`(`uid`,`order_id`,`content`,`account`) VALUES(?,?,?,?);")).WithArgs(3, 3, "3", 3.0).WillReturnResult(sqlmock.NewResult(1, 1))
 				s.mock01.ExpectExec(regexp.QuoteMeta("INSERT INTO `order_db_0`.`order_tab_2`(`uid`,`order_id`,`content`,`account`) VALUES(?,?,?,?);")).WithArgs(2, 2, "2", 2.0).WillReturnResult(sqlmock.NewResult(1, 1))
 			},
@@ -252,7 +252,7 @@ func (s *ShardingInsertSuite) TestShardingInsert_Exec() {
 			tc.mockDb()
 			ctx := &pcontext.Context{
 				Context: context.Background(),
-				Query: tc.sql,
+				Query:   tc.sql,
 				ParsedQuery: pcontext.ParsedQuery{
 					Root: ast.Parse(tc.sql),
 				},

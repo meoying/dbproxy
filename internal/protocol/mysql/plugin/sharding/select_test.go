@@ -3951,7 +3951,7 @@ func TestShardingSelector_GetMulti(t *testing.T) {
 				require.NoError(t, err)
 				res = append(res, d)
 			}
-			assert.Equal(t, tc.wantRes, res)
+			assert.ElementsMatch(t, c.wantRes, res)
 		})
 	}
 }

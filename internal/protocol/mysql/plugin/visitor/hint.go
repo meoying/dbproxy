@@ -12,6 +12,7 @@ type HintVisitor struct {
 func (s *HintVisitor) Name() string {
 	return "HintVisitor"
 }
+
 func NewHintVisitor() *HintVisitor {
 	return &HintVisitor{
 		BaseVisitor: &BaseVisitor{},

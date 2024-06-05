@@ -2,7 +2,6 @@ package sharding
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/ecodeclub/ekit/mapx"
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -11,8 +10,6 @@ import (
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/valyala/bytebufferpool"
-	"go.uber.org/multierr"
-	"sync"
 )
 
 var ErrInsertFindingDst = errors.New(" 一行数据只能插入一个表")
@@ -143,24 +140,7 @@ func (i *InsertHandler) Exec(ctx context.Context) sharding.Result {
 	if err != nil {
 		return sharding.NewResult(nil, err)
 	}
-	errList := make([]error, len(qs))
-	resList := make([]sql.Result, len(qs))
-	var wg sync.WaitGroup
-	locker := &sync.RWMutex{}
-	wg.Add(len(qs))
-	for idx, q := range qs {
-		go func(idx int, q sharding.Query) {
-			defer wg.Done()
-			res, er := i.db.Exec(ctx, q)
-			locker.Lock()
-			errList[idx] = er
-			resList[idx] = res
-			locker.Unlock()
-		}(idx, q)
-	}
-	wg.Wait()
-	shardingRes := sharding.NewResult(resList, multierr.Combine(errList...))
-	return shardingRes
+	return exec(ctx,i.db,qs)
 }
 
 // checkColumns 判断sk是否存在于meta中，如果不存在会返回报错
