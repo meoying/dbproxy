@@ -94,9 +94,20 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 			return &plugin.Result{
 				Result: res,
 			}, nil
+		case visitor.UpdateSql:
+			handler, err := NewUpdateHandler(p.algorithm, p.ds, ctx)
+			if err != nil {
+				return nil, err
+			}
+			res := handler.Exec(ctx.Context)
+			if res.Err() != nil {
+				return nil, res.Err()
+			}
+			return &plugin.Result{
+				Result: res,
+			}, nil
 		default:
 			return nil, errors.New("未知语句")
 		}
-
 	})
 }

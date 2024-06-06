@@ -183,7 +183,7 @@ func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) Exp
 	switch v := ctx.(type) {
 	case *parser.FullColumnNameExpressionAtomContext:
 		return Column{
-			Name: v.FullColumnName().GetText(),
+			Name: b.removeQuote(v.FullColumnName().GetText()),
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
@@ -322,4 +322,8 @@ func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorCont
 		Symbol: opstr,
 		Text:   opstr,
 	}
+}
+
+func (b *BaseVisitor)VisitFullColumnName(ctx *parser.FullColumnNameContext) any{
+	return b.removeQuote(ctx.GetText())
 }
