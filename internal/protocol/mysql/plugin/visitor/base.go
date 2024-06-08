@@ -1,17 +1,12 @@
 package visitor
 
 import (
-	"errors"
 	"fmt"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
-	"reflect"
 	"strconv"
 	"strings"
 )
-
-var errStmtMatch = errors.New("当前语句不能使用该解析方式")
-var errQueryInvalid = errors.New("当前查询错误")
 
 type BaseVal struct {
 	Err  error
@@ -31,21 +26,13 @@ type BaseVisitor struct {
 	parser.BaseMySqlParserVisitor
 }
 
-type ValMeta struct {
-	Val any
-	Typ reflect.Kind
-}
-
 func (b *BaseVisitor) VisitTableName(ctx *parser.TableNameContext) any {
 	return getTableName(ctx)
 }
 
 func (b *BaseVisitor) VisitConstant(ctx *parser.ConstantContext) any {
 	if ctx.GetNullLiteral() != nil {
-		return &ValMeta{
-			Typ: reflect.Invalid,
-			Val: nil,
-		}
+		return nil
 	}
 	constant := ctx.GetChildren()[0]
 	switch v := constant.(type) {
@@ -58,44 +45,31 @@ func (b *BaseVisitor) VisitConstant(ctx *parser.ConstantContext) any {
 	case *parser.DecimalLiteralContext:
 		return b.VisitDecimalLiteral(v)
 	default:
-		return &ValMeta{
-			Val: nil,
-			Typ: reflect.Invalid,
-		}
+		return nil
 	}
 }
 
 func (b *BaseVisitor) VisitStringLiteral(ctx *parser.StringLiteralContext) any {
-	return &ValMeta{
-		Val: strings.Trim(ctx.GetText(), "\"'"),
-		Typ: reflect.String,
-	}
+	v := strings.Trim(ctx.GetText(), "'")
+	return strings.Trim(v,"\"")
 }
 
 func (b *BaseVisitor) VisitBooleanLiteral(ctx *parser.BooleanLiteralContext) any {
-	meta := &ValMeta{
-		Typ: reflect.Bool,
-	}
 	if ctx.TRUE() != nil {
-		meta.Val = true
-	} else if ctx.FALSE() != nil {
-		meta.Val = false
+		return true
 	}
-	return meta
+	return false
 }
 
 func (b *BaseVisitor) VisitDecimalLiteral(ctx *parser.DecimalLiteralContext) any {
-	meta := &ValMeta{}
+
 	if ctx.ONE_DECIMAL() != nil || ctx.TWO_DECIMAL() != nil ||
 		ctx.DECIMAL_LITERAL() != nil || ctx.ZERO_DECIMAL() != nil {
 		v, _ := strconv.Atoi(ctx.GetText())
-		meta.Typ = reflect.Int
-		meta.Val = v
-	} else {
-		meta.Typ = reflect.Float64
-		meta.Val, _ = strconv.ParseFloat(ctx.GetText(), 64)
+		return v
 	}
-	return meta
+	v, _ := strconv.ParseFloat(ctx.GetText(), 64)
+	return v
 }
 
 func (b *BaseVisitor) VisitFullColumnNameExpressionAtom(ctx *parser.FullColumnNameExpressionAtomContext) any {
@@ -149,15 +123,14 @@ func (b *BaseVisitor) visitExpressionAtom(atomCtx parser.IPredicateContext) Expr
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
-		data := val.(*ValMeta).Val
-		if va, ok := data.(string); ok {
+		if va, ok := val.(string); ok {
 			if b.hasQuote(va) {
 				return Column{
 					Name: b.removeQuote(va),
 				}
 			}
 		}
-		return ValueOf(data)
+		return ValueOf(val)
 	case *parser.MathExpressionAtomContext:
 		var op operator.Op
 		if v.MultOperator() != nil {
@@ -187,7 +160,7 @@ func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) Exp
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
-		return ValueOf(val.(*ValMeta).Val)
+		return ValueOf(val)
 	case *parser.NestedExpressionAtomContext:
 		return b.VisitNestedExpressionAtom(v).(Expr)
 	case *parser.MathExpressionAtomContext:
@@ -308,13 +281,7 @@ func (b *BaseVisitor) VisitNotExpression(ctx *parser.NotExpressionContext) any {
 	}
 }
 
-func (b *BaseVisitor) removeQuote(str string) string {
-	return strings.Trim(str, "`")
-}
 
-func (b *BaseVisitor) hasQuote(str string) bool {
-	return strings.HasPrefix(str, "`")
-}
 
 func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorContext) any {
 	opstr := ctx.GetText()
@@ -324,6 +291,16 @@ func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorCont
 	}
 }
 
-func (b *BaseVisitor)VisitFullColumnName(ctx *parser.FullColumnNameContext) any{
+func (b *BaseVisitor) VisitFullColumnName(ctx *parser.FullColumnNameContext) any {
 	return b.removeQuote(ctx.GetText())
+}
+
+
+
+func (b *BaseVisitor) removeQuote(str string) string {
+	return strings.Trim(str, "`")
+}
+
+func (b *BaseVisitor) hasQuote(str string) bool {
+	return strings.HasPrefix(str, "`")
 }

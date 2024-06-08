@@ -1,6 +1,6 @@
 package visitor
 
-// Assignable represents that something could be used alias "assignment" statement
+// Assignable represents that something could be used Alias "assignment" statement
 type Assignable interface {
 	assign()
 }
@@ -8,9 +8,6 @@ type Assignable interface {
 // Assignment represents assignment statement
 type Assignment BinaryExpr
 
-
 func (Assignment) assign() {
 	panic("implement me")
 }
-
-

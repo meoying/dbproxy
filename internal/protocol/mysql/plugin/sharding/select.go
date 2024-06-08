@@ -105,6 +105,9 @@ func (s *SelectHandler) queryMulti(ctx context.Context, qs []sharding.Query) (li
 func (s *SelectHandler) buildQuery(db, tbl, ds string) (sharding.Query, error) {
 	var err error
 	s.writeString("SELECT ")
+	if s.selectVal.Distinct {
+		s.writeString("DISTINCT ")
+	}
 	if len(s.selectVal.Cols) == 0 {
 		s.builder.writeString("*")
 	} else {
@@ -113,6 +116,7 @@ func (s *SelectHandler) buildQuery(db, tbl, ds string) (sharding.Query, error) {
 			return sharding.EmptyQuery, err
 		}
 	}
+
 	s.writeString(" FROM ")
 	s.quote(db)
 	s.writeByte('.')
@@ -127,7 +131,6 @@ func (s *SelectHandler) buildQuery(db, tbl, ds string) (sharding.Query, error) {
 	return sharding.Query{SQL: s.buffer.String(), Args: s.args, Datasource: ds, DB: db}, nil
 }
 
-
 func (s *SelectHandler) buildColumns(index int, name string) error {
 	if index > 0 {
 		s.comma()
@@ -141,7 +144,13 @@ func (s *SelectHandler) buildSelectedList() error {
 		if i > 0 {
 			s.comma()
 		}
-		err := s.builder.buildColumn(col)
+		var err error
+		switch expr := col.(type) {
+		case visitor.Column:
+			err = s.builder.buildColumn(expr)
+		case visitor.Aggregate:
+			err = s.selectAggregate(expr)
+		}
 		if err != nil {
 			return err
 		}
@@ -150,3 +159,29 @@ func (s *SelectHandler) buildSelectedList() error {
 
 }
 
+func (s *SelectHandler) selectAggregate(aggregate visitor.Aggregate) error {
+	// 如果是AVG需要转化成SUM 和 COUNT
+	if aggregate.Fn == "AVG" {
+		aggregate.Fn = "SUM"
+		err := s.selectAggregate(aggregate)
+		if err != nil {
+			return err
+		}
+		s.comma()
+		aggregate.Fn = "COUNT"
+		err = s.selectAggregate(aggregate)
+		return err
+	}
+	s.writeString(aggregate.Fn)
+	s.writeByte('(')
+	if aggregate.Distinct {
+		s.writeString("DISTINCT ")
+	}
+	s.writeString(aggregate.Arg)
+	s.writeByte(')')
+	if aggregate.Alias != "" {
+		s.writeString(" AS ")
+		s.quote(aggregate.Alias)
+	}
+	return nil
+}

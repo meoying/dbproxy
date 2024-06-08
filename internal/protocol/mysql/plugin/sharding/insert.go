@@ -101,7 +101,7 @@ func (i *InsertHandler) buildQuery(db, table string, cols []string, values []vis
 		}
 		i.writeString("(")
 		for j, v := range cols {
-			i.parameter(valMap[v].Val)
+			i.parameter(valMap[v])
 			if j != len(cols)-1 {
 				i.comma()
 			}
@@ -126,8 +126,8 @@ func (i *InsertHandler) getDst(ctx context.Context, valMap visitor.ValMap) (shar
 	sks := i.algorithm.ShardingKeys()
 	skValues := make(map[string]any)
 	for _, sk := range sks {
-		col := valMap[sk]
-		skValues[sk] = col.Val
+
+		skValues[sk] =valMap[sk]
 	}
 	return i.algorithm.Sharding(ctx, sharding.Request{
 		Op:       operator.OpEQ,

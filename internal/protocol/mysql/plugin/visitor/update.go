@@ -45,7 +45,7 @@ func (u *UpdateVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	updateStmt := ctx.UpdateStatement()
 	if updateStmt.SingleUpdateStatement() == nil {
 		return BaseVal{
-			Err: ErrUnsupportedUpdateSql,
+			Err: errUnsupportedUpdateSql,
 		}
 	}
 	return u.VisitSingleUpdateStatement(updateStmt.SingleUpdateStatement().(*parser.SingleUpdateStatementContext))
@@ -56,36 +56,37 @@ func (u *UpdateVisitor) VisitSingleUpdateStatement(ctx *parser.SingleUpdateState
 	pre := u.visitWhere(ctx.Expression())
 	// set 后面的列
 	updateEles := ctx.AllUpdatedElement()
-	assigns := make([]Assignable,0,len(updateEles))
+	assigns := make([]Assignable, 0, len(updateEles))
 	for _, ele := range updateEles {
-		res :=  u.VisitUpdatedElement(ele.(*parser.UpdatedElementContext))
-		if err,ok :=  res.(error);ok {
+		res := u.VisitUpdatedElement(ele.(*parser.UpdatedElementContext))
+		if err, ok := res.(error); ok {
 			return BaseVal{
 				Err: err,
 			}
 		}
-		assigns = append(assigns,res.(Assignment))
+		assigns = append(assigns, res.(Assignment))
 	}
 	return BaseVal{
 		Data: UpdateVal{
 			Predicate: pre.(Predicate),
-			Assigns: assigns,
+			Assigns:   assigns,
 		},
 	}
 }
 
+// VisitUpdatedElement  处理update set部分的语句
 func (u *UpdateVisitor) VisitUpdatedElement(ctx *parser.UpdatedElementContext) any {
 	columnName := u.BaseVisitor.VisitFullColumnName(ctx.FullColumnName().(*parser.FullColumnNameContext))
 	v := u.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
-	val,ok := v.(Expr)
+	val, ok := v.(Expr)
 	if !ok {
-		return ErrUnsupportedUpdateSql
+		return errUnsupportedUpdateSql
 	}
 	return Assignment{
 		Left: Column{
 			Name: columnName.(string),
 		},
-		Op: operator.OpEQ,
+		Op:    operator.OpEQ,
 		Right: val,
 	}
 }

@@ -43,7 +43,7 @@ func (s *DeleteVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 func (s *DeleteVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	if ctx.DeleteStatement().SingleDeleteStatement() == nil {
 		return BaseVal{
-			Err: ErrUnsupportedDeleteSql,
+			Err: errUnsupportedDeleteSql,
 		}
 	}
 	deleteCtx := ctx.DeleteStatement().SingleDeleteStatement().(*parser.SingleDeleteStatementContext)

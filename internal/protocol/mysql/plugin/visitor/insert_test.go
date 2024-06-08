@@ -4,7 +4,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
@@ -31,34 +30,13 @@ func TestVisitor_Insert(t *testing.T) {
 				TableName: "users",
 				Vals: []ValMap{
 					{
-						"id": {
-							Val: 0,
-							Typ: reflect.Int,
-						},
-						"id2": {
-							Val: 1,
-							Typ: reflect.Int,
-						},
-						"id3": {
-							Val: 11,
-							Typ: reflect.Int,
-						},
-						"id4": {
-							Val: float64(1.1),
-							Typ: reflect.Float64,
-						},
-						"str": {
-							Val: "z",
-							Typ: reflect.String,
-						},
-						"has": {
-							Val: true,
-							Typ: reflect.Bool,
-						},
-						"no": {
-							Val: nil,
-							Typ: reflect.Invalid,
-						},
+						"id":  0,
+						"id2": 1,
+						"id3": 11,
+						"id4": 1.1,
+						"str": "z",
+						"has": true,
+						"no":  nil,
 					},
 				},
 			},
@@ -79,64 +57,22 @@ func TestVisitor_Insert(t *testing.T) {
 				TableName: "users",
 				Vals: []ValMap{
 					{
-						"id": {
-							Val: 0,
-							Typ: reflect.Int,
-						},
-						"id2": {
-							Val: 1,
-							Typ: reflect.Int,
-						},
-						"id3": {
-							Val: 11,
-							Typ: reflect.Int,
-						},
-						"id4": {
-							Val: float64(1.1),
-							Typ: reflect.Float64,
-						},
-						"str": {
-							Val: "z",
-							Typ: reflect.String,
-						},
-						"has": {
-							Val: true,
-							Typ: reflect.Bool,
-						},
-						"no": {
-							Val: nil,
-							Typ: reflect.Invalid,
-						},
+						"id":  0,
+						"id2": 1,
+						"id3": 11,
+						"id4": 1.1,
+						"str": "z",
+						"has": true,
+						"no":  nil,
 					},
 					{
-						"id": {
-							Val: 1,
-							Typ: reflect.Int,
-						},
-						"id2": {
-							Val: 2,
-							Typ: reflect.Int,
-						},
-						"id3": {
-							Val: 3,
-							Typ: reflect.Int,
-						},
-						"id4": {
-							Val: float64(5.1),
-							Typ: reflect.Float64,
-						},
-						"str": {
-							Val: "zm",
-							Typ: reflect.String,
-						},
-						"has": {
-							Val: false,
-							Typ: reflect.Bool,
-						},
-						"no": {
-							Val: 10,
-							Typ: reflect.Int,
-						},
+						"id":  1,
+						"id2": 2,
+						"id3": 3,
+						"id4": 5.1,
+						"str": "zm",
+						"has": false,
+						"no":  10,
 					},
 				},
 			},
