@@ -127,6 +127,22 @@ func (s *SelectHandler) buildQuery(db, tbl, ds string) (sharding.Query, error) {
 			return sharding.EmptyQuery, err
 		}
 	}
+	// group by
+	if len(s.selectVal.GroupByClause) > 0 {
+		err = s.buildGroupBy()
+		if err != nil {
+			return sharding.EmptyQuery, err
+		}
+	}
+	// order by
+	if len(s.selectVal.OrderClauses) > 0 {
+		err = s.buildOrderBy()
+		if err != nil {
+			return sharding.EmptyQuery, err
+		}
+	}
+	// limit
+	s.buildLimit()
 	s.end()
 	return sharding.Query{SQL: s.buffer.String(), Args: s.args, Datasource: ds, DB: db}, nil
 }
@@ -184,4 +200,36 @@ func (s *SelectHandler) selectAggregate(aggregate visitor.Aggregate) error {
 		s.quote(aggregate.Alias)
 	}
 	return nil
+}
+
+func (s *SelectHandler) buildGroupBy() error {
+	s.writeString(" GROUP BY ")
+	for i, gb := range s.selectVal.GroupByClause {
+		if i > 0 {
+			s.comma()
+		}
+		s.quote(gb)
+	}
+	return nil
+}
+
+func (s *SelectHandler) buildOrderBy() error {
+	s.writeString(" ORDER BY ")
+	for i, ob := range s.selectVal.OrderClauses {
+		if i > 0 {
+			s.comma()
+		}
+		s.quote(ob.Column)
+		s.space()
+		s.writeString(ob.Order)
+	}
+	return nil
+}
+
+func (s *SelectHandler) buildLimit() {
+	if s.selectVal.LimitClause != nil {
+		limit := s.selectVal.LimitClause.Limit + s.selectVal.LimitClause.Offset
+		s.writeString(" LIMIT ")
+		s.parameter(limit)
+	}
 }

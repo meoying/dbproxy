@@ -15,12 +15,12 @@ type SelectVal struct {
 	Distinct      bool
 	OrderClauses  []OrderClause
 	LimitClause   *LimitClause
-	GroupByClause []Column
+	GroupByClause []string
 }
 
 type OrderClause struct {
-	Column Column
-	Desc   bool
+	Column string
+	Order  string
 }
 type LimitClause struct {
 	Limit  int
@@ -84,7 +84,7 @@ func (s *SelectVisitor) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 				Err: err,
 			}
 		}
-		selectVal.GroupByClause = groupByClauses.([]Column)
+		selectVal.GroupByClause = groupByClauses.([]string)
 	}
 	// 处理order by 部分
 	if queryCtx.OrderByClause() != nil {
@@ -169,13 +169,19 @@ func (s *SelectVisitor) VisitGroupByClause(ctx *parser.GroupByClauseContext) any
 		return []Column{}
 	}
 	items := ctx.AllGroupByItem()
-	groupByCols := make([]Column, 0, len(items))
+	groupByCols := make([]string, 0, len(items))
 	for _, item := range items {
 		col := s.BaseVisitor.VisitPredicateExpression(item.Expression().(*parser.PredicateExpressionContext))
-		if _, ok := col.(Column); !ok {
+		switch v := col.(type) {
+		case Column:
+			groupByCols = append(groupByCols, v.Name)
+		case ValueExpr:
+			groupByCols = append(groupByCols, s.removeQuote(v.Val.(string)))
+		default:
 			return errUnsupportedGroupByClause
+
 		}
-		groupByCols = append(groupByCols, col.(Column))
+
 	}
 	return groupByCols
 }
@@ -198,15 +204,20 @@ func (s *SelectVisitor) VisitOrderByClause(ctx *parser.OrderByClauseContext) any
 }
 
 func (s *SelectVisitor) VisitOrderByExpression(ctx *parser.OrderByExpressionContext) any {
+	orderClause := OrderClause{}
 	col := s.BaseVisitor.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
-	if _, ok := col.(Column); !ok {
+	switch v:=col.(type) {
+	case Column:
+		orderClause.Column =  v.Name
+	case ValueExpr:
+	    orderClause.Column =  s.removeQuote( v.Val.(string))
+	default:
 		return errUnsupportedOrderByClause
 	}
-	orderClause := OrderClause{
-		Column: col.(Column),
-	}
 	if ctx.DESC() != nil {
-		orderClause.Desc = true
+		orderClause.Order = "DESC"
+	}else {
+		orderClause.Order = "ASC"
 	}
 	return orderClause
 }
@@ -231,6 +242,7 @@ func (s *SelectVisitor) VisitLimitClauseAtom(ctx *parser.LimitClauseAtomContext)
 	meta := s.BaseVisitor.VisitDecimalLiteral(ctx.DecimalLiteral().(*parser.DecimalLiteralContext))
 	return meta.(int)
 }
+
 
 // 处理聚合函数
 func (b *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunctionCallContext) any {

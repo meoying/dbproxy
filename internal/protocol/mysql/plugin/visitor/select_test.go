@@ -470,7 +470,7 @@ func TestSelectVisitor(t *testing.T) {
 			sql:  "select COUNT(`id`) from t1;",
 			wantVal: SelectVal{
 				Cols: []Selectable{
-					Count("id"),
+					Count("`id`"),
 				},
 			},
 		},
@@ -539,9 +539,8 @@ func TestSelectVisitor(t *testing.T) {
 				Cols: []Selectable{},
 				OrderClauses: []OrderClause{
 					{
-						Column: Column{
-							Name: "id",
-						},
+						Column: "id",
+						Order:  "ASC",
 					},
 				},
 			},
@@ -553,15 +552,29 @@ func TestSelectVisitor(t *testing.T) {
 				Cols: []Selectable{},
 				OrderClauses: []OrderClause{
 					{
-						Column: Column{
-							Name: "col1",
-						},
+						Column: "col1",
+						Order:  "ASC",
 					},
 					{
-						Column: Column{
-							Name: "col2",
-						},
-						Desc: true,
+						Column: "col2",
+						Order:  "DESC",
+					},
+				},
+			},
+		},
+		{
+			name: "order by字段中含有`",
+			sql:  "select * from t1 order by `col1` asc,col2 desc",
+			wantVal: SelectVal{
+				Cols: []Selectable{},
+				OrderClauses: []OrderClause{
+					{
+						Column: "col1",
+						Order:  "ASC",
+					},
+					{
+						Column: "col2",
+						Order:  "DESC",
 					},
 				},
 			},
@@ -571,13 +584,20 @@ func TestSelectVisitor(t *testing.T) {
 			sql:  "select * from t1 group by col1,col2",
 			wantVal: SelectVal{
 				Cols: []Selectable{},
-				GroupByClause: []Column{
-					{
-						Name: "col1",
-					},
-					{
-						Name: "col2",
-					},
+				GroupByClause: []string{
+					"col1",
+					"col2",
+				},
+			},
+		},
+		{
+			name: "group by的字段有`",
+			sql:  "select * from t1 group by `col1`,col2",
+			wantVal: SelectVal{
+				Cols: []Selectable{},
+				GroupByClause: []string{
+					"col1",
+					"col2",
 				},
 			},
 		},
@@ -620,17 +640,13 @@ LIMIT 10;
 					Op:    operator.OpGT,
 					Right: ValueOf(10),
 				},
-				GroupByClause: []Column{
-					{
-						Name: "product",
-					},
+				GroupByClause: []string{
+					"product",
 				},
 				OrderClauses: []OrderClause{
 					{
-						Desc: true,
-						Column: Column{
-							Name: "total_sales_amount",
-						},
+						Order:  "DESC",
+						Column: "total_sales_amount",
 					},
 				},
 				LimitClause: &LimitClause{
