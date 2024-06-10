@@ -1,8 +1,9 @@
-package visitor
+package vparser
 
 import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 )
 
 type ValMap map[string]any
@@ -17,11 +18,19 @@ type InsertVisitor struct {
 	*BaseVisitor
 }
 
-func NewInsertVisitor() Visitor {
+
+func NewInsertVisitor() SqlParser {
 	return &InsertVisitor{
 		BaseVisitor: &BaseVisitor{},
 	}
 }
+
+
+func (s *InsertVisitor) Parse(ctx antlr.ParseTree) any {
+	return s.Visit(ctx)
+}
+
+
 func (s *InsertVisitor) Visit(tree antlr.ParseTree) any {
 	ctx := tree.(*parser.RootContext)
 	return s.VisitRoot(ctx)
@@ -104,9 +113,8 @@ func (i *InsertVisitor) visitExpressionsWithDefaults(ctx *parser.ExpressionsWith
 
 func (i *InsertVisitor) VisitExpressionOrDefault(ctx *parser.ExpressionOrDefaultContext) any {
 	val := i.BaseVisitor.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
-	return val.(ValueExpr).Val
+	return val.(visitor.ValueExpr).Val
 }
-
 
 func (i *InsertVisitor) columns(insertStmt parser.IInsertStatementContext) []string {
 	columnStmts := insertStmt.FullColumnNameList().AllFullColumnName()

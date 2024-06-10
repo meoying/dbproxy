@@ -6,7 +6,9 @@ import (
 
 type Context struct {
 	context.Context
-	ParsedQuery ParsedQuery
-	Query       string
-	Args        []any
+	// 这个是解析后的
+	ParsedQuery  ParsedQuery
+	Query        string
+	Args         []any
+	InTransition bool
 }

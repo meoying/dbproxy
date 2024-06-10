@@ -1,23 +1,28 @@
-package visitor
+package vparser
 
 import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 )
 
 type DeleteVal struct {
-	Predicate Predicate
+	Predicate visitor.Predicate
 }
 
 type DeleteVisitor struct {
 	*BaseVisitor
 }
 
+func (s *DeleteVisitor) Parse(ctx antlr.ParseTree) any {
+	return s.Visit(ctx)
+}
+
 func (s *DeleteVisitor) Name() string {
 	return "DeleteVisitor"
 }
 
-func NewDeleteVisitor() Visitor {
+func NewDeleteVisitor() SqlParser {
 	return &DeleteVisitor{
 		BaseVisitor: &BaseVisitor{},
 	}
@@ -54,7 +59,7 @@ func (s *DeleteVisitor) VisitSingleDeleteStatement(ctx *parser.SingleDeleteState
 	v := s.BaseVisitor.visitWhere(ctx.Expression())
 	return BaseVal{
 		Data: DeleteVal{
-			Predicate: v.(Predicate),
+			Predicate: v.(visitor.Predicate),
 		},
 	}
 }

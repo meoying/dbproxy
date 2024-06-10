@@ -1,4 +1,4 @@
-package visitor
+package vparser
 
 import "github.com/pkg/errors"
 

@@ -154,7 +154,7 @@ func (s *TestShardingPluginSuite) TestSharding_Select() {
 	require.NoError(s.T(), err)
 	// 使用主库查找
 	ctx := masterslave.UseMaster(context.Background())
-	rows, err := db.QueryContext(ctx, "SELECT /*! useMaster */  * FROM users WHERE (user_id = 1) or (user_id =2)")
+	rows, err := db.QueryContext(ctx, "SELECT /* useMaster */   * FROM users WHERE (user_id = 1) or (user_id =2)")
 	require.NoError(s.T(), err)
 	res := make([]Order, 0, 2)
 	for rows.Next() {

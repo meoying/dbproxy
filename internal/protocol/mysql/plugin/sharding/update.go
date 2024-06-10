@@ -5,6 +5,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/valyala/bytebufferpool"
 )
@@ -12,18 +13,18 @@ import (
 type UpdateHandler struct {
 	algorithm sharding.Algorithm
 	db        datasource.DataSource
-	updateVal visitor.UpdateVal
+	updateVal vparser.UpdateVal
 	shardingBuilder
 }
 
 func NewUpdateHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (*UpdateHandler, error) {
-	updateVisitor := visitor.NewUpdateVisitor()
-	resp := updateVisitor.Visit(ctx.ParsedQuery.Root)
-	baseVal := resp.(visitor.BaseVal)
+	updateVisitor := vparser.NewUpdateVisitor()
+	resp := updateVisitor.Parse(ctx.ParsedQuery.Root)
+	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
 	}
-	updateVal := baseVal.Data.(visitor.UpdateVal)
+	updateVal := baseVal.Data.(vparser.UpdateVal)
 	return &UpdateHandler{
 		algorithm: a,
 		updateVal: updateVal,

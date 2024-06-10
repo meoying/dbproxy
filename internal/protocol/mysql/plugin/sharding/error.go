@@ -12,3 +12,5 @@ func NewErrUpdateShardingKeyUnsupported(field string) error {
 }
 
 var ErrUnsupportedAssignment = errors.New(" 不支持的 assignment")
+
+var ErrUnKnowSql = errors.New("未知的sql")

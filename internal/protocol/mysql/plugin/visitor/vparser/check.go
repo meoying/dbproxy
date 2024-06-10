@@ -1,4 +1,4 @@
-package visitor
+package vparser
 
 import (
 	"github.com/antlr4-go/antlr/v4"
@@ -20,7 +20,7 @@ const (
 	UnKnowSql = ""
 )
 
-func NewCheckVisitor() Visitor {
+func NewCheckVisitor() *CheckVisitor {
 	return &CheckVisitor{}
 }
 

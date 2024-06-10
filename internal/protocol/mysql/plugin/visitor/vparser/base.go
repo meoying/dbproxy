@@ -1,8 +1,9 @@
-package visitor
+package vparser
 
 import (
 	"fmt"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"strconv"
 	"strings"
@@ -51,7 +52,7 @@ func (b *BaseVisitor) VisitConstant(ctx *parser.ConstantContext) any {
 
 func (b *BaseVisitor) VisitStringLiteral(ctx *parser.StringLiteralContext) any {
 	v := strings.Trim(ctx.GetText(), "'")
-	return strings.Trim(v,"\"")
+	return strings.Trim(v, "\"")
 }
 
 func (b *BaseVisitor) VisitBooleanLiteral(ctx *parser.BooleanLiteralContext) any {
@@ -86,7 +87,7 @@ func (b *BaseVisitor) visitWhere(ctx parser.IExpressionContext) any {
 	case *parser.NotExpressionContext:
 		return b.VisitNotExpression(v)
 	default:
-		return Predicate{}
+		return visitor.Predicate{}
 	}
 }
 
@@ -108,29 +109,29 @@ func (b *BaseVisitor) VisitBinaryComparisonPredicate(ctx *parser.BinaryCompariso
 	left := b.visitExpressionAtom(ctx.GetLeft())
 	op := b.VisitComparisonOperator(ctx.ComparisonOperator().(*parser.ComparisonOperatorContext))
 	right := b.visitExpressionAtom(ctx.GetRight())
-	return Predicate{
+	return visitor.Predicate{
 		Left:  left,
 		Op:    op.(operator.Op),
 		Right: right,
 	}
 }
 
-func (b *BaseVisitor) visitExpressionAtom(atomCtx parser.IPredicateContext) Expr {
+func (b *BaseVisitor) visitExpressionAtom(atomCtx parser.IPredicateContext) visitor.Expr {
 	switch v := atomCtx.GetChild(0).(type) {
 	case *parser.FullColumnNameExpressionAtomContext:
-		return Column{
+		return visitor.Column{
 			Name: b.VisitFullColumnNameExpressionAtom(v).(string),
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
 		if va, ok := val.(string); ok {
 			if b.hasQuote(va) {
-				return Column{
+				return visitor.Column{
 					Name: b.removeQuote(va),
 				}
 			}
 		}
-		return ValueOf(val)
+		return visitor.ValueOf(val)
 	case *parser.MathExpressionAtomContext:
 		var op operator.Op
 		if v.MultOperator() != nil {
@@ -142,27 +143,27 @@ func (b *BaseVisitor) visitExpressionAtom(atomCtx parser.IPredicateContext) Expr
 		}
 		left := b.visitMathExpression(v.GetLeft())
 		right := b.visitMathExpression(v.GetRight())
-		return Predicate{
+		return visitor.Predicate{
 			Left:  left,
 			Op:    op,
 			Right: right,
 		}
 
 	}
-	return Column{}
+	return visitor.Column{}
 }
 
-func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) Expr {
+func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) visitor.Expr {
 	switch v := ctx.(type) {
 	case *parser.FullColumnNameExpressionAtomContext:
-		return Column{
+		return visitor.Column{
 			Name: b.removeQuote(v.FullColumnName().GetText()),
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
-		return ValueOf(val)
+		return visitor.ValueOf(val)
 	case *parser.NestedExpressionAtomContext:
-		return b.VisitNestedExpressionAtom(v).(Expr)
+		return b.VisitNestedExpressionAtom(v).(visitor.Expr)
 	case *parser.MathExpressionAtomContext:
 		var op operator.Op
 		if v.MultOperator() != nil {
@@ -174,13 +175,13 @@ func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) Exp
 		}
 		left := b.visitMathExpression(v.GetLeft())
 		right := b.visitMathExpression(v.GetRight())
-		return Predicate{
+		return visitor.Predicate{
 			Left:  left,
 			Op:    op,
 			Right: right,
 		}
 	}
-	return Column{}
+	return visitor.Column{}
 
 }
 
@@ -189,7 +190,7 @@ func (b *BaseVisitor) VisitLikePredicate(ctx *parser.LikePredicateContext) any {
 	if ctx.NOT() != nil {
 		op = operator.OpNotLike
 	}
-	return Predicate{
+	return visitor.Predicate{
 		Left:  b.visitExpressionAtom(ctx.Predicate(0)),
 		Op:    op,
 		Right: b.visitExpressionAtom(ctx.Predicate(1)),
@@ -206,7 +207,7 @@ func (b *BaseVisitor) VisitInPredicate(ctx *parser.InPredicateContext) any {
 }
 
 // visitIn 不处理子查询
-func (b *BaseVisitor) visitIn(ctx *parser.InPredicateContext) Predicate {
+func (b *BaseVisitor) visitIn(ctx *parser.InPredicateContext) visitor.Predicate {
 	var op operator.Op
 	if ctx.IN() != nil {
 		op = operator.OpIn
@@ -218,12 +219,12 @@ func (b *BaseVisitor) visitIn(ctx *parser.InPredicateContext) Predicate {
 	exprs := ctx.Expressions().AllExpression()
 	ans := make([]any, 0, len(exprs))
 	for _, expr := range exprs {
-		ans = append(ans, b.VisitPredicateExpression(expr.(*parser.PredicateExpressionContext)).(ValueExpr).Val)
+		ans = append(ans, b.VisitPredicateExpression(expr.(*parser.PredicateExpressionContext)).(visitor.ValueExpr).Val)
 	}
-	return Predicate{
+	return visitor.Predicate{
 		Op:   op,
 		Left: col,
-		Right: Values{
+		Right: visitor.Values{
 			Vals: ans,
 		},
 	}
@@ -242,7 +243,7 @@ func (b *BaseVisitor) VisitLogicalExpression(ctx *parser.LogicalExpressionContex
 	}
 	left := b.visitExpression(ctx.Expression(0))
 	right := b.visitExpression(ctx.Expression(1))
-	return Predicate{
+	return visitor.Predicate{
 		Left:  left,
 		Op:    op,
 		Right: right,
@@ -260,11 +261,11 @@ func (b *BaseVisitor) VisitNestedExpressionAtom(ctx *parser.NestedExpressionAtom
 	return nil
 }
 
-func (b *BaseVisitor) visitExpression(ctx parser.IExpressionContext) Expr {
-	var e Expr
+func (b *BaseVisitor) visitExpression(ctx parser.IExpressionContext) visitor.Expr {
+	var e visitor.Expr
 	switch v := ctx.(type) {
 	case *parser.PredicateExpressionContext:
-		return b.VisitPredicateExpression(v).(Expr)
+		return b.VisitPredicateExpression(v).(visitor.Expr)
 	}
 
 	return e
@@ -273,15 +274,13 @@ func (b *BaseVisitor) visitExpression(ctx parser.IExpressionContext) Expr {
 
 func (b *BaseVisitor) VisitNotExpression(ctx *parser.NotExpressionContext) any {
 	pctx := ctx.Expression().(*parser.PredicateExpressionContext)
-	expr := b.VisitPredicateExpression(pctx).(Expr)
-	return Predicate{
-		Left:  Raw(""),
+	expr := b.VisitPredicateExpression(pctx).(visitor.Expr)
+	return visitor.Predicate{
+		Left:  visitor.Raw(""),
 		Op:    operator.OpNot,
 		Right: expr,
 	}
 }
-
-
 
 func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorContext) any {
 	opstr := ctx.GetText()
@@ -294,8 +293,6 @@ func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorCont
 func (b *BaseVisitor) VisitFullColumnName(ctx *parser.FullColumnNameContext) any {
 	return b.removeQuote(ctx.GetText())
 }
-
-
 
 func (b *BaseVisitor) removeQuote(str string) string {
 	return strings.Trim(str, "`")

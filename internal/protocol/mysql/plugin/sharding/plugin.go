@@ -1,27 +1,28 @@
 package sharding
 
 import (
-	"errors"
 	"github.com/meoying/dbproxy/internal/datasource"
-	"github.com/meoying/dbproxy/internal/datasource/masterslave"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"log"
-	"strings"
 )
 
 type Plugin struct {
-	ds        datasource.DataSource
-	algorithm sharding.Algorithm
+	ds         datasource.DataSource
+	algorithm  sharding.Algorithm
+	handlerMap map[string]NewHandlerFunc
 }
 
 func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
+
 	return &Plugin{
 		ds:        ds,
 		algorithm: algorithm,
+		handlerMap: map[string]NewHandlerFunc{
+			vparser.SelectSql: NewSelectHandler,
+		},
 	}
 }
 
@@ -52,62 +53,71 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 				log.Println("分库分表查询失败")
 			}
 		}()
-		checkVisitor := visitor.NewCheckVisitor()
-		nameResp := checkVisitor.VisitRoot(ctx.ParsedQuery.Root.(*parser.RootContext))
-		switch nameResp.(string) {
-		case visitor.InsertSql:
-			handler, err := NewInsertBuilder(p.algorithm, p.ds, ctx)
-			if err != nil {
-				return nil, err
-			}
-			res := handler.Exec(ctx.Context)
-			if res.Err() != nil {
-				return nil, res.Err()
-			}
-			return &plugin.Result{
-				Result: res,
-			}, nil
-		case visitor.SelectSql:
-			hintVisit := visitor.NewHintVisitor()
-			hint := hintVisit.Visit(ctx.ParsedQuery.Root)
-			if strings.Contains(hint.(string), "useMaster") {
-				qctx := masterslave.UseMaster(ctx.Context)
-				ctx.Context = qctx
-			}
-			handler, err := NewSelectHandler(p.algorithm, p.ds, ctx)
-			if err != nil {
-				return nil, err
-			}
-			res, err := handler.GetMulti(ctx.Context)
-			return &plugin.Result{
-				Rows: res,
-			}, err
-		case visitor.DeleteSql:
-			handler, err := NewDeleteHandler(p.algorithm, p.ds, ctx)
-			if err != nil {
-				return nil, err
-			}
-			res := handler.Exec(ctx.Context)
-			if res.Err() != nil {
-				return nil, res.Err()
-			}
-			return &plugin.Result{
-				Result: res,
-			}, nil
-		case visitor.UpdateSql:
-			handler, err := NewUpdateHandler(p.algorithm, p.ds, ctx)
-			if err != nil {
-				return nil, err
-			}
-			res := handler.Exec(ctx.Context)
-			if res.Err() != nil {
-				return nil, res.Err()
-			}
-			return &plugin.Result{
-				Result: res,
-			}, nil
-		default:
-			return nil, errors.New("未知语句")
+		checkVisitor := vparser.NewCheckVisitor()
+		sqlName := checkVisitor.Visit(ctx.ParsedQuery.Root).(string)
+		newHandlerFunc, ok := p.handlerMap[sqlName]
+		if !ok {
+			return nil, ErrUnKnowSql
 		}
+		handler, err := newHandlerFunc(p.algorithm, p.ds, ctx)
+		if err != nil {
+			return nil, err
+		}
+		return handler.QueryOrExec(ctx.Context)
+		//switch nameResp.(string) {
+		//case visitor.InsertSql:
+		//	handler, err := NewInsertBuilder(p.algorithm, p.ds, ctx)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	res := handler.Exec(ctx.Context)
+		//	if res.Err() != nil {
+		//		return nil, res.Err()
+		//	}
+		//	return &plugin.Result{
+		//		Result: res,
+		//	}, nil
+		//case visitor.SelectSql:
+		//	hintVisit := visitor.NewHintVisitor()
+		//	hint := hintVisit.Visit(ctx.ParsedQuery.Root)
+		//	if strings.Contains(hint.(string), "useMaster") {
+		//		qctx := masterslave.UseMaster(ctx.Context)
+		//		ctx.Context = qctx
+		//	}
+		//	handler, err := NewSelectHandler(p.algorithm, p.ds, ctx)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	res, err := handler.GetMulti(ctx.Context)
+		//	return &plugin.Result{
+		//		Rows: res,
+		//	}, err
+		//case visitor.DeleteSql:
+		//	handler, err := NewDeleteHandler(p.algorithm, p.ds, ctx)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	res := handler.Exec(ctx.Context)
+		//	if res.Err() != nil {
+		//		return nil, res.Err()
+		//	}
+		//	return &plugin.Result{
+		//		Result: res,
+		//	}, nil
+		//case visitor.UpdateSql:
+		//	handler, err := NewUpdateHandler(p.algorithm, p.ds, ctx)
+		//	if err != nil {
+		//		return nil, err
+		//	}
+		//	res := handler.Exec(ctx.Context)
+		//	if res.Err() != nil {
+		//		return nil, res.Err()
+		//	}
+		//	return &plugin.Result{
+		//		Result: res,
+		//	}, nil
+		//default:
+		//	return nil, errors.New("未知语句")
+		//}
 	})
 }

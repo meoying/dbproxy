@@ -1,7 +1,8 @@
-package visitor
+package vparser
 
 import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -18,28 +19,28 @@ func TestUpdateVisitor(t *testing.T) {
 			name: "多个set语句",
 			sql:  "UPDATE employees SET `salary` = 75000, position = 'Senior Developer' WHERE employee_id = 101;",
 			wantVal: UpdateVal{
-				Assigns: []Assignable{
-					Assignment{
-						Left: Column{
+				Assigns: []visitor.Assignable{
+					visitor.Assignment{
+						Left: visitor.Column{
 							Name: "salary",
 						},
 						Op:    operator.OpEQ,
-						Right: ValueOf(75000),
+						Right: visitor.ValueOf(75000),
 					},
-					Assignment{
-						Left: Column{
+					visitor.Assignment{
+						Left: visitor.Column{
 							Name: "position",
 						},
 						Op:    operator.OpEQ,
-						Right: ValueOf("Senior Developer"),
+						Right: visitor.ValueOf("Senior Developer"),
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "employee_id",
 					},
 					Op:    operator.OpEQ,
-					Right: ValueOf(101),
+					Right: visitor.ValueOf(101),
 				},
 			},
 		},
@@ -47,21 +48,21 @@ func TestUpdateVisitor(t *testing.T) {
 			name: "单个set语句",
 			sql:  "UPDATE employees SET salary = 75000 WHERE employee_id = 101;",
 			wantVal: UpdateVal{
-				Assigns: []Assignable{
-					Assignment{
-						Left: Column{
+				Assigns: []visitor.Assignable{
+					visitor.Assignment{
+						Left: visitor.Column{
 							Name: "salary",
 						},
 						Op:    operator.OpEQ,
-						Right: ValueOf(75000),
+						Right: visitor.ValueOf(75000),
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "employee_id",
 					},
 					Op:    operator.OpEQ,
-					Right: ValueOf(101),
+					Right: visitor.ValueOf(101),
 				},
 			},
 		},
@@ -69,18 +70,18 @@ func TestUpdateVisitor(t *testing.T) {
 			name: "set右边为算术表达式",
 			sql:  "update t1 set a = a +1;",
 			wantVal: UpdateVal{
-				Assigns: []Assignable{
-					Assignment{
-						Left: Column{
+				Assigns: []visitor.Assignable{
+					visitor.Assignment{
+						Left: visitor.Column{
 							Name: "a",
 						},
 						Op: operator.OpEQ,
-						Right: Predicate{
-							Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "a",
 							},
 							Op:    operator.OpAdd,
-							Right: ValueOf(1),
+							Right: visitor.ValueOf(1),
 						},
 					},
 				},
@@ -90,28 +91,28 @@ func TestUpdateVisitor(t *testing.T) {
 			name: "set右边为复杂算术表达式",
 			sql:  "update t1 set a = (b + (a + 1)) * 10;",
 			wantVal: UpdateVal{
-				Assigns: []Assignable{
-					Assignment{
-						Left: Column{
+				Assigns: []visitor.Assignable{
+					visitor.Assignment{
+						Left: visitor.Column{
 							Name: "a",
 						},
 						Op: operator.OpEQ,
-						Right: Predicate{
-							Left: Predicate{
-								Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Predicate{
+								Left: visitor.Column{
 									Name: "b",
 								},
 								Op: operator.OpAdd,
-								Right: Predicate{
-									Left: Column{
+								Right: visitor.Predicate{
+									Left: visitor.Column{
 										Name: "a",
 									},
 									Op:    operator.OpAdd,
-									Right: ValueOf(1),
+									Right: visitor.ValueOf(1),
 								},
 							},
 							Op:    operator.OpMulti,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 					},
 				},

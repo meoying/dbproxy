@@ -1,4 +1,4 @@
-package visitor
+package vparser
 
 import (
 	"github.com/antlr4-go/antlr/v4"

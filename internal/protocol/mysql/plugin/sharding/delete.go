@@ -5,6 +5,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/valyala/bytebufferpool"
 )
@@ -12,18 +13,18 @@ import (
 type DeleteHandler struct {
 	algorithm sharding.Algorithm
 	db        datasource.DataSource
-	deleteVal visitor.DeleteVal
+	deleteVal vparser.DeleteVal
 	shardingBuilder
 }
 
 func NewDeleteHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (*DeleteHandler, error) {
-	selectVisitor := visitor.NewDeleteVisitor()
-	resp := selectVisitor.Visit(ctx.ParsedQuery.Root)
-	baseVal := resp.(visitor.BaseVal)
+	deleteVisitor := vparser.NewDeleteVisitor()
+	resp := deleteVisitor.Parse(ctx.ParsedQuery.Root)
+	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
 	}
-	deleteVal := baseVal.Data.(visitor.DeleteVal)
+	deleteVal := baseVal.Data.(vparser.DeleteVal)
 	return &DeleteHandler{
 		algorithm: a,
 		deleteVal: deleteVal,

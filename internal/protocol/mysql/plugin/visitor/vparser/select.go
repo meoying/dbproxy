@@ -1,17 +1,15 @@
-package visitor
+package vparser
 
 import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"strconv"
 )
 
-type Selectable interface {
-	selected()
-}
 type SelectVal struct {
-	Cols          []Selectable
-	Predicate     Predicate
+	Cols          []visitor.Selectable
+	Predicate     visitor.Predicate
 	Distinct      bool
 	OrderClauses  []OrderClause
 	LimitClause   *LimitClause
@@ -22,6 +20,7 @@ type OrderClause struct {
 	Column string
 	Order  string
 }
+
 type LimitClause struct {
 	Limit  int
 	Offset int
@@ -35,10 +34,14 @@ func (s *SelectVisitor) Name() string {
 	return "SelectVisitor"
 }
 
-func NewsSelectVisitor() Visitor {
+func NewsSelectVisitor() SqlParser {
 	return &SelectVisitor{
 		BaseVisitor: &BaseVisitor{},
 	}
+}
+
+func (s *SelectVisitor) Parse(ctx antlr.ParseTree) any {
+	return s.Visit(ctx)
 }
 
 func (s *SelectVisitor) Visit(tree antlr.ParseTree) any {
@@ -73,9 +76,9 @@ func (s *SelectVisitor) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 		}
 	}
 	// 处理select部分
-	selectVal.Cols = s.VisitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext)).([]Selectable)
+	selectVal.Cols = s.VisitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext)).([]visitor.Selectable)
 	// 处理where和from部分
-	selectVal.Predicate = s.VisitFromClause(queryCtx.FromClause().(*parser.FromClauseContext)).(Predicate)
+	selectVal.Predicate = s.VisitFromClause(queryCtx.FromClause().(*parser.FromClauseContext)).(visitor.Predicate)
 	// 处理group by 部分,这部分不是sql语句中必须有的部分，要先判断是否存在
 	if queryCtx.GroupByClause() != nil {
 		groupByClauses := s.VisitGroupByClause(queryCtx.GroupByClause().(*parser.GroupByClauseContext))
@@ -109,7 +112,7 @@ func (s *SelectVisitor) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 // VisitFromClause 处理where部分
 func (s *SelectVisitor) VisitFromClause(ctx *parser.FromClauseContext) any {
 	if ctx.WHERE() == nil {
-		return Predicate{}
+		return visitor.Predicate{}
 	}
 	return s.visitWhere(ctx.Expression())
 }
@@ -123,7 +126,7 @@ func (s *SelectVisitor) VisitTableSources(ctx *parser.TableSourcesContext) any {
 // VisitSelectElements 处理 select部分
 func (s *SelectVisitor) VisitSelectElements(ctx *parser.SelectElementsContext) any {
 	colEles := ctx.GetChildren()
-	cols := make([]Selectable, 0, len(colEles))
+	cols := make([]visitor.Selectable, 0, len(colEles))
 	if ctx.STAR() != nil {
 		return cols
 	}
@@ -131,10 +134,10 @@ func (s *SelectVisitor) VisitSelectElements(ctx *parser.SelectElementsContext) a
 		switch v := colEle.(type) {
 		case *parser.SelectColumnElementContext:
 			col := s.VisitSelectColumnElement(v)
-			cols = append(cols, col.(Column))
+			cols = append(cols, col.(visitor.Column))
 		case *parser.SelectFunctionElementContext:
 			col := s.VisitSelectFunctionElement(v)
-			cols = append(cols, col.(Aggregate))
+			cols = append(cols, col.(visitor.Aggregate))
 		}
 	}
 	return cols
@@ -143,7 +146,7 @@ func (s *SelectVisitor) VisitSelectElements(ctx *parser.SelectElementsContext) a
 // VisitSelectColumnElement 处理 select的字段部分
 func (s *SelectVisitor) VisitSelectColumnElement(ctx *parser.SelectColumnElementContext) any {
 	va := ctx.FullColumnName().GetText()
-	col := Column{
+	col := visitor.Column{
 		Name: s.BaseVisitor.removeQuote(va),
 	}
 	if ctx.AS() != nil {
@@ -155,7 +158,7 @@ func (s *SelectVisitor) VisitSelectColumnElement(ctx *parser.SelectColumnElement
 // VisitSelectFunctionElement 处理select的聚合函数部分
 func (s *SelectVisitor) VisitSelectFunctionElement(ctx *parser.SelectFunctionElementContext) any {
 	resp := s.VisitAggregateFunctionCall(ctx.FunctionCall().(*parser.AggregateFunctionCallContext))
-	agg := resp.(Aggregate)
+	agg := resp.(visitor.Aggregate)
 	if ctx.AS() != nil {
 		alias := s.BaseVisitor.removeQuote(ctx.Uid().GetText())
 		agg.Alias = alias
@@ -166,20 +169,19 @@ func (s *SelectVisitor) VisitSelectFunctionElement(ctx *parser.SelectFunctionEle
 // VisitGroupByClause 处理group by
 func (s *SelectVisitor) VisitGroupByClause(ctx *parser.GroupByClauseContext) any {
 	if ctx == nil {
-		return []Column{}
+		return []visitor.Column{}
 	}
 	items := ctx.AllGroupByItem()
 	groupByCols := make([]string, 0, len(items))
 	for _, item := range items {
 		col := s.BaseVisitor.VisitPredicateExpression(item.Expression().(*parser.PredicateExpressionContext))
 		switch v := col.(type) {
-		case Column:
+		case visitor.Column:
 			groupByCols = append(groupByCols, v.Name)
-		case ValueExpr:
+		case visitor.ValueExpr:
 			groupByCols = append(groupByCols, s.removeQuote(v.Val.(string)))
 		default:
 			return errUnsupportedGroupByClause
-
 		}
 
 	}
@@ -206,17 +208,17 @@ func (s *SelectVisitor) VisitOrderByClause(ctx *parser.OrderByClauseContext) any
 func (s *SelectVisitor) VisitOrderByExpression(ctx *parser.OrderByExpressionContext) any {
 	orderClause := OrderClause{}
 	col := s.BaseVisitor.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
-	switch v:=col.(type) {
-	case Column:
-		orderClause.Column =  v.Name
-	case ValueExpr:
-	    orderClause.Column =  s.removeQuote( v.Val.(string))
+	switch v := col.(type) {
+	case visitor.Column:
+		orderClause.Column = v.Name
+	case visitor.ValueExpr:
+		orderClause.Column = s.removeQuote(v.Val.(string))
 	default:
 		return errUnsupportedOrderByClause
 	}
 	if ctx.DESC() != nil {
 		orderClause.Order = "DESC"
-	}else {
+	} else {
 		orderClause.Order = "ASC"
 	}
 	return orderClause
@@ -243,7 +245,6 @@ func (s *SelectVisitor) VisitLimitClauseAtom(ctx *parser.LimitClauseAtomContext)
 	return meta.(int)
 }
 
-
 // 处理聚合函数
 func (b *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunctionCallContext) any {
 	aggCtx := ctx.AggregateWindowedFunction()
@@ -263,18 +264,18 @@ func (b *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunction
 			}
 		}
 	}
-	var agg Aggregate
+	var agg visitor.Aggregate
 	switch {
 	case aggCtx.AVG() != nil:
-		agg = Avg(name)
+		agg = visitor.Avg(name)
 	case aggCtx.MIN() != nil:
-		agg = Min(name)
+		agg = visitor.Min(name)
 	case aggCtx.MAX() != nil:
-		agg = Max(name)
+		agg = visitor.Max(name)
 	case aggCtx.SUM() != nil:
-		agg = Sum(name)
+		agg = visitor.Sum(name)
 	case aggCtx.COUNT() != nil:
-		agg = Count(name)
+		agg = visitor.Count(name)
 	}
 	if aggCtx.DISTINCT() != nil {
 		agg.Distinct = true

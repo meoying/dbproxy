@@ -1,8 +1,9 @@
-package visitor
+package vparser
 
 import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -19,17 +20,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个比较符",
 			sql:  "select id from t1 where id > 11",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op:    operator.OpGT,
-					Right: ValueOf(11),
+					Right: visitor.ValueOf(11),
 				},
 			},
 		},
@@ -37,17 +38,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个比较符 >=",
 			sql:  "select id from t1 where id >= 11",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op:    operator.OpGTEQ,
-					Right: ValueOf(11),
+					Right: visitor.ValueOf(11),
 				},
 			},
 		},
@@ -55,21 +56,21 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个比较符，一侧为计算表达式",
 			sql:  "select id from t1 where id + 1 >= 11",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "id",
 						},
 						Op:    operator.OpAdd,
-						Right: ValueOf(1),
+						Right: visitor.ValueOf(1),
 					},
 					Op:    operator.OpGTEQ,
-					Right: ValueOf(11),
+					Right: visitor.ValueOf(11),
 				},
 			},
 		},
@@ -77,25 +78,25 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个比较符，一侧为二元计算表达式",
 			sql:  "select id from t1 where id +1 + 1 >= 11",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Predicate{
-							Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "id",
 							},
 							Op:    operator.OpAdd,
-							Right: ValueOf(1),
+							Right: visitor.ValueOf(1),
 						},
 						Op:    operator.OpAdd,
-						Right: ValueOf(1),
+						Right: visitor.ValueOf(1),
 					},
 					Op:    operator.OpGTEQ,
-					Right: ValueOf(11),
+					Right: visitor.ValueOf(11),
 				},
 			},
 		},
@@ -103,26 +104,26 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个比较符，两侧为一元计算表达式",
 			sql:  "select id from t1 where id +1 >= a * 1",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "id",
 						},
 						Op:    operator.OpAdd,
-						Right: ValueOf(1),
+						Right: visitor.ValueOf(1),
 					},
 					Op: operator.OpGTEQ,
-					Right: Predicate{
-						Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "a",
 						},
 						Op:    operator.OpMulti,
-						Right: ValueOf(1),
+						Right: visitor.ValueOf(1),
 					},
 				},
 			},
@@ -131,17 +132,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "like查询",
 			sql:  "select id from t1 where name like '%n%';",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "name",
 					},
 					Op:    operator.OpLike,
-					Right: ValueOf("%n%"),
+					Right: visitor.ValueOf("%n%"),
 				},
 			},
 		},
@@ -149,17 +150,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "in 查询",
 			sql:  "select id from t1 where id in (1,2,3,4);",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op: operator.OpIn,
-					Right: Values{
+					Right: visitor.Values{
 						Vals: []any{1, 2, 3, 4},
 					},
 				},
@@ -169,17 +170,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "Not in查询",
 			sql:  "select id from t1 where id not in (1,2,3,4);",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op: operator.OpNotIN,
-					Right: Values{
+					Right: visitor.Values{
 						Vals: []any{1, 2, 3, 4},
 					},
 				},
@@ -189,26 +190,26 @@ func TestSelectVisitor(t *testing.T) {
 			name: "and 查询",
 			sql:  "select id from t1 where a > 10 and b < 10;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "a",
 						},
 						Op:    operator.OpGT,
-						Right: ValueOf(10),
+						Right: visitor.ValueOf(10),
 					},
 					Op: operator.OpAnd,
-					Right: Predicate{
-						Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "b",
 						},
 						Op:    operator.OpLT,
-						Right: ValueOf(10),
+						Right: visitor.ValueOf(10),
 					},
 				},
 			},
@@ -217,36 +218,36 @@ func TestSelectVisitor(t *testing.T) {
 			name: "有多个逻辑运算符",
 			sql:  "select id from t1 where (a > 10 or b <=10)  and b like '%name%';",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Predicate{
-							Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "a",
 							},
 							Op:    operator.OpGT,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 						Op: operator.OpOr,
-						Right: Predicate{
-							Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "b",
 							},
 							Op:    operator.OpLTEQ,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 					},
 					Op: operator.OpAnd,
-					Right: Predicate{
-						Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "b",
 						},
 						Op:    operator.OpLike,
-						Right: ValueOf("%name%"),
+						Right: visitor.ValueOf("%name%"),
 					},
 				},
 			},
@@ -255,36 +256,36 @@ func TestSelectVisitor(t *testing.T) {
 			name: "有多个逻辑运算符",
 			sql:  "select id from t1 where (a > 10 or b <=10)  and (b like '%name%');",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Predicate{
-							Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "a",
 							},
 							Op:    operator.OpGT,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 						Op: operator.OpOr,
-						Right: Predicate{
-							Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "b",
 							},
 							Op:    operator.OpLTEQ,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 					},
 					Op: operator.OpAnd,
-					Right: Predicate{
-						Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "b",
 						},
 						Op:    operator.OpLike,
-						Right: ValueOf("%name%"),
+						Right: visitor.ValueOf("%name%"),
 					},
 				},
 			},
@@ -293,46 +294,46 @@ func TestSelectVisitor(t *testing.T) {
 			name: "括号里套括号",
 			sql:  "select id from t1 where (a > 10 or (b <=10 and c > 0 ))  and (b like '%name%');",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Predicate{
-						Left: Predicate{
-							Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "a",
 							},
 							Op:    operator.OpGT,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 						Op: operator.OpOr,
-						Right: Predicate{
-							Left: Predicate{
-								Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Predicate{
+								Left: visitor.Column{
 									Name: "b",
 								},
 								Op:    operator.OpLTEQ,
-								Right: ValueOf(10),
+								Right: visitor.ValueOf(10),
 							},
 							Op: operator.OpAnd,
-							Right: Predicate{
-								Left: Column{
+							Right: visitor.Predicate{
+								Left: visitor.Column{
 									Name: "c",
 								},
 								Op:    operator.OpGT,
-								Right: ValueOf(0),
+								Right: visitor.ValueOf(0),
 							},
 						},
 					},
 					Op: operator.OpAnd,
-					Right: Predicate{
-						Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Column{
 							Name: "b",
 						},
 						Op:    operator.OpLike,
-						Right: ValueOf("%name%"),
+						Right: visitor.ValueOf("%name%"),
 					},
 				},
 			},
@@ -341,29 +342,29 @@ func TestSelectVisitor(t *testing.T) {
 			name: "not 查询",
 			sql:  "select id from t1 where not (id > 10 and c < 19);",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Raw(""),
+				Predicate: visitor.Predicate{
+					Left: visitor.Raw(""),
 					Op:   operator.OpNot,
-					Right: Predicate{
-						Left: Predicate{
-							Left: Column{
+					Right: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "id",
 							},
 							Op:    operator.OpGT,
-							Right: ValueOf(10),
+							Right: visitor.ValueOf(10),
 						},
 						Op: operator.OpAnd,
-						Right: Predicate{
-							Left: Column{
+						Right: visitor.Predicate{
+							Left: visitor.Column{
 								Name: "c",
 							},
 							Op:    operator.OpLT,
-							Right: ValueOf(19),
+							Right: visitor.ValueOf(19),
 						},
 					},
 				},
@@ -373,17 +374,17 @@ func TestSelectVisitor(t *testing.T) {
 			name: "where 的变量名含有 `` ",
 			sql:  "select id from t1 where `id` > 11",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op:    operator.OpGT,
-					Right: ValueOf(11),
+					Right: visitor.ValueOf(11),
 				},
 			},
 		},
@@ -391,11 +392,11 @@ func TestSelectVisitor(t *testing.T) {
 			name: "select 列中包含`",
 			sql:  "select `id`,`name` from  t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "id",
 					},
-					Column{
+					visitor.Column{
 						Name: "name",
 					},
 				},
@@ -405,15 +406,15 @@ func TestSelectVisitor(t *testing.T) {
 			name: "select 列为 *",
 			sql:  "select * from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 			},
 		},
 		{
 			name: "select 列中有别名",
 			sql:  "select id as a from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name:  "id",
 						Alias: "a",
 					},
@@ -424,8 +425,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数 Avg(id)",
 			sql:  "select Avg(id)  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Avg("id"),
+				Cols: []visitor.Selectable{
+					visitor.Avg("id"),
 				},
 			},
 		},
@@ -433,8 +434,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数 Sum(id)",
 			sql:  "select SUM(id)  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Sum("id"),
+				Cols: []visitor.Selectable{
+					visitor.Sum("id"),
 				},
 			},
 		},
@@ -442,8 +443,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数 Max(id)",
 			sql:  "select MAX(id)  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Max("id"),
+				Cols: []visitor.Selectable{
+					visitor.Max("id"),
 				},
 			},
 		},
@@ -451,8 +452,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数 Min(id)",
 			sql:  "select MIN(id)  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Min("id"),
+				Cols: []visitor.Selectable{
+					visitor.Min("id"),
 				},
 			},
 		},
@@ -460,8 +461,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数Count(*)",
 			sql:  "select COUNT(*) from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Count("*"),
+				Cols: []visitor.Selectable{
+					visitor.Count("*"),
 				},
 			},
 		},
@@ -469,8 +470,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数字段带有`",
 			sql:  "select COUNT(`id`) from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Count("`id`"),
+				Cols: []visitor.Selectable{
+					visitor.Count("`id`"),
 				},
 			},
 		},
@@ -478,8 +479,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数 Avg(id) as",
 			sql:  "select Avg(id) as avgId  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Avg("id").As("avgId"),
+				Cols: []visitor.Selectable{
+					visitor.Avg("id").As("avgId"),
 				},
 			},
 		},
@@ -488,8 +489,8 @@ func TestSelectVisitor(t *testing.T) {
 			sql:  "select Distinct id as avgId  from t1;",
 			wantVal: SelectVal{
 				Distinct: true,
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name:  "id",
 						Alias: "avgId",
 					},
@@ -500,8 +501,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "Avg(Distinct id)",
 			sql:  "select avg(Distinct id)as avgId  from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					AvgDistinct("id").As("avgId"),
+				Cols: []visitor.Selectable{
+					visitor.AvgDistinct("id").As("avgId"),
 				},
 			},
 		},
@@ -509,8 +510,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数count(*)",
 			sql:  "select count(*) from t1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Count("*"),
+				Cols: []visitor.Selectable{
+					visitor.Count("*"),
 				},
 			},
 		},
@@ -518,8 +519,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数count(1)",
 			sql:  "select count(1) from t1",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Count("1"),
+				Cols: []visitor.Selectable{
+					visitor.Count("1"),
 				},
 			},
 		},
@@ -527,8 +528,8 @@ func TestSelectVisitor(t *testing.T) {
 			name: "聚合函数count(`id`)",
 			sql:  "select count(`id`) from t1",
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Count("`id`"),
+				Cols: []visitor.Selectable{
+					visitor.Count("`id`"),
 				},
 			},
 		},
@@ -536,7 +537,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "单个order by",
 			sql:  "select * from t1 order by id;",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				OrderClauses: []OrderClause{
 					{
 						Column: "id",
@@ -549,7 +550,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "多个order by",
 			sql:  "select * from t1 order by col1 asc,col2 desc",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				OrderClauses: []OrderClause{
 					{
 						Column: "col1",
@@ -566,7 +567,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "order by字段中含有`",
 			sql:  "select * from t1 order by `col1` asc,col2 desc",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				OrderClauses: []OrderClause{
 					{
 						Column: "col1",
@@ -583,7 +584,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "多个group by",
 			sql:  "select * from t1 group by col1,col2",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				GroupByClause: []string{
 					"col1",
 					"col2",
@@ -594,7 +595,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "group by的字段有`",
 			sql:  "select * from t1 group by `col1`,col2",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				GroupByClause: []string{
 					"col1",
 					"col2",
@@ -605,7 +606,7 @@ func TestSelectVisitor(t *testing.T) {
 			name: "limit",
 			sql:  "select * from t1  limit 10 offset 1;",
 			wantVal: SelectVal{
-				Cols: []Selectable{},
+				Cols: []visitor.Selectable{},
 				LimitClause: &LimitClause{
 					Limit:  10,
 					Offset: 1,
@@ -627,18 +628,18 @@ ORDER BY
 LIMIT 10;
 `,
 			wantVal: SelectVal{
-				Cols: []Selectable{
-					Column{
+				Cols: []visitor.Selectable{
+					visitor.Column{
 						Name: "product",
 					},
-					Count("id"),
+					visitor.Count("id"),
 				},
-				Predicate: Predicate{
-					Left: Column{
+				Predicate: visitor.Predicate{
+					Left: visitor.Column{
 						Name: "id",
 					},
 					Op:    operator.OpGT,
-					Right: ValueOf(10),
+					Right: visitor.ValueOf(10),
 				},
 				GroupByClause: []string{
 					"product",

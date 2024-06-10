@@ -37,4 +37,6 @@ type Result struct {
 	Rows sqlx.Rows
 	// Result 的 error 会被传递过去客户端
 	Result sql.Result
+	// ChangeTransaction 是否改变事务的状态
+	ChangeTransaction bool
 }

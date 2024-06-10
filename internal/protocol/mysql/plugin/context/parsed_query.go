@@ -17,6 +17,11 @@ func (q *ParsedQuery) FirstDML() *parser.DmlStatementContext {
 	return dmlStmt.(*parser.DmlStatementContext)
 }
 
+func (q *ParsedQuery) SqlStatement() any {
+	sqlStmt := q.FirstStatement()
+	return sqlStmt.GetChildren()[0]
+}
+
 func (q *ParsedQuery) FirstStatement() *parser.SqlStatementContext {
 	sqlStmts := q.Root.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]

@@ -25,8 +25,9 @@ type Conn struct {
 	Id           uint32
 
 	// onCmd 处理客户端过来的命令
-	onCmd      OnCmd
-	cmdTimeout time.Duration
+	onCmd        OnCmd
+	cmdTimeout   time.Duration
+	InTransition bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32
@@ -63,9 +64,9 @@ func (mc *Conn) Loop() error {
 		if err1 != nil {
 			return fmt.Errorf("读取客户端请求失败 %w", err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), mc.cmdTimeout)
+		ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		err1 = mc.onCmd(ctx, mc, pkt)
-		cancel()
+		//cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
 		if err1 != nil {
 			return err1
 		}

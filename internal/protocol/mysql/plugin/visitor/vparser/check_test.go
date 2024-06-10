@@ -1,4 +1,4 @@
-package visitor
+package vparser
 
 import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"

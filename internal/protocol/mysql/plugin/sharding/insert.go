@@ -6,7 +6,7 @@ import (
 	"github.com/ecodeclub/ekit/mapx"
 	"github.com/meoying/dbproxy/internal/datasource"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/valyala/bytebufferpool"
@@ -15,20 +15,20 @@ import (
 var ErrInsertFindingDst = errors.New(" 一行数据只能插入一个表")
 
 type InsertHandler struct {
-	insertVal visitor.InsertVal
+	insertVal vparser.InsertVal
 	algorithm sharding.Algorithm
 	db        datasource.DataSource
 	*builder
 }
 
 func NewInsertBuilder(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (*InsertHandler, error) {
-	insertVisitor := visitor.NewInsertVisitor()
-	resp := insertVisitor.Visit(ctx.ParsedQuery.Root)
-	baseVal := resp.(visitor.BaseVal)
+	insertVisitor := vparser.NewInsertVisitor()
+	resp := insertVisitor.Parse(ctx.ParsedQuery.Root)
+	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
 	}
-	insertVal := baseVal.Data.(visitor.InsertVal)
+	insertVal := baseVal.Data.(vparser.InsertVal)
 	return &InsertHandler{
 		algorithm: a,
 		insertVal: insertVal,
@@ -41,7 +41,7 @@ func NewInsertBuilder(a sharding.Algorithm, db datasource.DataSource, ctx *pcont
 }
 
 func (i *InsertHandler) Build(ctx context.Context) ([]sharding.Query, error) {
-	dsDBTabMap, err := mapx.NewMultiTreeMap[sharding.Dst, visitor.ValMap](sharding.CompareDSDBTab)
+	dsDBTabMap, err := mapx.NewMultiTreeMap[sharding.Dst, vparser.ValMap](sharding.CompareDSDBTab)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (i *InsertHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 	return ansQuery, nil
 }
 
-func (i *InsertHandler) buildQuery(db, table string, cols []string, values []visitor.ValMap) error {
+func (i *InsertHandler) buildQuery(db, table string, cols []string, values []vparser.ValMap) error {
 	var err error
 	i.writeString("INSERT INTO ")
 	i.quote(db)
@@ -122,12 +122,11 @@ func (i *InsertHandler) buildColumns(colMetas []string) error {
 	return nil
 }
 
-func (i *InsertHandler) getDst(ctx context.Context, valMap visitor.ValMap) (sharding.Response, error) {
+func (i *InsertHandler) getDst(ctx context.Context, valMap vparser.ValMap) (sharding.Response, error) {
 	sks := i.algorithm.ShardingKeys()
 	skValues := make(map[string]any)
 	for _, sk := range sks {
-
-		skValues[sk] =valMap[sk]
+		skValues[sk] = valMap[sk]
 	}
 	return i.algorithm.Sharding(ctx, sharding.Request{
 		Op:       operator.OpEQ,
@@ -140,7 +139,7 @@ func (i *InsertHandler) Exec(ctx context.Context) sharding.Result {
 	if err != nil {
 		return sharding.NewResult(nil, err)
 	}
-	return exec(ctx,i.db,qs)
+	return exec(ctx, i.db, qs)
 }
 
 // checkColumns 判断sk是否存在于meta中，如果不存在会返回报错
