@@ -71,6 +71,59 @@ func (s *ServerTestSuite) TestSelect() {
 	}
 }
 
+func (s *ServerTestSuite) TestInsert() {
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	require.NoError(s.T(), err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	result, err := db.ExecContext(ctx, "insert into users(name) VALUES ('Andy')")
+	require.NoError(s.T(), err)
+	s.T().Log(result)
+}
+
+func (s *ServerTestSuite) TestUpdate() {
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	require.NoError(s.T(), err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	result, err := db.ExecContext(ctx, "update users set name='Jack' where name = 'Andy'")
+	require.NoError(s.T(), err)
+	s.T().Log(result)
+}
+
+func (s *ServerTestSuite) TestDelete() {
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	require.NoError(s.T(), err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	result, err := db.ExecContext(ctx, "delete from users where name='Jack'")
+	require.NoError(s.T(), err)
+	s.T().Log(result)
+}
+
+func (s *ServerTestSuite) TestTransaction() {
+	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	require.NoError(s.T(), err)
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	//defer cancel()
+	ctx := context.Background()
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		s.T().Fatalf("Failed to begin transaction: %v", err)
+	}
+
+	_, err = tx.ExecContext(ctx, "insert into users(name) VALUES ('Harry')")
+	if err != nil {
+		s.T().Fatalf("Failed to begin transaction: %v", err)
+	}
+
+	err = tx.Commit()
+	//err = tx.Rollback()
+	if err != nil {
+		s.T().Fatalf("Failed to commit: %v", err)
+	}
+}
+
 func TestServer(t *testing.T) {
 	suite.Run(t, new(ServerTestSuite))
 }

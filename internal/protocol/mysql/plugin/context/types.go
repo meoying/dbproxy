@@ -7,7 +7,8 @@ import (
 type Context struct {
 	context.Context
 	// 这个是解析后的
-	ParsedQuery ParsedQuery
-	Query       string
-	Args        []any
+	ParsedQuery  ParsedQuery
+	Query        string
+	Args         []any
+	InTransition bool
 }

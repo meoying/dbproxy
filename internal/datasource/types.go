@@ -26,6 +26,7 @@ type Tx interface {
 }
 
 type DataSource interface {
+	TxBeginner
 	Executor
 	Close() error
 }
