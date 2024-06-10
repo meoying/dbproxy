@@ -1,0 +1,3 @@
+[submodule "antlr"]
+	path = antlr
+	url = git@github.com:meoying/antlr4-go.git
