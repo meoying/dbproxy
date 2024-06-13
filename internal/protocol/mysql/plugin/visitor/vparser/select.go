@@ -147,7 +147,7 @@ func (s *SelectVisitor) VisitSelectElements(ctx *parser.SelectElementsContext) a
 func (s *SelectVisitor) VisitSelectColumnElement(ctx *parser.SelectColumnElementContext) any {
 	va := ctx.FullColumnName().GetText()
 	col := visitor.Column{
-		Name: s.BaseVisitor.removeQuote(va),
+		Name: s.BaseVisitor.RemoveQuote(va),
 	}
 	if ctx.AS() != nil {
 		col.Alias = ctx.Uid().GetText()
@@ -160,7 +160,7 @@ func (s *SelectVisitor) VisitSelectFunctionElement(ctx *parser.SelectFunctionEle
 	resp := s.VisitAggregateFunctionCall(ctx.FunctionCall().(*parser.AggregateFunctionCallContext))
 	agg := resp.(visitor.Aggregate)
 	if ctx.AS() != nil {
-		alias := s.BaseVisitor.removeQuote(ctx.Uid().GetText())
+		alias := s.BaseVisitor.RemoveQuote(ctx.Uid().GetText())
 		agg.Alias = alias
 	}
 	return agg
@@ -179,7 +179,7 @@ func (s *SelectVisitor) VisitGroupByClause(ctx *parser.GroupByClauseContext) any
 		case visitor.Column:
 			groupByCols = append(groupByCols, v.Name)
 		case visitor.ValueExpr:
-			groupByCols = append(groupByCols, s.removeQuote(v.Val.(string)))
+			groupByCols = append(groupByCols, s.RemoveQuote(v.Val.(string)))
 		default:
 			return errUnsupportedGroupByClause
 		}
@@ -212,7 +212,7 @@ func (s *SelectVisitor) VisitOrderByExpression(ctx *parser.OrderByExpressionCont
 	case visitor.Column:
 		orderClause.Column = v.Name
 	case visitor.ValueExpr:
-		orderClause.Column = s.removeQuote(v.Val.(string))
+		orderClause.Column = s.RemoveQuote(v.Val.(string))
 	default:
 		return errUnsupportedOrderByClause
 	}

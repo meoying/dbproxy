@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"strings"
 )
 
 type Base struct {
 	db  string
 	tab string
-	*parser.BaseMySqlParserVisitor
+	visitor.BaseVisitor
 }
 
 // VisitTableName 用于篡改表名

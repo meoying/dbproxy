@@ -192,7 +192,7 @@ func TestShardingSelector_Build(t *testing.T) {
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
-					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE (`user_id`=?) OR (`order_id`=?);",
+					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -817,167 +817,166 @@ func TestShardingSelector_Build(t *testing.T) {
 				return res
 			}(),
 		},
-		//{
-		//	name: "select 列中带有聚合函数COUNT(*)",
-		//	sql:  "select count(*) from order ",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT COUNT(*) FROM `%s`.`%s`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "select 列中带有聚合函数COUNT(1)",
-		//	sql:  "select count(1) from order ",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT COUNT(1) FROM `%s`.`%s`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "聚合函数AVG(`id`)",
-		//	sql:  "select AVG(`id`) from order ",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT SUM(`id`),COUNT(`id`) FROM `%s`.`%s`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "Distinct单个字段",
-		//	sql:  "select distinct id from order;",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT DISTINCT `id` FROM `%s`.`%s`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "聚合函数和distinct",
-		//	sql:  "select Avg(distinct id) from order;",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT SUM(DISTINCT id),COUNT(DISTINCT id) FROM `%s`.`%s`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "group by",
-		//	sql:  "select `order_id`,count(`user_id`) from order group by `order_id`;",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT `order_id`,COUNT(`user_id`) FROM `%s`.`%s` GROUP BY `order_id`;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "order by",
-		//	sql:  "select * from order order by  `order_id`,`user_id` desc;",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT * FROM `%s`.`%s` ORDER BY `order_id` ASC,`user_id` DESC;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
-		//{
-		//	name: "limit",
-		//	sql:  "select * from order order by  `user_id` desc limit 10 offset 5 ;",
-		//	qs: func() []sharding.Query {
-		//		var res []sharding.Query
-		//		sql := "SELECT * FROM `%s`.`%s` ORDER BY `user_id` DESC LIMIT ?;"
-		//		for i := 0; i < dbBase; i++ {
-		//			dbName := fmt.Sprintf(dbPattern, i)
-		//			for j := 0; j < tableBase; j++ {
-		//				tableName := fmt.Sprintf(tablePattern, j)
-		//				res = append(res, sharding.Query{
-		//					SQL:        fmt.Sprintf(sql, dbName, tableName),
-		//					DB:         dbName,
-		//					Args:       []any{15},
-		//					Datasource: dsPattern,
-		//				})
-		//			}
-		//		}
-		//		return res
-		//	}(),
-		//},
+		{
+			name: "select 列中带有聚合函数COUNT(*)",
+			sql:  "SELECT count(*) FROM order;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT count(*) FROM `%s`.`%s` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "select 列中带有聚合函数COUNT(1)",
+			sql:  "SELECT COUNT(1) FROM order;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT COUNT(1) FROM `%s`.`%s` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "聚合函数AVG(`id`)",
+			sql:  "SELECT AVG(`id`) FROM order;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT SUM(`id`),COUNT(`id`) FROM `%s`.`%s` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "Distinct单个字段",
+			sql:  "SELECT DISTINCT `id` FROM order;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT DISTINCT `id` FROM `%s`.`%s` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "聚合函数和distinct",
+			sql:  "SELECT Avg(distinct id) FROM order;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT SUM(distinct id),COUNT(distinct id) FROM `%s`.`%s` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "group by",
+			sql:  "SELECT `order_id`,COUNT(`user_id`) FROM order GROUP BY `order_id`;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT `order_id`,COUNT(`user_id`) FROM `%s`.`%s` GROUP BY `order_id` ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "order by",
+			sql:  "SELECT * FROM order ORDER BY  `order_id`,`user_id` DESC;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT * FROM `%s`.`%s` ORDER BY `order_id` , `user_id` DESC ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
+		{
+			name: "limit",
+			sql:  "SELECT * FROM order ORDER BY  `user_id` DESC limit 10 offset 5 ;",
+			qs: func() []sharding.Query {
+				var res []sharding.Query
+				sql := "SELECT * FROM `%s`.`%s` ORDER BY `user_id` DESC LIMIT 15 OFFSET 0 ; "
+				for i := 0; i < dbBase; i++ {
+					dbName := fmt.Sprintf(dbPattern, i)
+					for j := 0; j < tableBase; j++ {
+						tableName := fmt.Sprintf(tablePattern, j)
+						res = append(res, sharding.Query{
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							DB:         dbName,
+							Datasource: dsPattern,
+						})
+					}
+				}
+				return res
+			}(),
+		},
 	}
 
 	for _, tc := range testCases {

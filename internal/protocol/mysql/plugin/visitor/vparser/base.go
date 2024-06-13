@@ -5,7 +5,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
-	"strconv"
 	"strings"
 )
 
@@ -24,57 +23,7 @@ func getTableName(tableCtx parser.ITableNameContext) string {
 
 // 定义一些通用的解析方式
 type BaseVisitor struct {
-	parser.BaseMySqlParserVisitor
-}
-
-func (b *BaseVisitor) VisitTableName(ctx *parser.TableNameContext) any {
-	return getTableName(ctx)
-}
-
-func (b *BaseVisitor) VisitConstant(ctx *parser.ConstantContext) any {
-	if ctx.GetNullLiteral() != nil {
-		return nil
-	}
-	constant := ctx.GetChildren()[0]
-	switch v := constant.(type) {
-	// 字符串类型
-	case *parser.StringLiteralContext:
-		return b.VisitStringLiteral(v)
-	// bool
-	case *parser.BooleanLiteralContext:
-		return b.VisitBooleanLiteral(v)
-	case *parser.DecimalLiteralContext:
-		return b.VisitDecimalLiteral(v)
-	default:
-		return nil
-	}
-}
-
-func (b *BaseVisitor) VisitStringLiteral(ctx *parser.StringLiteralContext) any {
-	v := strings.Trim(ctx.GetText(), "'")
-	return strings.Trim(v, "\"")
-}
-
-func (b *BaseVisitor) VisitBooleanLiteral(ctx *parser.BooleanLiteralContext) any {
-	if ctx.TRUE() != nil {
-		return true
-	}
-	return false
-}
-
-func (b *BaseVisitor) VisitDecimalLiteral(ctx *parser.DecimalLiteralContext) any {
-
-	if ctx.ONE_DECIMAL() != nil || ctx.TWO_DECIMAL() != nil ||
-		ctx.DECIMAL_LITERAL() != nil || ctx.ZERO_DECIMAL() != nil {
-		v, _ := strconv.Atoi(ctx.GetText())
-		return v
-	}
-	v, _ := strconv.ParseFloat(ctx.GetText(), 64)
-	return v
-}
-
-func (b *BaseVisitor) VisitFullColumnNameExpressionAtom(ctx *parser.FullColumnNameExpressionAtomContext) any {
-	return strings.Trim(ctx.FullColumnName().GetText(), "`")
+	visitor.BaseVisitor
 }
 
 // visitWhere delete，select，update 解析where部分的语句
@@ -125,9 +74,9 @@ func (b *BaseVisitor) visitExpressionAtom(atomCtx parser.IPredicateContext) visi
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
 		if va, ok := val.(string); ok {
-			if b.hasQuote(va) {
+			if b.HasQuote(va) {
 				return visitor.Column{
-					Name: b.removeQuote(va),
+					Name: b.RemoveQuote(va),
 				}
 			}
 		}
@@ -157,7 +106,7 @@ func (b *BaseVisitor) visitMathExpression(ctx parser.IExpressionAtomContext) vis
 	switch v := ctx.(type) {
 	case *parser.FullColumnNameExpressionAtomContext:
 		return visitor.Column{
-			Name: b.removeQuote(v.FullColumnName().GetText()),
+			Name: b.RemoveQuote(v.FullColumnName().GetText()),
 		}
 	case *parser.ConstantExpressionAtomContext:
 		val := b.VisitConstant(v.Constant().(*parser.ConstantContext))
@@ -288,16 +237,4 @@ func (b *BaseVisitor) VisitComparisonOperator(ctx *parser.ComparisonOperatorCont
 		Symbol: opstr,
 		Text:   opstr,
 	}
-}
-
-func (b *BaseVisitor) VisitFullColumnName(ctx *parser.FullColumnNameContext) any {
-	return b.removeQuote(ctx.GetText())
-}
-
-func (b *BaseVisitor) removeQuote(str string) string {
-	return strings.Trim(str, "`")
-}
-
-func (b *BaseVisitor) hasQuote(str string) bool {
-	return strings.HasPrefix(str, "`")
 }

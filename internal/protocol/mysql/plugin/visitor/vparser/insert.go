@@ -120,7 +120,7 @@ func (i *InsertVisitor) columns(insertStmt parser.IInsertStatementContext) []str
 	columnStmts := insertStmt.FullColumnNameList().AllFullColumnName()
 	cols := make([]string, 0, len(columnStmts))
 	for _, colStmt := range columnStmts {
-		cols = append(cols, i.removeQuote(colStmt.Uid().GetText()))
+		cols = append(cols, i.RemoveQuote(colStmt.Uid().GetText()))
 	}
 	return cols
 }
