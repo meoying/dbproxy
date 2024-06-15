@@ -1,13 +1,16 @@
+//go:build e2e
+
 package mysql
 
 import (
 	"context"
 	"database/sql"
+	"testing"
+	"time"
+
 	"github.com/meoying/dbproxy/internal/datasource/single"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/forward"
-	"testing"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"

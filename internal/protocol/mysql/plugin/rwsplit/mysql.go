@@ -8,7 +8,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 )
 
 type Handler struct {

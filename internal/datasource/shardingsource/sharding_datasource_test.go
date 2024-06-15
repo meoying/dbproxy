@@ -18,8 +18,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves/roundrobin"
 

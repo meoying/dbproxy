@@ -17,9 +17,10 @@ package hash
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/internal/errs"
-	"strings"
 )
 
 // ShadowHash TODO experiemntal
