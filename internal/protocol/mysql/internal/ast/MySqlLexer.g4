@@ -44,7 +44,7 @@ channels {
 // 形如 @tid 12345 这种注解的形态
 fragment SPEC_MYSQL_COMMENT : '/*!' .+? '*/';
 fragment COMMENT_INPUT      : '/*' .*? '*/';
-PROXY_HINT: SPEC_MYSQL_COMMENT;
+PROXY_HINT: COMMENT_INPUT;
 
 // SKIP
 
