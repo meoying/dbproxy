@@ -315,8 +315,3 @@ func (m *pipeline) Merge(ctx context.Context, results []rows.Rows) (rows.Rows, e
 	}
 	return r, nil
 }
-
-// NewBatchMerger 仅供sharding_select.go使用,后续重构后需要删掉该方法并只保留上方New方法
-func NewBatchMerger() (merger.Merger, error) {
-	return batchmerger.NewMerger(), nil
-}
