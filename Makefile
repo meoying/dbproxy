@@ -1,7 +1,7 @@
 # 单元测试
 .PHONY: ut
 ut:
-	@go test -race ./...
+	@go test -race ./... -count=1
 
 .PHONY: setup
 setup:
@@ -14,3 +14,12 @@ lint:
 .PHONY: fmt
 fmt:
 	@sh ./.script/fmt.sh
+
+.PHONY: tidy
+tidy:
+	@go mod tidy -v
+
+.PHONY: check
+check:
+	@$(MAKE) --no-print-directory fmt
+	@$(MAKE) --no-print-directory tidy
