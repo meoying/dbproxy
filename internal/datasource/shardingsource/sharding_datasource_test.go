@@ -20,18 +20,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ecodeclub/eorm/internal/datasource/masterslave/slaves/roundrobin"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves/roundrobin"
 
-	"github.com/ecodeclub/eorm/internal/datasource/masterslave"
-	"github.com/ecodeclub/eorm/internal/datasource/masterslave/slaves"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 
-	"github.com/ecodeclub/eorm/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/ecodeclub/eorm/internal/datasource"
-	"github.com/ecodeclub/eorm/internal/datasource/cluster"
-	"github.com/ecodeclub/eorm/internal/sharding"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/cluster"
+	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

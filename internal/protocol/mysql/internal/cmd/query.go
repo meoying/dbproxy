@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"database/sql"
-
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
@@ -14,12 +13,12 @@ import (
 var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
-	hdl plugin.Handler
+	hdl     plugin.Handler
 }
 
 func NewQueryExecutor(hdl plugin.Handler) *QueryExecutor {
 	return &QueryExecutor{
-		hdl: hdl,
+		hdl:     hdl,
 	}
 }
 
@@ -32,8 +31,8 @@ func (exec *QueryExecutor) Exec(
 	payload []byte) error {
 	que := exec.parseQuery(payload)
 	pctx := &pcontext.Context{
-		Context: ctx,
-		Query:   que,
+		Context:  ctx,
+		Query:    que,
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(que),
 		},

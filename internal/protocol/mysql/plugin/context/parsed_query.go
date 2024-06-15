@@ -6,7 +6,7 @@ import (
 
 // ParsedQuery 代表一个经过了 AST 解析的查询
 type ParsedQuery struct {
-	Root parser.IRootContext
+	Root     parser.IRootContext
 }
 
 // FirstDML 第一个 DML 语句，也就是增删改查语句。

@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"database/sql"
-
 	"github.com/ecodeclub/ekit/sqlx"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 )

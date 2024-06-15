@@ -10,6 +10,7 @@ import (
 type Plugin struct {
 }
 
+
 func (p *Plugin) Name() string {
 	//TODO implement me
 	panic("implement me")

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/meoying/dbproxy/internal/sharding"
+	"github.com/meoying/dbproxy/internal/sharding/internal/errs"
 	"strings"
 )
 

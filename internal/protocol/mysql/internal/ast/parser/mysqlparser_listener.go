@@ -1,7 +1,8 @@
-// Code generated from /Users/mindeng/workspace/go/src/meoying/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
+// Code generated from /Users/zhuwenliang/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
+
 
 // MySqlParserListener is a complete listener for a parse tree produced by MySqlParser.
 type MySqlParserListener interface {

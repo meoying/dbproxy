@@ -10,6 +10,7 @@ type Plugin struct {
 	hdl *Handler
 }
 
+
 func (p *Plugin) Name() string {
 	return "forward"
 }
@@ -20,10 +21,4 @@ func (p *Plugin) Init(cfg []byte) error {
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 	return p.hdl
-}
-
-func NewPlugin(hdl *Handler) *Plugin {
-	return &Plugin{
-		hdl: hdl,
-	}
 }
