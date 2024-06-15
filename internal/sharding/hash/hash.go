@@ -17,6 +17,7 @@ package hash
 import (
 	"context"
 	"fmt"
+
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/internal/errs"
 	"github.com/meoying/dbproxy/internal/sharding/operator"

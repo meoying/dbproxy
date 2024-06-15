@@ -17,7 +17,7 @@ package mysql
 import (
 	"strings"
 
-	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 
 	"github.com/go-sql-driver/mysql"
 )

@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"database/sql"
+
 	"github.com/meoying/dbproxy/internal/query"
 )
 

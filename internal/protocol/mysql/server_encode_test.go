@@ -1,12 +1,15 @@
+//go:build e2e
+
 package mysql
 
 import (
 	"context"
 	"database/sql"
-	"github.com/magiconair/properties/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // 测试 MySQL 的整数的类型

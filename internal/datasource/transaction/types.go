@@ -18,7 +18,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 
 	"github.com/meoying/dbproxy/internal/datasource"
 )
