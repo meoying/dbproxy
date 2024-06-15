@@ -31,7 +31,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves/dns/mysql"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 )
 
 type Dsn interface {

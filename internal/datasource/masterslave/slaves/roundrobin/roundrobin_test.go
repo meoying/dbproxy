@@ -24,7 +24,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
