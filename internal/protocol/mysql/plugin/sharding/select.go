@@ -71,7 +71,10 @@ func (s *SelectHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error)
 	if err != nil {
 		return nil, err
 	}
-	originCols, targetCols := s.newQuerySpec()
+	originCols, targetCols, err := s.newQuerySpec()
+	if err != nil {
+		return nil, err
+	}
 	mgr, err := factory.New(originCols, targetCols)
 	if err != nil {
 		return nil, err
@@ -89,19 +92,26 @@ func (s *SelectHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error)
 	}, nil
 }
 
-func (s *SelectHandler) newQuerySpec() (factory.QuerySpec, factory.QuerySpec) {
+func (s *SelectHandler) newQuerySpec() (factory.QuerySpec, factory.QuerySpec, error) {
 	var originSpec, targetSpec factory.QuerySpec
 	var hasAgg, hasGroupBy, hasOrderBy bool
+	var err error
 	features := make([]query.Feature, 0, 8)
 	originSpec.Select, targetSpec.Select, hasAgg = s.newSelect()
 	if hasAgg {
 		features = append(features, query.AggregateFunc)
 	}
-	originSpec.GroupBy, targetSpec.GroupBy, hasGroupBy = s.newGroupBy()
+	originSpec.GroupBy, targetSpec.GroupBy, hasGroupBy, err = s.newGroupBy()
+	if err != nil {
+		return originSpec, targetSpec, err
+	}
 	if hasGroupBy {
 		features = append(features, query.GroupBy)
 	}
-	originSpec.OrderBy, targetSpec.OrderBy, hasOrderBy = s.newOriginBy()
+	originSpec.OrderBy, targetSpec.OrderBy, hasOrderBy, err = s.newOrderBy()
+	if err != nil {
+		return originSpec, targetSpec, err
+	}
 	if hasOrderBy {
 		features = append(features, query.OrderBy)
 	}
@@ -110,28 +120,42 @@ func (s *SelectHandler) newQuerySpec() (factory.QuerySpec, factory.QuerySpec) {
 		originSpec.Limit = s.selectVal.LimitClause.Limit
 		originSpec.Offset = s.selectVal.LimitClause.Offset
 		targetSpec.Offset = 0
-		targetSpec.Limit = s.selectVal.LimitClause.Limit
+		targetSpec.Limit = s.selectVal.LimitClause.Limit + s.selectVal.LimitClause.Offset
+	}
+	if s.selectVal.Distinct {
+		originSpec = s.setDistinct(originSpec)
+		targetSpec = s.setDistinct(targetSpec)
+		features = append(features, query.Distinct)
 	}
 	originSpec.Features = features
 	targetSpec.Features = features
-	return originSpec, targetSpec
+	return originSpec, targetSpec, nil
 }
 
-func (s *SelectHandler) newOriginBy() ([]merger.ColumnInfo, []merger.ColumnInfo, bool) {
+func (s *SelectHandler) setDistinct(originSpec factory.QuerySpec) factory.QuerySpec {
+	for idx := range originSpec.Select {
+		originSpec.Select[idx].Distinct = true
+	}
+	return originSpec
+}
+
+func (s *SelectHandler) newOrderBy() ([]merger.ColumnInfo, []merger.ColumnInfo, bool, error) {
 	originCols := make([]merger.ColumnInfo, 0, len(s.selectVal.Cols))
 	targetCols := make([]merger.ColumnInfo, 0, len(s.selectVal.Cols))
-	for idx, orderCol := range s.selectVal.OrderClauses {
-		colInfo := merger.ColumnInfo{
-			Index: idx,
-			Name:  orderCol.Column,
+	for _, orderCol := range s.selectVal.OrderClauses {
+		colInfo, err := s.findCol(orderCol.Column)
+		if err != nil {
+			return nil, nil, false, err
 		}
 		if strings.ToUpper(orderCol.Order) == "ASC" {
 			colInfo.Order = merger.OrderASC
 		} else {
 			colInfo.Order = merger.OrderDESC
 		}
+		originCols = append(originCols, colInfo)
+		targetCols = append(targetCols, colInfo)
 	}
-	return originCols, targetCols, len(s.selectVal.OrderClauses) > 0
+	return originCols, targetCols, len(s.selectVal.OrderClauses) > 0, nil
 }
 
 func (s *SelectHandler) newSelect() ([]merger.ColumnInfo, []merger.ColumnInfo, bool) {
@@ -195,18 +219,19 @@ func (s *SelectHandler) newSelect() ([]merger.ColumnInfo, []merger.ColumnInfo, b
 	}
 	return originCols, targetCols, hasAggregate
 }
-func (s *SelectHandler) newGroupBy() ([]merger.ColumnInfo, []merger.ColumnInfo, bool) {
+
+func (s *SelectHandler) newGroupBy() ([]merger.ColumnInfo, []merger.ColumnInfo, bool, error) {
 	originCols := make([]merger.ColumnInfo, 0, len(s.selectVal.Cols))
 	targetCols := make([]merger.ColumnInfo, 0, len(s.selectVal.Cols))
-	for idx, groupByCol := range s.selectVal.GroupByClause {
-		colInfo := merger.ColumnInfo{
-			Index: idx,
-			Name:  groupByCol,
+	for _, groupByCol := range s.selectVal.GroupByClause {
+		colInfo, err := s.findCol(groupByCol)
+		if err != nil {
+			return nil, nil, false, err
 		}
 		originCols = append(originCols, colInfo)
 		targetCols = append(targetCols, colInfo)
 	}
-	return originCols, targetCols, len(s.selectVal.GroupByClause) > 0
+	return originCols, targetCols, len(s.selectVal.GroupByClause) > 0, nil
 }
 
 func NewSelectHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
@@ -231,6 +256,40 @@ func NewSelectHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcont
 			algorithm: a,
 		},
 	}, nil
+}
+func (s *SelectHandler) findCol(name string) (merger.ColumnInfo, error) {
+	for idx, selectCol := range s.selectVal.Cols {
+		var selectColInfo merger.ColumnInfo
+		var selectName string
+		switch v := selectCol.(type) {
+		case visitor.Column:
+			selectName = v.Name
+			if v.Alias != "" {
+				selectName = v.Alias
+			}
+			selectColInfo = merger.ColumnInfo{
+				Index: idx,
+				Name:  v.Name,
+				Alias: v.Alias,
+			}
+		case visitor.Aggregate:
+			if v.Alias != "" {
+				selectName = v.Alias
+			}
+			selectColInfo = merger.ColumnInfo{
+				Index:         idx,
+				Name:          v.Arg,
+				AggregateFunc: v.Fn,
+				Alias:         v.Alias,
+				Distinct:      v.Distinct,
+			}
+		}
+		if name == selectName {
+			return selectColInfo, nil
+		}
+	}
+	return merger.ColumnInfo{}, NewErrUnKnowSelectCol(name)
+
 }
 
 func (s *SelectHandler) queryMulti(ctx context.Context, qs []sharding.Query) (list.List[sqlx.Rows], error) {

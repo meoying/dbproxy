@@ -165,22 +165,16 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 		{
 			name: "简单查询",
 			before: func(t *testing.T) {
-				sql1 := "insert into order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',1.3);"
-				sql2 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',1.1);"
+				sql1 := "INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);"
+				sql2 := "INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);"
 				_, err := s.db.Exec(sql1)
 				require.NoError(s.T(), err)
 				_, err = s.db.Exec(sql2)
 				require.NoError(s.T(), err)
 			},
-			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`   FROM order WHERE (user_id = 1) or (user_id =2);",
+			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`   FROM order WHERE (user_id = 1) OR (user_id =2);",
 			after: func(t *testing.T, rows *sql.Rows) {
-				res := make([]Order, 0, 2)
-				for rows.Next() {
-					order := Order{}
-					err := rows.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Account)
-					require.NoError(s.T(), err)
-					res = append(res, order)
-				}
+				res := s.getColsFromRows(rows)
 				assert.ElementsMatch(t, []Order{
 					{
 						UserId:  2,
@@ -197,6 +191,204 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 				}, res)
 			},
 		},
+		{
+			name: "聚合函数AVG",
+			before: func(t *testing.T) {
+				sql1 := "insert into order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',0.1);"
+				sql2 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9);"
+				sql3 := "insert into order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) values (3,1,'content1',7.1);"
+				sql4 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (4,1,'content1',9.9);"
+				s.execSql([]string{sql1, sql2, sql3, sql4})
+			},
+			sql: "SELECT /* useMaster */ AVG(`account`)  FROM order;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				avgAccounts := make([]sql.NullFloat64, 0, 2)
+				for rows.Next() {
+					var avgAccount sql.NullFloat64
+					err := rows.Scan(&avgAccount)
+					require.NoError(s.T(), err)
+					avgAccounts = append(avgAccounts, avgAccount)
+				}
+				assert.ElementsMatch(t, []sql.NullFloat64{
+					{
+						Float64: 6,
+						Valid:   true,
+					},
+				}, avgAccounts)
+			},
+		},
+		{
+			name: "聚合函数MAX",
+			before: func(t *testing.T) {
+				sql1 := "insert into order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',0.1);"
+				sql2 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9);"
+				sql3 := "insert into order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) values (3,1,'content1',7.1);"
+				sql4 := "insert into order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (4,1,'content1',9.9);"
+				s.execSql([]string{sql1, sql2, sql3, sql4})
+			},
+			sql: "SELECT /* useMaster */ MAX(`account`)  FROM order;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				maxAccounts := make([]sql.NullFloat64, 0, 2)
+				for rows.Next() {
+					var maxAccount sql.NullFloat64
+					err := rows.Scan(&maxAccount)
+					require.NoError(s.T(), err)
+					maxAccounts = append(maxAccounts, maxAccount)
+				}
+				assert.ElementsMatch(t, []sql.NullFloat64{
+					{
+						Float64: 9.9,
+						Valid:   true,
+					},
+				}, maxAccounts)
+			},
+		},
+		{
+			name: "order by",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,9,'content4',1.4);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,9,'content4',1.1);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,11,'content4',1.6);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,8,'content4',1.1);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,10,'content4',1.1);",
+				}
+				s.execSql(sqls)
+			},
+			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` ORDER BY `account` DESC,`order_id`;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				res := s.getColsFromRows(rows)
+				assert.Equal(t, []Order{
+					{
+						UserId:  3,
+						OrderId: 11,
+						Content: "content4",
+						Account: 1.6,
+					},
+					{
+						UserId:  4,
+						OrderId: 9,
+						Content: "content4",
+						Account: 1.4,
+					},
+					{
+						UserId:  1,
+						OrderId: 8,
+						Content: "content4",
+						Account: 1.2,
+					},
+					{
+						UserId:  6,
+						OrderId: 8,
+						Content: "content4",
+						Account: 1.1,
+					},
+					{
+						UserId:  7,
+						OrderId: 9,
+						Content: "content4",
+						Account: 1.1,
+					},
+					{
+						UserId:  2,
+						OrderId: 10,
+						Content: "content4",
+						Account: 1.1,
+					},
+				}, res)
+			},
+		},
+		{
+			name: "group by",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+				}
+				s.execSql(sqls)
+			},
+			sql: "SELECT /* useMaster */ `order_id` AS `oid`  FROM `order` GROUP BY `oid`;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				oidGroups := make([]int64, 0, 3)
+				for rows.Next() {
+					var oidGroup int64
+					err := rows.Scan(&oidGroup)
+					require.NoError(s.T(), err)
+					oidGroups = append(oidGroups, oidGroup)
+				}
+				assert.ElementsMatch(t, []int64{
+					6, 7, 8,
+				}, oidGroups)
+			},
+		},
+		{
+			name: "limit",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+				}
+				s.execSql(sqls)
+			},
+			sql: "SELECT /* useMaster */ `user_id` AS `uid`  FROM `order` ORDER BY `uid` LIMIT 6 OFFSET 0;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				oidGroups := make([]int64, 0, 3)
+				for rows.Next() {
+					var oidGroup int64
+					err := rows.Scan(&oidGroup)
+					require.NoError(s.T(), err)
+					oidGroups = append(oidGroups, oidGroup)
+				}
+				assert.ElementsMatch(t, []int64{
+					1, 2, 3, 4, 5, 6,
+				}, oidGroups)
+			},
+		},
+		{
+			name: "select distinct",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+				}
+				s.execSql(sqls)
+			},
+			sql: "SELECT /* useMaster */ DISTINCT order_id AS oid  FROM `order`;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				oidGroups := make([]int64, 0, 3)
+				for rows.Next() {
+					var oidGroup int64
+					err := rows.Scan(&oidGroup)
+					require.NoError(s.T(), err)
+					oidGroups = append(oidGroups, oidGroup)
+				}
+				assert.ElementsMatch(t, []int64{
+					6, 7, 8,
+				}, oidGroups)
+			},
+		},
 	}
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -208,18 +400,17 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 			require.NoError(s.T(), err)
 			tc.after(t, rows)
 			// 清理数据
-			deleteSql := "delete from  order_db_0.order_tab;"
-			_, err = s.db.Exec(deleteSql)
-			require.NoError(s.T(), err)
-			deleteSql = "delete from  order_db_1.order_tab;"
-			_, err = s.db.Exec(deleteSql)
-			require.NoError(s.T(), err)
-			deleteSql = "delete from  order_db_2.order_tab;"
-			_, err = s.db.Exec(deleteSql)
-			require.NoError(s.T(), err)
+			s.clearTable()
 		})
 	}
+}
 
+func (s *TestShardingPluginSuite) clearTable() {
+	for i := 0; i < 3; i++ {
+		sql := fmt.Sprintf("delete from  order_db_%d.order_tab;", i)
+		_, err := s.db.Exec(sql)
+		require.NoError(s.T(), err)
+	}
 }
 
 func (s *TestShardingPluginSuite) execSql(sqls []string) {
@@ -239,6 +430,17 @@ func (s *TestShardingPluginSuite) getOrder(row *sql.Rows) (Order, error) {
 	}
 	return order, nil
 
+}
+
+func (s *TestShardingPluginSuite) getColsFromRows(rows *sql.Rows) []Order {
+	res := make([]Order, 0, 2)
+	for rows.Next() {
+		order := Order{}
+		err := rows.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Account)
+		require.NoError(s.T(), err)
+		res = append(res, order)
+	}
+	return res
 }
 
 func (s *TestShardingPluginSuite) MasterSlavesMysqlDB(db *sql.DB) *masterslave.MasterSlavesDB {

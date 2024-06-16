@@ -68,7 +68,7 @@ func (s *Select) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 func (s *Select) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 	queryCtx := ctx.QuerySpecification()
 	// 修改select
-	s.VisitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext))
+	s.visitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext), 0)
 	s.VisitFromClause(queryCtx.FromClause().(*parser.FromClauseContext))
 	// 如果limit有值了说明需要改造limit部分
 	if s.Limit != 0 {
@@ -86,9 +86,9 @@ func (s *Select) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 	return nil
 }
 
-func (s *Select) VisitSelectElements(ctx *parser.SelectElementsContext) any {
+func (s *Select) visitSelectElements(ctx *parser.SelectElementsContext, index int) any {
 	eles := ctx.AllSelectElement()
-	for i := 0; i < len(eles); i++ {
+	for i := index; i < len(eles); i++ {
 		ele := eles[i]
 		if v, ok := ele.(*parser.SelectFunctionElementContext); ok {
 			// 如果select的列为聚合函数，获取是什么类型的聚合函数
@@ -104,7 +104,6 @@ func (s *Select) VisitSelectElements(ctx *parser.SelectElementsContext) any {
 					ctx.RemoveLastChild()
 					residueEles = append(residueEles, eles[j])
 				}
-				ctx.RemoveLastChild()
 				// 在列表头部增加 sum(xxx),count(xxx)
 				sumAgg := s.newSelectFunctionElementContext(v, parser.MySqlParserSUM, SUM)
 				countAgg := s.newSelectFunctionElementContext(v, parser.MySqlParserCOUNT, COUNT)
@@ -114,6 +113,7 @@ func (s *Select) VisitSelectElements(ctx *parser.SelectElementsContext) any {
 				commaToken := antlr.NewCommonToken(stop.GetSource(), parser.MySqlLexerCOMMA, antlr.TokenDefaultChannel, stop.GetStart()+1, stop.GetStart()+1)
 				commaToken.SetText(",")
 				// 重新构建select
+				ctx.AddTokenNode(commaToken)
 				ctx.AddChild(sumAgg)
 				ctx.AddTokenNode(commaToken)
 				ctx.AddChild(countAgg)
@@ -121,7 +121,7 @@ func (s *Select) VisitSelectElements(ctx *parser.SelectElementsContext) any {
 					ctx.AddTokenNode(commaToken)
 					ctx.AddChild(selectele)
 				}
-				s.VisitSelectElements(ctx)
+				s.visitSelectElements(ctx, index+3)
 				return nil
 			}
 		}

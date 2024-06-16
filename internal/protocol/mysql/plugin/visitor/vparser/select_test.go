@@ -581,6 +581,22 @@ func TestSelectVisitor(t *testing.T) {
 			},
 		},
 		{
+			name: "别名有`",
+			sql:  "select id as `uid`  from t1 group by `col1`,col2",
+			wantVal: SelectVal{
+				Cols: []visitor.Selectable{
+					visitor.Column{
+						Name:  "id",
+						Alias: "uid",
+					},
+				},
+				GroupByClause: []string{
+					"col1",
+					"col2",
+				},
+			},
+		},
+		{
 			name: "多个group by",
 			sql:  "select * from t1 group by col1,col2",
 			wantVal: SelectVal{

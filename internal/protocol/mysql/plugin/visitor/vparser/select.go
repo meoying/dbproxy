@@ -150,7 +150,7 @@ func (s *SelectVisitor) VisitSelectColumnElement(ctx *parser.SelectColumnElement
 		Name: s.BaseVisitor.RemoveQuote(va),
 	}
 	if ctx.AS() != nil {
-		col.Alias = ctx.Uid().GetText()
+		col.Alias = s.BaseVisitor.RemoveQuote(ctx.Uid().GetText())
 	}
 	return col
 }
