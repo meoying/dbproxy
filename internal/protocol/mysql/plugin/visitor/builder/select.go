@@ -14,6 +14,7 @@ const (
 type Select struct {
 	Limit  int
 	Offset int
+	ColHasChanged bool
 	*Base
 }
 
@@ -23,6 +24,12 @@ func WithLimit(limit, offset int) SelectOption {
 	return func(s *Select) {
 		s.Limit = limit
 		s.Offset = offset
+	}
+}
+
+func WithChanged() SelectOption {
+	return func(s *Select) {
+		s.ColHasChanged = true
 	}
 }
 
@@ -67,22 +74,27 @@ func (s *Select) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 
 func (s *Select) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {
 	queryCtx := ctx.QuerySpecification()
-	// 修改select
-	s.visitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext), 0)
-	s.VisitFromClause(queryCtx.FromClause().(*parser.FromClauseContext))
-	// 如果limit有值了说明需要改造limit部分
-	if s.Limit != 0 {
-		// 判断 有没有原ast树有没有limit子句，（判断最后一个子节点是否为limitClauseCtx)
-		childLen := queryCtx.GetChildCount()
-		childCtx := queryCtx.GetChild(childLen - 1)
-		if _, ok := childCtx.(*parser.LimitClauseContext); ok {
-			// 删除最后一个子节点（limit子句）
-			queryCtx.RemoveLastChild()
+
+	if !s.ColHasChanged {
+		// 修改select
+		s.visitSelectElements(queryCtx.SelectElements().(*parser.SelectElementsContext), 0)
+		// 如果limit有值了说明需要改造limit部分
+		if s.Limit != 0 {
+			// 判断 有没有原ast树有没有limit子句，（判断最后一个子节点是否为limitClauseCtx)
+			childLen := queryCtx.GetChildCount()
+			childCtx := queryCtx.GetChild(childLen - 1)
+			if _, ok := childCtx.(*parser.LimitClauseContext); ok {
+				// 删除最后一个子节点（limit子句）
+				queryCtx.RemoveLastChild()
+			}
+			// 添加limitClauseCtx节点
+			limitClauseCtx := s.newLimitClause(queryCtx.(*parser.QuerySpecificationContext))
+			queryCtx.AddChild(limitClauseCtx)
 		}
-		// 添加limitClauseCtx节点
-		limitClauseCtx := s.newLimitClause(queryCtx.(*parser.QuerySpecificationContext))
-		queryCtx.AddChild(limitClauseCtx)
 	}
+	// 改表名
+	s.VisitFromClause(queryCtx.FromClause().(*parser.FromClauseContext))
+
 	return nil
 }
 

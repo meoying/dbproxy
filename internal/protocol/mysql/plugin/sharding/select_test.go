@@ -863,7 +863,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			sql:  "SELECT AVG(`id`) FROM order;",
 			qs: func() []sharding.Query {
 				var res []sharding.Query
-				sql := "SELECT SUM(`id`),COUNT(`id`) FROM `%s`.`%s` ; "
+				sql := "SELECT AVG(`id`),SUM(`id`),COUNT(`id`) FROM `%s`.`%s` ; "
 				for i := 0; i < dbBase; i++ {
 					dbName := fmt.Sprintf(dbPattern, i)
 					for j := 0; j < tableBase; j++ {
@@ -903,7 +903,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			sql:  "SELECT Avg(distinct id) FROM order;",
 			qs: func() []sharding.Query {
 				var res []sharding.Query
-				sql := "SELECT SUM(distinct id),COUNT(distinct id) FROM `%s`.`%s` ; "
+				sql := "SELECT Avg(distinct id),SUM(distinct id),COUNT(distinct id) FROM `%s`.`%s` ; "
 				for i := 0; i < dbBase; i++ {
 					dbName := fmt.Sprintf(dbPattern, i)
 					for j := 0; j < tableBase; j++ {

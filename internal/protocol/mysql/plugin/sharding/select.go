@@ -43,13 +43,16 @@ func (s *SelectHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 		return nil, err
 	}
 	res := make([]sharding.Query, 0, len(shardingRes.Dsts))
-	for _, dst := range shardingRes.Dsts {
+	for idx, dst := range shardingRes.Dsts {
 		var selectBuilder *visitorBuilder.Select
 		opts := make([]visitorBuilder.SelectOption, 0, 4)
 		if s.selectVal.LimitClause != nil {
 			limit := s.selectVal.LimitClause.Limit
 			offset := s.selectVal.LimitClause.Offset
 			opts = append(opts, visitorBuilder.WithLimit(limit+offset, 0))
+		}
+		if idx > 0 {
+			opts  = append(opts,visitorBuilder.WithChanged())
 		}
 		selectBuilder = visitorBuilder.NewSelect(dst.DB, dst.Table, opts...)
 		sql, err := selectBuilder.Build(s.ctx.ParsedQuery.Root)

@@ -104,6 +104,12 @@ func TestSelectBuilder_Build(t *testing.T) {
 			selectBuilder: NewSelect("order_db_0", "order_tab_1", WithLimit(10, 3)),
 			wantSql:       "select * from `order_db_0`.`order_tab_1` LIMIT 10 OFFSET 3 ; ",
 		},
+		{
+			name:          "只修改表名",
+			sql:           "select avg(age),avg(col2),avg(col3) from order;",
+			selectBuilder: NewSelect("order_db_0", "order_tab_1", WithChanged()),
+			wantSql:       "select avg(age),avg(col2),avg(col3) from `order_db_0`.`order_tab_1` ; ",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

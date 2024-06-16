@@ -1,3 +1,5 @@
+//go:build e2e
+
 package mysql
 
 import (
@@ -108,7 +110,7 @@ func (s *TestShardingPluginSuite) SetupSuite() {
 	plugins := []plugin.Plugin{
 		p,
 	}
-	server := NewServer(":8306", plugins)
+	server := NewServer(":8307", plugins)
 	s.db = db
 	s.server = server
 	go func() {
@@ -393,12 +395,13 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			tc.before(t)
-			db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/mysql")
 			require.NoError(t, err)
 			// 使用主库查找
 			rows, err := db.QueryContext(context.Background(), tc.sql)
 			require.NoError(s.T(), err)
 			tc.after(t, rows)
+			fmt.Println(tc.name)
 			// 清理数据
 			s.clearTable()
 		})
