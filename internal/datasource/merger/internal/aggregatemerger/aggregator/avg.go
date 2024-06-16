@@ -15,6 +15,8 @@
 package aggregator
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"reflect"
 
 	"github.com/meoying/dbproxy/internal/datasource/merger"
@@ -31,7 +33,7 @@ type AVG struct {
 	countColumnInfo merger.ColumnInfo
 }
 
-// NewAVG sumInfo是sum的信息，countInfo是count的信息，avgName用于Column方法
+// NewAVG avgInfo是avg列的信息, sumInfo是sum列的信息，countInfo是count列的信息
 func NewAVG(avgInfo, sumInfo, countInfo merger.ColumnInfo) *AVG {
 	return &AVG{
 		name:            "AVG",
@@ -50,19 +52,14 @@ func (a *AVG) Aggregate(cols [][]any) (any, error) {
 	return avgFunc(cols, a.sumColumnInfo.Index, a.countColumnInfo.Index)
 }
 
-func (a *AVG) findAvgFunc(col []any) (func([][]any, int, int) (float64, error), error) {
+func (a *AVG) findAvgFunc(col []any) (func([][]any, int, int) (any, error), error) {
 	sumIndex := a.sumColumnInfo.Index
 	countIndex := a.countColumnInfo.Index
 	if sumIndex >= len(col) || sumIndex < 0 || countIndex >= len(col) || countIndex < 0 {
 		return nil, errs.ErrMergerInvalidAggregateColumnIndex
 	}
-	sumKind := reflect.TypeOf(col[sumIndex]).Kind()
-	countKind := reflect.TypeOf(col[countIndex]).Kind()
-	val, ok := avgAggregateFuncMapping[[2]reflect.Kind{sumKind, countKind}]
-	if !ok {
-		return nil, errs.ErrMergerAggregateFuncNotFound
-	}
-	return val, nil
+
+	return a.avgNullableAggregator, nil
 }
 
 func (a *AVG) ColumnInfo() merger.ColumnInfo {
@@ -74,7 +71,7 @@ func (a *AVG) Name() string {
 }
 
 // avgAggregator cols就是上面Aggregate的入参cols可以参Aggregate的描述
-func avgAggregator[S AggregateElement, C AggregateElement](cols [][]any, sumIndex int, countIndex int) (float64, error) {
+func avgAggregator[S AggregateElement, C AggregateElement](cols [][]any, sumIndex int, countIndex int) (any, error) {
 	var sum S
 	var count C
 	for _, col := range cols {
@@ -86,7 +83,90 @@ func avgAggregator[S AggregateElement, C AggregateElement](cols [][]any, sumInde
 
 }
 
-var avgAggregateFuncMapping = map[[2]reflect.Kind]func([][]any, int, int) (float64, error){
+func (a *AVG) avgNullableAggregator(cols [][]any, sumIndex int, countIndex int) (any, error) {
+	notNullCols := make([][]any, 0, len(cols))
+	var sumValKind, countValKind reflect.Kind
+	var sumZeroVal, countZeroVal any
+	for _, col := range cols {
+		sumZeroVal = a.getZeroVal(col, sumIndex)
+		if sumZeroVal != nil {
+			break
+		}
+	}
+	for _, col := range cols {
+		countZeroVal = a.getZeroVal(col, countIndex)
+		if countZeroVal != nil {
+			break
+		}
+	}
+	for _, col := range cols {
+		var sumVal, countVal any
+		var kind reflect.Kind
+		col, sumVal, kind = a.setColInfo(col, sumIndex, sumZeroVal)
+		// 需要不为nil
+		if kind != reflect.Invalid {
+			sumValKind = kind
+		}
+		col, countVal, kind = a.setColInfo(col, countIndex, countZeroVal)
+		// 需要不为nil
+		if kind != reflect.Invalid {
+			countValKind = kind
+		}
+		// 都为nil就没必要进行聚合函数计算了
+		if sumVal != nil || countVal != nil {
+			notNullCols = append(notNullCols, col)
+		}
+	}
+	if sumValKind != reflect.Invalid && countValKind != reflect.Invalid {
+		// 说明几个count列 或者 sum列有不为null的列
+		avgFunc, ok := avgAggregateFuncMapping[[2]reflect.Kind{sumValKind, countValKind}]
+		if !ok {
+			return nil, errs.ErrMergerAggregateFuncNotFound
+		}
+		return avgFunc(notNullCols, sumIndex, countIndex)
+	}
+	return sql.NullFloat64{
+		Valid: false,
+	}, nil
+}
+
+func (*AVG) getZeroVal(cols []any, index int) any {
+	var zeroVal any
+	col := cols[index]
+	if reflect.TypeOf(col).Kind() == reflect.Struct {
+		colVal, _ := col.(driver.Valuer).Value()
+		if colVal != nil {
+			zeroVal = reflect.Zero(reflect.TypeOf(colVal)).Interface()
+		}
+	} else {
+		zeroVal = reflect.Zero(reflect.TypeOf(col)).Interface()
+	}
+	return zeroVal
+}
+
+func (*AVG) setColInfo(col []any, index int, zeroVal any) ([]any, any, reflect.Kind) {
+	indexCol := col[index]
+	indexValKind := reflect.Invalid
+	indexKind := reflect.TypeOf(indexCol).Kind()
+	var colVal any
+	if indexKind == reflect.Struct {
+		// sum列为sql null类型
+		colVal, _ = col[index].(driver.Valuer).Value()
+		if colVal == nil {
+			// 如果是nil用0这些初值表示
+			col[index] = zeroVal
+		} else {
+			indexValKind = reflect.TypeOf(colVal).Kind()
+			col[index] = colVal
+		}
+	} else {
+		colVal = col[index]
+		indexValKind = reflect.TypeOf(colVal).Kind()
+	}
+	return col, colVal, indexValKind
+}
+
+var avgAggregateFuncMapping = map[[2]reflect.Kind]func([][]any, int, int) (any, error){
 	[2]reflect.Kind{reflect.Int, reflect.Int}:     avgAggregator[int, int],
 	[2]reflect.Kind{reflect.Int, reflect.Int8}:    avgAggregator[int, int8],
 	[2]reflect.Kind{reflect.Int, reflect.Int16}:   avgAggregator[int, int16],

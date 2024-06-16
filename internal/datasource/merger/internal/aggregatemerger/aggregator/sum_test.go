@@ -15,6 +15,7 @@
 package aggregator
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/meoying/dbproxy/internal/datasource/merger"
@@ -77,6 +78,100 @@ func TestSum_Aggregate(t *testing.T) {
 			},
 			sumIndex: 20,
 			wantErr:  errs.ErrMergerInvalidAggregateColumnIndex,
+		},
+		{
+			name: "columnInfo为nullable类型",
+			input: [][]any{
+				{
+					sql.NullFloat64{
+						Float64: 2.2,
+						Valid:   true,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Valid: false,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Valid:   true,
+						Float64: 3.4,
+					},
+				},
+			},
+			sumIndex: 0,
+			wantVal:  5.6,
+		},
+		{
+			name: "所有列查出来的都为null",
+			input: [][]any{
+				{
+					sql.NullFloat64{
+						Valid: false,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Valid: false,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Valid: false,
+					},
+				},
+			},
+			sumIndex: 0,
+			wantVal: sql.NullFloat64{
+				Valid: false,
+			},
+		},
+		{
+			name: "所有列查出来的都不是null",
+			input: [][]any{
+				{
+					sql.NullFloat64{
+						Float64: 2.2,
+						Valid:   true,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Float64: 5.6,
+						Valid:   true,
+					},
+				},
+				{
+					sql.NullFloat64{
+						Valid:   true,
+						Float64: 3.4,
+					},
+				},
+			},
+			sumIndex: 0,
+			wantVal:  11.2,
+		},
+		{
+			name: "表示三者混合的情况",
+			input: [][]any{
+				{
+					sql.NullFloat64{
+						Float64: 2.2,
+						Valid:   true,
+					},
+				},
+				{
+					5.6,
+				},
+				{
+					sql.NullFloat64{
+						Valid: false,
+					},
+				},
+			},
+			sumIndex: 0,
+			wantVal:  7.8,
 		},
 	}
 	for _, tc := range testcases {

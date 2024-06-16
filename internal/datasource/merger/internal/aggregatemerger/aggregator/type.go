@@ -14,7 +14,12 @@
 
 package aggregator
 
-import "github.com/meoying/dbproxy/internal/datasource/merger"
+import (
+	"database/sql/driver"
+	"reflect"
+
+	"github.com/meoying/dbproxy/internal/datasource/merger"
+)
 
 type AggregateElement interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~float32 | ~float64
@@ -27,4 +32,25 @@ type Aggregator interface {
 	ColumnInfo() merger.ColumnInfo
 	// Name 聚合函数本身的名称, MIN/MAX/SUM/COUNT/AVG
 	Name() string
+}
+
+// nullableAggregator 处理查询到的nullable类型的数据，第一个返回值为 非null的数据 如果是sql.nullfloat64{value: 1.1,valid: true},返回的就是1.1,第二个返回值为value的kind
+func nullableAggregator(colsData [][]any, index int) ([][]any, reflect.Kind) {
+	notNullCols := make([][]any, 0, len(colsData))
+	var kind reflect.Kind
+	for _, colData := range colsData {
+		col := colData[index]
+		if reflect.TypeOf(col).Kind() == reflect.Struct {
+			maxVal, _ := col.(driver.Valuer).Value()
+			if maxVal != nil {
+				kind = reflect.TypeOf(maxVal).Kind()
+				colData[index] = maxVal
+				notNullCols = append(notNullCols, colData)
+			}
+		} else {
+			kind = reflect.TypeOf(col).Kind()
+			notNullCols = append(notNullCols, colData)
+		}
+	}
+	return notNullCols, kind
 }
