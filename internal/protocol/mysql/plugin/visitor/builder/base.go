@@ -2,10 +2,11 @@ package builder
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
-	"strings"
 )
 
 type Base struct {
@@ -22,7 +23,7 @@ func (b *Base) VisitTableName(ctx *parser.TableNameContext) any {
 
 func (b *Base) VisitFullId(ctx *parser.FullIdContext) any {
 	// 去除db.tab的.tab部分
-	for  len(ctx.GetChildren()) > 1 {
+	for len(ctx.GetChildren()) > 1 {
 		ctx.RemoveLastChild()
 	}
 	// 获取db.tab的 db部分的token

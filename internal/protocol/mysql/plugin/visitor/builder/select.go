@@ -1,9 +1,10 @@
 package builder
 
 import (
+	"strconv"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"strconv"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 )
 
 type Select struct {
-	Limit  int
-	Offset int
+	Limit         int
+	Offset        int
 	ColHasChanged bool
 	*Base
 }

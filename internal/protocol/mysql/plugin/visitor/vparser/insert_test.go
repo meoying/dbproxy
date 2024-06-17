@@ -1,10 +1,11 @@
 package vparser
 
 import (
+	"testing"
+
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestVisitor_Insert(t *testing.T) {

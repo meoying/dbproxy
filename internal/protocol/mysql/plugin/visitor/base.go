@@ -1,9 +1,10 @@
 package visitor
 
 import (
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"strconv"
 	"strings"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 )
 
 type BaseVisitor struct {

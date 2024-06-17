@@ -18,3 +18,6 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 
 echo "安装 goimports..."
 go install golang.org/x/tools/cmd/goimports@latest
+
+echo "下载子模块 antlr......如果失败请现在github上配置SSH Authentication Key"
+git submodule update --init --recursive

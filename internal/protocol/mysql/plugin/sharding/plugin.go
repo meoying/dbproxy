@@ -1,17 +1,18 @@
 package sharding
 
 import (
+	"log"
+
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
-	"log"
 )
 
 type Plugin struct {
-	ds        datasource.DataSource
-	algorithm sharding.Algorithm
+	ds         datasource.DataSource
+	algorithm  sharding.Algorithm
 	handlerMap map[string]NewHandlerFunc
 }
 
