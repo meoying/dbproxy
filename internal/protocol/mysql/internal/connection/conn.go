@@ -64,7 +64,8 @@ func (mc *Conn) Loop() error {
 		if err1 != nil {
 			return fmt.Errorf("读取客户端请求失败 %w", err)
 		}
-		ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
+		//ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
+		ctx := context.Background()
 		err1 = mc.onCmd(ctx, mc, pkt)
 		//cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
 		if err1 != nil {
