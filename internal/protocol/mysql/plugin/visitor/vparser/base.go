@@ -13,6 +13,7 @@ type BaseVal struct {
 	Data any
 }
 
+
 // 定义一些通用的解析方式
 type BaseVisitor struct {
 	visitor.BaseVisitor

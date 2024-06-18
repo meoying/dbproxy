@@ -47,7 +47,7 @@ func (b *BaseVisitor) VisitStringLiteral(ctx *parser.StringLiteralContext) any {
 }
 
 func (b *BaseVisitor) VisitBooleanLiteral(ctx *parser.BooleanLiteralContext) any {
-	return ctx.TRUE()
+	return ctx.TRUE() != nil
 }
 
 func (b *BaseVisitor) VisitDecimalLiteral(ctx *parser.DecimalLiteralContext) any {
