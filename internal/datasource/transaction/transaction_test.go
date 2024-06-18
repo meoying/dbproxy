@@ -145,7 +145,7 @@ func (s *TransactionSuite) initMock(t *testing.T) {
 }
 
 func (s *TransactionSuite) TestDBQuery() {
-	//s.mock.ExpectQuery("SELECT *").WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("value"))
+	// s.mock.ExpectQuery("SELECT *").WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("value"))
 	testCases := []struct {
 		name     string
 		tx       *transaction.Tx
@@ -283,28 +283,4 @@ func (s *TransactionSuite) TestDBExec() {
 
 func TestSingleSuite(t *testing.T) {
 	suite.Run(t, &TransactionSuite{})
-}
-
-type mockDB struct {
-	db *sql.DB
-}
-
-func (m *mockDB) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
-	return m.db.QueryContext(ctx, query.SQL, query.Args...)
-}
-
-func (m *mockDB) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
-	return m.db.ExecContext(ctx, query.SQL, query.Args...)
-}
-
-func (m *mockDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, error) {
-	tx, err := m.db.BeginTx(ctx, opts)
-	if err != nil {
-		return nil, err
-	}
-	return transaction.NewTx(tx), nil
-}
-
-func (m *mockDB) Close() error {
-	return m.db.Close()
 }

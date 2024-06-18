@@ -1,5 +1,3 @@
-
-
 package mysql
 
 import (
@@ -43,15 +41,16 @@ func (s *ServerTestSuite) TestIntTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
+	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
 	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err)
+	require.NoError(s.T(), err2)
 	require.NoError(s.T(), err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint any
 				err = rows.Scan(&id, &typeTinyint, &typeSmallint, &typeMediumint, &typeInt, &typeInteger, &typeBigint)
@@ -92,15 +91,16 @@ func (s *ServerTestSuite) TestFloatTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
+	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
 	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err)
+	require.NoError(s.T(), err2)
 	require.NoError(s.T(), err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal any
 				err = rows.Scan(&id, &typeFloat, &typeDouble, &typeDecimal, &typeNumeric, &typeReal)
@@ -143,15 +143,16 @@ func (s *ServerTestSuite) TestStringTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
+	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
 	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err)
+	require.NoError(s.T(), err2)
 	require.NoError(s.T(), err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit any
 				err = rows.Scan(&id, &typeChar, &typeVarchar, &typeTinytext, &typeText, &typeMediumtext, &typeLongtext, &typeEnum, &typeSet, &typeBinary, &typeVarbinary, &typeJson, &typeBit)
@@ -201,6 +202,7 @@ func (s *ServerTestSuite) TestDateTypes() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeDate, typeDatetime, typeTimestamp, typeTime, type_year any
 				err = rows.Scan(&id, &typeDate, &typeDatetime, &typeTimestamp, &typeTime, &type_year)
@@ -250,6 +252,7 @@ func (s *ServerTestSuite) TestGeographyTypes() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeGeometry, typeGeomcollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon any
 				err = rows.Scan(&id, &typeGeometry, &typeGeomcollection, &typeLinestring, &typeMultilinestring, &typePoint, &typeMultipoint, &typePolygon, &typeMultipolygon)
@@ -290,29 +293,31 @@ func (s *ServerTestSuite) TestFilePathTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
+	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
 	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err)
-	require.NoError(s.T(), err1)
+	t := s.T()
+	require.NoError(t, err2)
+	require.NoError(t, err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			rows, err := realDb.QueryContext(ctx, tc.sql)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
 				err = rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
+				require.NoError(t, err)
+				t.Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
 				tc.wantRes = []any{id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob}
 			}
 			rows, err = db.QueryContext(ctx, tc.sql)
-			require.NoError(s.T(), err)
+			require.NoError(t, err)
 			for rows.Next() {
 				var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
 				err = rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
+				require.NoError(t, err)
+				t.Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
 				res := []any{id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob}
 				assert.Equal(t, res, tc.wantRes)
 			}

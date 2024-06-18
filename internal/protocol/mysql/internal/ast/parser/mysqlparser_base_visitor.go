@@ -3,7 +3,6 @@
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
 
-
 type BaseMySqlParserVisitor struct {
 	*antlr.BaseParseTreeVisitor
 }

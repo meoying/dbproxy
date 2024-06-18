@@ -3,6 +3,8 @@ package sharding
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ecodeclub/ekit/list"
 	"github.com/ecodeclub/ekit/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -19,7 +21,6 @@ import (
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-	"strings"
 )
 
 var ErrUnsupportedTooComplexQuery = errors.New("暂未支持太复杂的查询")
@@ -52,7 +53,7 @@ func (s *SelectHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 			opts = append(opts, visitorBuilder.WithLimit(limit+offset, 0))
 		}
 		if idx > 0 {
-			opts  = append(opts,visitorBuilder.WithChanged())
+			opts = append(opts, visitorBuilder.WithChanged())
 		}
 		selectBuilder = visitorBuilder.NewSelect(dst.DB, dst.Table, opts...)
 		sql, err := selectBuilder.Build(s.ctx.ParsedQuery.Root)

@@ -67,14 +67,13 @@ func (i *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext)
 		Cols:      i.columns(ctx),
 	}
 
-
 	insertCtx := ctx.InsertStatementValue().(*parser.InsertStatementValueContext)
 	if insertCtx.VALUES() == nil && insertCtx.VALUE() == nil {
 		return BaseVal{
 			Err: errStmtMatch,
 		}
 	}
-	vv,astVals,err := i.visitInsertStatementValue(insertCtx, iVal.Cols)
+	vv, astVals, err := i.visitInsertStatementValue(insertCtx, iVal.Cols)
 	if err != nil {
 		return BaseVal{
 			Err: err,
@@ -87,20 +86,20 @@ func (i *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext)
 	}
 }
 
-func (i *InsertVisitor) visitInsertStatementValue(ctx *parser.InsertStatementValueContext, cols []string) ([]ValMap,[]*parser.ExpressionsWithDefaultsContext, error) {
+func (i *InsertVisitor) visitInsertStatementValue(ctx *parser.InsertStatementValueContext, cols []string) ([]ValMap, []*parser.ExpressionsWithDefaultsContext, error) {
 	exPressCtxs := ctx.AllExpressionsWithDefaults()
 	ans := make([]ValMap, 0, len(exPressCtxs))
-	astValues := make([]*parser.ExpressionsWithDefaultsContext,0,len(exPressCtxs))
+	astValues := make([]*parser.ExpressionsWithDefaultsContext, 0, len(exPressCtxs))
 	for _, expressCtx := range exPressCtxs {
 		eCtx := expressCtx.(*parser.ExpressionsWithDefaultsContext)
 		v, err := i.visitExpressionsWithDefaults(eCtx, cols)
 		if err != nil {
-			return nil,nil, err
+			return nil, nil, err
 		}
-		astValues = append(astValues,eCtx)
+		astValues = append(astValues, eCtx)
 		ans = append(ans, v)
 	}
-	return ans,astValues, nil
+	return ans, astValues, nil
 }
 
 func (i *InsertVisitor) visitExpressionsWithDefaults(ctx *parser.ExpressionsWithDefaultsContext, cols []string) (ValMap, error) {

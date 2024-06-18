@@ -78,7 +78,6 @@ func (i *Insert) newLRBracket(ctx *parser.InsertStatementValueContext) {
 	lrToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserLR_BRACKET, token.GetChannel(), token.GetStart(), token.GetStop())
 	lrToken.SetText("(")
 	ctx.AddTokenNode(lrToken)
-
 }
 
 func (i *Insert) newRRBracket(ctx *parser.InsertStatementValueContext) {

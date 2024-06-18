@@ -1,10 +1,11 @@
 package vparser
 
 import (
+	"strconv"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
-	"strconv"
 )
 
 type SelectVal struct {
@@ -267,15 +268,15 @@ func (b *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunction
 	var agg visitor.Aggregate
 	switch {
 	case aggCtx.AVG() != nil:
-		agg = visitor.NewAggregate(name,aggCtx.AVG().GetText())
+		agg = visitor.NewAggregate(name, aggCtx.AVG().GetText())
 	case aggCtx.MIN() != nil:
-		agg = visitor.NewAggregate(name,aggCtx.MIN().GetText())
+		agg = visitor.NewAggregate(name, aggCtx.MIN().GetText())
 	case aggCtx.MAX() != nil:
-		agg = visitor.NewAggregate(name,aggCtx.MAX().GetText())
+		agg = visitor.NewAggregate(name, aggCtx.MAX().GetText())
 	case aggCtx.SUM() != nil:
-		agg = visitor.NewAggregate(name,aggCtx.SUM().GetText())
+		agg = visitor.NewAggregate(name, aggCtx.SUM().GetText())
 	case aggCtx.COUNT() != nil:
-		agg = visitor.NewAggregate(name,aggCtx.COUNT().GetText())
+		agg = visitor.NewAggregate(name, aggCtx.COUNT().GetText())
 	}
 	if aggCtx.DISTINCT() != nil {
 		agg.Distinct = true

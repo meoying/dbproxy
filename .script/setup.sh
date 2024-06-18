@@ -1,6 +1,6 @@
-SOURCE_COMMIT=.github/pre-commit
+SOURCE_COMMIT=.script/pre-commit
 TARGET_COMMIT=.git/hooks/pre-commit
-SOURCE_PUSH=.github/pre-push
+SOURCE_PUSH=.script/pre-push
 TARGET_PUSH=.git/hooks/pre-push
 
 echo "设置 git pre-commit hooks..."
@@ -14,7 +14,10 @@ test -x $TARGET_PUSH || chmod +x $TARGET_PUSH
 test -x $TARGET_COMMIT || chmod +x $TARGET_COMMIT
 
 echo "安装 golangci-lint..."
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1
 
 echo "安装 goimports..."
 go install golang.org/x/tools/cmd/goimports@latest
+
+echo "下载子模块 antlr......如果失败请现在github上配置SSH Authentication Key"
+git submodule update --init --recursive
