@@ -30,7 +30,7 @@ func TestInsert_Build(t *testing.T) {
 					insertVal.AstValues[2],
 				})
 			},
-			wantSql: "INSERT INTO `user_db_1`.`user_tab_1` ( username , email ) VALUES ( 'john_doe' , 'john@example.com' ) , ( 'dm' , 'dm.@163.com' ) ; ",
+			wantSql: "INSERT INTO `user_db_1`.`user_tab_1` ( username , email ) VALUES ( 'john_doe','john@example.com' ) , ( 'dm','dm.@163.com' ) ; ",
 		},
 	}
 	for _, tc := range testcases {

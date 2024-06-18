@@ -10,8 +10,8 @@ import (
 )
 
 type Plugin struct {
-	ds        datasource.DataSource
-	algorithm sharding.Algorithm
+	ds         datasource.DataSource
+	algorithm  sharding.Algorithm
 	handlerMap map[string]NewHandlerFunc
 }
 
@@ -34,6 +34,7 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 		algorithm: algorithm,
 		handlerMap: map[string]NewHandlerFunc{
 			vparser.SelectSql: NewSelectHandler,
+			vparser.InsertSql: NewInsertBuilder,
 		},
 	}
 }
@@ -46,7 +47,10 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 		// 3. 调用 p.ds.Exec 或者 p.ds.Query
 		if next != nil {
-			next.Handle(ctx)
+			_, err := next.Handle(ctx)
+			if err != nil {
+				return nil, err
+			}
 		}
 		defer func() {
 			if r := recover(); r != nil {

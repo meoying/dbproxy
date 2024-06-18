@@ -9,16 +9,16 @@ type Insert struct {
 	*Base
 	astValues []*parser.ExpressionsWithDefaultsContext
 }
-func NewInsert(db, tab string,astValues []*parser.ExpressionsWithDefaultsContext)SqlBuilder {
+
+func NewInsert(db, tab string, astValues []*parser.ExpressionsWithDefaultsContext) SqlBuilder {
 	return &Insert{
 		Base: &Base{
-			db: db,
+			db:  db,
 			tab: tab,
 		},
 		astValues: astValues,
 	}
 }
-
 
 func (i *Insert) Build(ctx antlr.ParseTree) (string, error) {
 	err := i.VisitRoot(ctx.(*parser.RootContext))
@@ -26,7 +26,7 @@ func (i *Insert) Build(ctx antlr.ParseTree) (string, error) {
 		return "", err.(error)
 	}
 	sql := i.removeEof(ctx.GetText())
-	return sql,nil
+	return sql, nil
 }
 
 func (i *Insert) VisitRoot(ctx *parser.RootContext) any {
@@ -46,23 +46,20 @@ func (i *Insert) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	return i.VisitInsertStatement(insertStatementCtx)
 }
 
-func (i *Insert)VisitInsertStatement(ctx *parser.InsertStatementContext) any {
+func (i *Insert) VisitInsertStatement(ctx *parser.InsertStatementContext) any {
 	// 处理表名
 	i.VisitTableName(ctx.TableName().(*parser.TableNameContext))
 	// 处理值
 	return i.VisitInsertStatementValue(ctx.InsertStatementValue().(*parser.InsertStatementValueContext))
 }
 
-
-
-
-func (i *Insert)VisitInsertStatementValue(ctx *parser.InsertStatementValueContext) any {
+func (i *Insert) VisitInsertStatementValue(ctx *parser.InsertStatementValueContext) any {
 	// 将value或者values后面的所有数据都给删除
 	childCount := ctx.GetChildCount()
-	for i:=0;i<childCount-1;i++{
+	for i := 0; i < childCount-1; i++ {
 		ctx.RemoveLastChild()
 	}
-	for idx,v := range i.astValues {
+	for idx, v := range i.astValues {
 		if idx > 0 {
 			// 逗号
 			i.newComma(ctx)
@@ -76,26 +73,24 @@ func (i *Insert)VisitInsertStatementValue(ctx *parser.InsertStatementValueContex
 	}
 	return nil
 }
-func (i *Insert)newLRBracket(ctx *parser.InsertStatementValueContext) {
+func (i *Insert) newLRBracket(ctx *parser.InsertStatementValueContext) {
 	token := ctx.GetStop()
-	lrToken :=  antlr.NewCommonToken(token.GetSource(),parser.MySqlParserLR_BRACKET,token.GetChannel(),token.GetStart(),token.GetStop())
+	lrToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserLR_BRACKET, token.GetChannel(), token.GetStart(), token.GetStop())
 	lrToken.SetText("(")
 	ctx.AddTokenNode(lrToken)
-	return
+
 }
 
-func (i *Insert)newRRBracket(ctx *parser.InsertStatementValueContext) {
+func (i *Insert) newRRBracket(ctx *parser.InsertStatementValueContext) {
 	token := ctx.GetStop()
-	rrToken :=  antlr.NewCommonToken(token.GetSource(),parser.MySqlParserRR_BRACKET,token.GetChannel(),token.GetStart(),token.GetStop())
+	rrToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserRR_BRACKET, token.GetChannel(), token.GetStart(), token.GetStop())
 	rrToken.SetText(")")
 	ctx.AddTokenNode(rrToken)
-	return
 }
 
-func (i *Insert)newComma(ctx *parser.InsertStatementValueContext) {
+func (i *Insert) newComma(ctx *parser.InsertStatementValueContext) {
 	token := ctx.GetStop()
-	commaToken := antlr.NewCommonToken(token.GetSource(),parser.MySqlParserCOMMA,token.GetChannel(),token.GetStart(),token.GetStop())
+	commaToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserCOMMA, token.GetChannel(), token.GetStart(), token.GetStop())
 	commaToken.SetText(",")
 	ctx.AddTokenNode(commaToken)
-	return
 }
