@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
@@ -14,11 +15,12 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
 
+	"testing"
+
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type TestShardingPluginSuite struct {

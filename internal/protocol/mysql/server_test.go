@@ -1,5 +1,3 @@
-
-
 package mysql
 
 import (

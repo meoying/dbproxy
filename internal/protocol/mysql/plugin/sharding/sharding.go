@@ -2,6 +2,7 @@ package sharding
 
 import (
 	"context"
+
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
@@ -18,7 +19,7 @@ func (s *shardingBuilder) findDst(ctx context.Context, predicate visitor.Predica
 	}
 	return sharding.Response{
 		Dsts: s.algorithm.Broadcast(ctx),
-	},nil
+	}, nil
 }
 
 func (b *shardingBuilder) findDstByPredicate(ctx context.Context, pre visitor.Predicate) (sharding.Response, error) {

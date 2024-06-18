@@ -22,21 +22,19 @@ func NewAggregate(name string, fn string) Aggregate {
 		Fn:  fn,
 	}
 }
-func NewDistinctAggregate(name string, fn string)Aggregate {
+func NewDistinctAggregate(name string, fn string) Aggregate {
 	return Aggregate{
-		Arg: name,
-		Fn:  fn,
+		Arg:      name,
+		Fn:       fn,
 		Distinct: true,
 	}
 }
 
 func (a Aggregate) As(alias string) Aggregate {
 	return Aggregate{
-		Arg: a.Arg,
-		Fn:  a.Fn,
-		Alias: alias,
+		Arg:      a.Arg,
+		Fn:       a.Fn,
+		Alias:    alias,
 		Distinct: a.Distinct,
 	}
 }
-
-

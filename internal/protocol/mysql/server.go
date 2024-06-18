@@ -68,7 +68,7 @@ func (s *Server) Start() error {
 			}()
 			err2 := conn.Loop()
 			if err2 != nil {
-				s.logger.Error("退出命令处理循环 %w", err2)
+				s.logger.Error("退出命令处理循环 %w", "error", err2)
 			}
 		}()
 	}

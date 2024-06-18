@@ -16,7 +16,6 @@ type UpdateVisitor struct {
 	*BaseVisitor
 }
 
-
 func NewUpdateVisitor() SqlParser {
 	return &UpdateVisitor{
 		BaseVisitor: &BaseVisitor{},
@@ -27,7 +26,6 @@ func (u *UpdateVisitor) Name() string {
 	return "UpdateVisitor"
 }
 
-
 func (u *UpdateVisitor) Parse(ctx antlr.ParseTree) any {
 	return u.Visit(ctx)
 }
@@ -36,7 +34,6 @@ func (u *UpdateVisitor) Visit(tree antlr.ParseTree) any {
 	ctx := tree.(*parser.RootContext)
 	return u.VisitRoot(ctx)
 }
-
 
 func (u *UpdateVisitor) VisitRoot(ctx *parser.RootContext) any {
 	sqlStmts := ctx.GetChildren()[0]

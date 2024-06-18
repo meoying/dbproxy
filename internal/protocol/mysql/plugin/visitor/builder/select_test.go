@@ -1,9 +1,10 @@
 package builder
 
 import (
+	"testing"
+
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSelectBuilder_Build(t *testing.T) {

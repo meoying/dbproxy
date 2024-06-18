@@ -1,9 +1,10 @@
 package builder
 
 import (
+	"strconv"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"strconv"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 )
 
 type Select struct {
-	Limit  int
-	Offset int
+	Limit         int
+	Offset        int
 	ColHasChanged bool
 	*Base
 }
@@ -189,10 +190,7 @@ func (s *Select) VisitSelectFunctionElement(ctx *parser.SelectFunctionElementCon
 }
 
 func (s *Select) VisitAggregateWindowedFunction(ctx *parser.AggregateWindowedFunctionContext) any {
-	if ctx.AVG() != nil {
-		return true
-	}
-	return false
+	return ctx.AVG() != nil
 }
 
 func (s *Select) VisitFromClause(ctx *parser.FromClauseContext) any {
@@ -241,5 +239,4 @@ func (s *Select) newLimitAtomCtx(ctx *parser.LimitClauseContext, queryCtx *parse
 	decimapLiteralctx.AddTokenNode(decimalToken)
 	limitAtomCtx.AddChild(decimapLiteralctx)
 	ctx.AddChild(limitAtomCtx)
-	return
 }
