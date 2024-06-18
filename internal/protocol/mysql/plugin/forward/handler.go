@@ -20,13 +20,13 @@ func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	var err error
 	result := &plugin.Result{}
 	sqlStmt := ctx.ParsedQuery.SqlStatement()
-	switch sqlStmt.(type) {
+	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
-		err = f.handleTransaction(ctx, sqlStmt.(*parser.TransactionStatementContext))
+		err = f.handleTransaction(ctx, typ)
 		result.ChangeTransaction = true
 		return result, err
 	case *parser.DmlStatementContext:
-		return f.handleDml(ctx, sqlStmt.(*parser.DmlStatementContext))
+		return f.handleDml(ctx, typ)
 	}
 	return result, nil
 }

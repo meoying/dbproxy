@@ -47,7 +47,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 		// 3. 调用 p.ds.Exec 或者 p.ds.Query
 		if next != nil {
-			next.Handle(ctx)
+			_, _ = next.Handle(ctx)
 		}
 		defer func() {
 			if r := recover(); r != nil {

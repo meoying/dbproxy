@@ -14,14 +14,6 @@ type BaseVal struct {
 	Data any
 }
 
-func getTableName(tableCtx parser.ITableNameContext) string {
-	val := tableCtx.
-		FullId().
-		Uid(0).GetText()
-	return strings.Trim(val, "`")
-
-}
-
 // 定义一些通用的解析方式
 type BaseVisitor struct {
 	visitor.BaseVisitor

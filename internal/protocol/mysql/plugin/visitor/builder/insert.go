@@ -78,7 +78,6 @@ func (i *Insert) newLRBracket(ctx *parser.InsertStatementValueContext) {
 	lrToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserLR_BRACKET, token.GetChannel(), token.GetStart(), token.GetStop())
 	lrToken.SetText("(")
 	ctx.AddTokenNode(lrToken)
-	return
 }
 
 func (i *Insert) newRRBracket(ctx *parser.InsertStatementValueContext) {
@@ -86,7 +85,6 @@ func (i *Insert) newRRBracket(ctx *parser.InsertStatementValueContext) {
 	rrToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserRR_BRACKET, token.GetChannel(), token.GetStart(), token.GetStop())
 	rrToken.SetText(")")
 	ctx.AddTokenNode(rrToken)
-	return
 }
 
 func (i *Insert) newComma(ctx *parser.InsertStatementValueContext) {
@@ -94,5 +92,4 @@ func (i *Insert) newComma(ctx *parser.InsertStatementValueContext) {
 	commaToken := antlr.NewCommonToken(token.GetSource(), parser.MySqlParserCOMMA, token.GetChannel(), token.GetStart(), token.GetStop())
 	commaToken.SetText(",")
 	ctx.AddTokenNode(commaToken)
-	return
 }

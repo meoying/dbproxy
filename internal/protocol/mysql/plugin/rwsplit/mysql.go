@@ -37,7 +37,7 @@ func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 		if useMaster {
 			newCtx = masterslave.UseMaster(newCtx)
 		}
-		res, err := h.ds.Query(ctx, datasource.Query{
+		res, err := h.ds.Query(newCtx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
