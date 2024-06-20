@@ -18,7 +18,7 @@ func (prc *SelectElementsContext) GetText() string {
 	return getText(prc.BaseParserRuleContext)
 }
 
-func (prc *ExpressionsWithDefaultsContext)GetText()string {
+func (prc *ExpressionsWithDefaultsContext) GetText() string {
 	return getText(prc.BaseParserRuleContext)
 }
 
