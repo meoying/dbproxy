@@ -18,6 +18,10 @@ func (prc *SelectElementsContext) GetText() string {
 	return getText(prc.BaseParserRuleContext)
 }
 
+func (prc *ExpressionsWithDefaultsContext)GetText()string {
+	return getText(prc.BaseParserRuleContext)
+}
+
 func (prc *AggregateWindowedFunctionContext) GetText() string {
 	if prc.GetChildCount() == 0 {
 		return ""

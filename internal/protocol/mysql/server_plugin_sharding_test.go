@@ -14,6 +14,8 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
+	"strconv"
+	"strings"
 
 	"testing"
 
@@ -121,39 +123,64 @@ func (s *TestShardingPluginSuite) SetupSuite() {
 	}()
 }
 
-//func (s *TestShardingPluginSuite) TestSharding_Insert() {
-//	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
-//	require.NoError(s.T(), err)
-//	sql2 := "insert into order (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3);"
-//	_, err = db.Exec(sql2)
-//	require.NoError(s.T(), err)
-//	row, err := s.db.Query("select * from order_db_1.order_tab where id = 1;")
-//	require.NoError(s.T(), err)
-//	row2, err := s.db.Query("select * from order_db_0.order_tab where id = 2;")
-//	require.NoError(s.T(), err)
-//	order1, err := s.getOrder(row)
-//	require.NoError(s.T(), err)
-//	order2, err := s.getOrder(row2)
-//	require.NoError(s.T(), err)
-//	assert.Equal(s.T(), []Order{
-//		{
-//			UserId:  1,
-//			OrderId: 3,
-//			Content: "content",
-//			Account: 1.1,
-//		},
-//		{
-//			UserId:  2,
-//			OrderId: 4,
-//			Content: "content4",
-//			Account: 1.3,
-//		},
-//	}, []Order{
-//		order1,
-//		order2,
-//	})
-//
-//}
+func (s *TestShardingPluginSuite) TestSharding_Insert() {
+	testcases := []struct {
+		name  string
+		sql   string
+		after func(t *testing.T)
+	}{
+		{
+			name: "插入多条数据",
+			sql:  "INSERT INTO order (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
+			after: func(t *testing.T) {
+				rowList := s.getRowsFromTable([]int64{1, 2, 3})
+				// 表示每个库的数据
+				wantOrderList := [][]Order{
+					{
+						{
+							UserId:  3,
+							OrderId: 3,
+							Content: "content3",
+							Account: 1.3,
+						},
+					},
+					{
+						{
+							UserId:  1,
+							OrderId: 3,
+							Content: "content",
+							Account: 1.1,
+						},
+					},
+					{
+						{
+							UserId:  2,
+							OrderId: 4,
+							Content: "content4",
+							Account: 1.3,
+						},
+					},
+				}
+				for idx, row := range rowList {
+					orders := s.getColsFromRows(row)
+					wantOrders := wantOrderList[idx]
+					assert.ElementsMatch(t, wantOrders, orders)
+				}
+			},
+		},
+	}
+	for _, tc := range testcases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/")
+			require.NoError(s.T(), err)
+			_, err = db.Exec(tc.sql)
+			tc.after(t)
+			// 清理数据
+			s.clearTable()
+		})
+	}
+
+}
 
 func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 	//初始化数据
@@ -418,6 +445,22 @@ func (s *TestShardingPluginSuite) clearTable() {
 	}
 }
 
+func (s *TestShardingPluginSuite) getRowsFromTable(ids []int64) []*sql.Rows {
+	idStr := make([]string, 0, len(ids))
+	for _, id := range ids {
+		idStr = append(idStr, strconv.FormatInt(id, 10))
+	}
+	rowsList := make([]*sql.Rows, 0, 3)
+	for i := 0; i < 3; i++ {
+		query := fmt.Sprintf("select * from order_db_%d.order_tab where `user_id` in (%s)", i, strings.Join(idStr, ","))
+		rows, err := s.db.Query(query)
+		require.NoError(s.T(), err)
+		rowsList = append(rowsList, rows)
+	}
+	return rowsList
+
+}
+
 func (s *TestShardingPluginSuite) execSql(sqls []string) {
 	for _, vsql := range sqls {
 		_, err := s.db.Exec(vsql)
@@ -434,7 +477,6 @@ func (s *TestShardingPluginSuite) getOrder(row *sql.Rows) (Order, error) {
 		}
 	}
 	return order, nil
-
 }
 
 func (s *TestShardingPluginSuite) getColsFromRows(rows *sql.Rows) []Order {
