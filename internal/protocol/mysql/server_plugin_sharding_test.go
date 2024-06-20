@@ -288,6 +288,66 @@ func (s *TestShardingPluginSuite) TestSharding_Update() {
 	}
 }
 
+func (s *TestShardingPluginSuite) TestSharding_Delete() {
+	testcases := []struct {
+		name   string
+		sql    string
+		before func(t *testing.T)
+		after  func(t *testing.T)
+	}{
+		{
+			name: "删除",
+			sql:  "DELETE FROM order WHERE user_id = 1;",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+				}
+				s.execSql(sqls)
+			},
+			after: func(t *testing.T) {
+				rowList := s.getRowsFromTable([]int64{1, 2, 3})
+				wantOrderList := [][]Order{
+					{
+						{
+							UserId:  3,
+							OrderId: 1,
+							Content: "content1",
+							Account: 1.1,
+						},
+					},
+					{},
+					{
+						{
+							UserId:  2,
+							OrderId: 4,
+							Content: "content4",
+							Account: 1.3,
+						},
+					},
+				}
+				for idx, row := range rowList {
+					orders := s.getColsFromRows(row)
+					wantOrders := wantOrderList[idx]
+					assert.ElementsMatch(t, wantOrders, orders)
+				}
+			},
+		},
+	}
+	for _, tc := range testcases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			tc.before(t)
+			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/")
+			require.NoError(s.T(), err)
+			_, err = db.Exec(tc.sql)
+			tc.after(t)
+			// 清理数据
+			s.clearTable()
+		})
+	}
+}
+
 func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 	//初始化数据
 	testcases := []struct {

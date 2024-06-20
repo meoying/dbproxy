@@ -9,7 +9,7 @@ type Update struct {
 	*Base
 }
 
-func NewUpdate(db, tab string, opts ...SelectOption) *Update {
+func NewUpdate(db, tab string) *Update {
 	return &Update{
 		Base: &Base{
 			db:  db,
