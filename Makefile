@@ -9,7 +9,7 @@ setup:
 
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run -c ./.script/.golangci.yml
 
 .PHONY: fmt
 fmt:

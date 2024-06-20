@@ -1,24 +1,13 @@
 package log
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"log/slog"
-	"os"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 var (
 	ErrNotImplementQueryerContext = errors.New("未实现driver.QueryerContext")
 )
-
-func init() {
-	d := &mysql.MySQLDriver{}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	sql.Register("mysql", newDriver(d, d, NewSLogger(logger)))
-}
 
 type driverWrapper struct {
 	driver        driver.Driver

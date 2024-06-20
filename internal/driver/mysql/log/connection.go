@@ -8,7 +8,6 @@ import (
 
 type connWrapper struct {
 	conn   driver.Conn
-	dq     driver.QueryerContext
 	logger Logger
 }
 
