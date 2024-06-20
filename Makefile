@@ -31,8 +31,8 @@ e2e:
 
 .PHONY: e2e_up
 e2e_up:
-	docker compose -f .script/integration_test_compose.yml up -d
+	docker compose -p dbproxy -f .script/integration_test_compose.yml up -d
 
 .PHONY: e2e_down
 e2e_down:
-	docker compose -f .script/integration_test_compose.yml down
+	docker compose -p dbproxy -f .script/integration_test_compose.yml down -v

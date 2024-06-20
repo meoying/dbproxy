@@ -7,6 +7,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"strconv"
+	"strings"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
@@ -14,8 +17,6 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"strings"
 
 	"testing"
 
