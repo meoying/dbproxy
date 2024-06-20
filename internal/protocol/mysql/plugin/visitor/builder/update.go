@@ -41,7 +41,7 @@ func (u *Update) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 func (u *Update) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	updateStatementCtx := ctx.UpdateStatement()
 	if updateStatementCtx.SingleUpdateStatement() == nil {
-		return errUnsupportedDeleteSql
+		return errUnsupportedUpdateSql
 	}
 
 	return u.VisitSingleUpdateStatement(updateStatementCtx.SingleUpdateStatement().(*parser.SingleUpdateStatementContext))
