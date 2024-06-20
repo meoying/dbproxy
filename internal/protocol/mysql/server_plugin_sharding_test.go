@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"strconv"
 	"strings"
@@ -66,6 +67,7 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 }
 
 func (s *TestShardingPluginSuite) SetupSuite() {
+	time.Sleep(10 * time.Second)
 	dsn := "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := sql.Open("mysql", dsn)
 	require.NoError(s.T(), err)
