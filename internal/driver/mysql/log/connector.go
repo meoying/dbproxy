@@ -11,15 +11,21 @@ type connectorWrapper struct {
 	logger    Logger
 }
 
+func newConnectorWrapper(connector driver.Connector, d driver.Driver, logger Logger) driver.Connector {
+	return &connectorWrapper{connector: connector, driver: d, logger: logger}
+}
+
 func (c *connectorWrapper) Connect(ctx context.Context) (driver.Conn, error) {
 	con, err := c.connector.Connect(ctx)
 	if err != nil {
 		c.logger.Errorf("Failed to Connect: %v", err)
 		return nil, err
 	}
+	c.logger.Logf("Connect\n")
 	return &connWrapper{conn: con, logger: c.logger}, err
 }
 
 func (c *connectorWrapper) Driver() driver.Driver {
+	c.logger.Logf("Driver\n")
 	return c.driver
 }

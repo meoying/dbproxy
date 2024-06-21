@@ -99,23 +99,6 @@ type driverTestSuite struct {
 	suite.Suite
 }
 
-// Connector 测试用例
-func (s *driverTestSuite) TestConnector_Connect_Logf() {
-
-}
-
-func (s *driverTestSuite) TestConnector_Connect_Errorf() {
-
-}
-
-func (s *driverTestSuite) TestConnector_Driver_Logf() {
-
-}
-
-func (s *driverTestSuite) TestConnector_Driver_Errorf() {
-
-}
-
 // Stmt 测试用例
 func (s *driverTestSuite) TestStmt_Exec_Logf() {
 	t := s.T()
