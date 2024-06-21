@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"testing"
 
@@ -20,7 +21,11 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 		mockConnector.EXPECT().Connect(gomock.Any()).Return(mockConn, nil).Times(1)
 		mockDriver := mocks.NewMockDriver(ctrl)
 
-		conn, err := newConnectorWrapper(mockConnector, mockDriver, newMockLogLogger(ctrl)).Connect(context.Background())
+		var connector driver.Connector = mockConnector
+		var d driver.Driver = mockDriver
+		var logger Logger = newMockLogLogger(ctrl)
+		var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
+		conn, err := r.Connect(context.Background())
 		assert.NoError(t, err)
 		assert.NotNil(t, conn)
 	})
@@ -34,7 +39,11 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 		mockConnector.EXPECT().Connect(gomock.Any()).Return(nil, expectedError).Times(1)
 		mockDriver := mocks.NewMockDriver(ctrl)
 
-		conn, err := newConnectorWrapper(mockConnector, mockDriver, newMockErrorLogger(ctrl)).Connect(context.Background())
+		var connector driver.Connector = mockConnector
+		var d driver.Driver = mockDriver
+		var logger Logger = newMockErrorLogger(ctrl)
+		var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
+		conn, err := r.Connect(context.Background())
 		assert.Error(t, err)
 		assert.Nil(t, conn)
 	})
@@ -47,6 +56,10 @@ func TestConnectorWrapper_Driver(t *testing.T) {
 	mockConnector := mocks.NewMockConnector(ctrl)
 	mockDriver := mocks.NewMockDriver(ctrl)
 
-	wrappedConnector := newConnectorWrapper(mockConnector, mockDriver, newMockLogLogger(ctrl))
+	var connector driver.Connector = mockConnector
+	var d driver.Driver = mockDriver
+	var logger Logger = newMockLogLogger(ctrl)
+	var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
+	wrappedConnector := r
 	assert.Equal(t, mockDriver, wrappedConnector.Driver())
 }

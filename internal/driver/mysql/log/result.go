@@ -9,10 +9,6 @@ type resultWrapper struct {
 	logger Logger
 }
 
-func newResultWrapper(result driver.Result, logger Logger) *resultWrapper {
-	return &resultWrapper{result: result, logger: logger}
-}
-
 func (r *resultWrapper) LastInsertId() (int64, error) {
 	id, err := r.result.LastInsertId()
 	if err != nil {

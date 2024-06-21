@@ -2,11 +2,6 @@ package log
 
 import (
 	"database/sql/driver"
-	"errors"
-)
-
-var (
-	ErrNotImplementQueryerContext = errors.New("未实现driver.QueryerContext")
 )
 
 type driverWrapper struct {

@@ -19,7 +19,9 @@ func TestRowsWrapper_Close(t *testing.T) {
 		rows := mocks.NewMockRows(ctrl)
 		rows.EXPECT().Close().Return(nil).Times(1)
 
-		err := newRowsWrapper(rows, newMockLogLogger(ctrl)).Close()
+		var rows2 driver.Rows = rows
+		var logger Logger = newMockLogLogger(ctrl)
+		err := (&rowsWrapper{rows: rows2, logger: logger}).Close()
 		assert.NoError(t, err)
 	})
 
@@ -31,7 +33,9 @@ func TestRowsWrapper_Close(t *testing.T) {
 		expectedError := errors.New("mock close error")
 		rows.EXPECT().Close().Return(expectedError).Times(1)
 
-		err := newRowsWrapper(rows, newMockErrorLogger(ctrl)).Close()
+		var rows2 driver.Rows = rows
+		var logger Logger = newMockErrorLogger(ctrl)
+		err := (&rowsWrapper{rows: rows2, logger: logger}).Close()
 		assert.Error(t, err)
 	})
 }
@@ -45,7 +49,9 @@ func TestRowsWrapper_Columns(t *testing.T) {
 		expectedColumns := []string{"col1", "col2"}
 		rows.EXPECT().Columns().Return(expectedColumns).Times(1)
 
-		columns := newRowsWrapper(rows, newMockLogLogger(ctrl)).Columns()
+		var rows2 driver.Rows = rows
+		var logger Logger = newMockLogLogger(ctrl)
+		columns := (&rowsWrapper{rows: rows2, logger: logger}).Columns()
 		assert.Equal(t, expectedColumns, columns)
 	})
 }
@@ -60,7 +66,9 @@ func TestRowsWrapper_Next(t *testing.T) {
 		dest := make([]driver.Value, 2)
 		rows.EXPECT().Next(dest).Return(nil).Times(1)
 
-		err := newRowsWrapper(rows, newMockLogLogger(ctrl)).Next(dest)
+		var rows2 driver.Rows = rows
+		var logger Logger = newMockLogLogger(ctrl)
+		err := (&rowsWrapper{rows: rows2, logger: logger}).Next(dest)
 		assert.NoError(t, err)
 	})
 
@@ -73,7 +81,9 @@ func TestRowsWrapper_Next(t *testing.T) {
 		expectedError := errors.New("mock next error")
 		rows.EXPECT().Next(dest).Return(expectedError).Times(1)
 
-		err := newRowsWrapper(rows, newMockErrorLogger(ctrl)).Next(dest)
+		var rows2 driver.Rows = rows
+		var logger Logger = newMockErrorLogger(ctrl)
+		err := (&rowsWrapper{rows: rows2, logger: logger}).Next(dest)
 		assert.Error(t, err)
 	})
 }

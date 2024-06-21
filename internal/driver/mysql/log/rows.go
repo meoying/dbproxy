@@ -10,10 +10,6 @@ type rowsWrapper struct {
 	logger Logger
 }
 
-func newRowsWrapper(rows driver.Rows, logger Logger) *rowsWrapper {
-	return &rowsWrapper{rows: rows, logger: logger}
-}
-
 func (r *rowsWrapper) Columns() []string {
 	cs := r.rows.Columns()
 	r.logger.Logf("Columns: %v", cs)
@@ -46,7 +42,7 @@ type rowsColumnTypePrecisionScaleWrapper struct {
 }
 
 func newRowsColumnTypePrecisionScaleWrapper(r driver.RowsColumnTypePrecisionScale, logger Logger) *rowsColumnTypePrecisionScaleWrapper {
-	return &rowsColumnTypePrecisionScaleWrapper{rowsWrapper: newRowsWrapper(r, logger), RowsColumnTypePrecisionScale: r}
+	return &rowsColumnTypePrecisionScaleWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypePrecisionScale: r}
 }
 
 func (r *rowsColumnTypePrecisionScaleWrapper) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
@@ -60,7 +56,7 @@ type rowsColumnTypeNullableWrapper struct {
 }
 
 func newRowsColumnTypeNullableWrapper(r driver.RowsColumnTypeNullable, logger Logger) *rowsColumnTypeNullableWrapper {
-	return &rowsColumnTypeNullableWrapper{rowsWrapper: newRowsWrapper(r, logger), RowsColumnTypeNullable: r}
+	return &rowsColumnTypeNullableWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeNullable: r}
 }
 
 func (r *rowsColumnTypeNullableWrapper) ColumnTypeNullable(index int) (nullable, ok bool) {
@@ -74,7 +70,7 @@ type rowsNextResultSetWrapper struct {
 }
 
 func newRowsNextResultSetWrapper(r driver.RowsNextResultSet, logger Logger) *rowsNextResultSetWrapper {
-	return &rowsNextResultSetWrapper{rowsWrapper: newRowsWrapper(r, logger), RowsNextResultSet: r}
+	return &rowsNextResultSetWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsNextResultSet: r}
 }
 
 func (r *rowsNextResultSetWrapper) HasNextResultSet() bool {
@@ -98,7 +94,7 @@ type rowsColumnTypeScanTypeWrapper struct {
 }
 
 func newRowsColumnTypeScanTypeWrapper(r driver.RowsColumnTypeScanType, logger Logger) *rowsColumnTypeScanTypeWrapper {
-	return &rowsColumnTypeScanTypeWrapper{rowsWrapper: newRowsWrapper(r, logger), RowsColumnTypeScanType: r}
+	return &rowsColumnTypeScanTypeWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeScanType: r}
 }
 
 func (r *rowsColumnTypeScanTypeWrapper) ColumnTypeScanType(index int) reflect.Type {
@@ -112,7 +108,7 @@ type rowsColumnTypeDatabaseTypeNameWrapper struct {
 }
 
 func newRowsColumnTypeDatabaseTypeNameWrapper(r driver.RowsColumnTypeDatabaseTypeName, logger Logger) *rowsColumnTypeDatabaseTypeNameWrapper {
-	return &rowsColumnTypeDatabaseTypeNameWrapper{rowsWrapper: newRowsWrapper(r, logger), RowsColumnTypeDatabaseTypeName: r}
+	return &rowsColumnTypeDatabaseTypeNameWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeDatabaseTypeName: r}
 }
 
 func (r *rowsColumnTypeDatabaseTypeNameWrapper) ColumnTypeDatabaseTypeName(index int) string {

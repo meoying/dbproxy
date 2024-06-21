@@ -1,6 +1,7 @@
 package log
 
 import (
+	"database/sql/driver"
 	"errors"
 	"testing"
 
@@ -18,7 +19,9 @@ func TestResultWrapper_LastInsertId(t *testing.T) {
 		mockRes := mocks.NewMockResult(ctrl)
 		mockRes.EXPECT().LastInsertId().Return(int64(1), nil).Times(1)
 
-		id, err := newResultWrapper(mockRes, newMockLogLogger(ctrl)).LastInsertId()
+		var result driver.Result = mockRes
+		var logger Logger = newMockLogLogger(ctrl)
+		id, err := (&resultWrapper{result: result, logger: logger}).LastInsertId()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), id)
 	})
@@ -31,7 +34,9 @@ func TestResultWrapper_LastInsertId(t *testing.T) {
 		expectedError := errors.New("mock LastInsertId error")
 		mockRes.EXPECT().LastInsertId().Return(int64(0), expectedError).Times(1)
 
-		id, err := newResultWrapper(mockRes, newMockErrorLogger(ctrl)).LastInsertId()
+		var result driver.Result = mockRes
+		var logger Logger = newMockErrorLogger(ctrl)
+		id, err := (&resultWrapper{result: result, logger: logger}).LastInsertId()
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), id)
 	})
@@ -46,7 +51,9 @@ func TestResultWrapper_RowsAffected(t *testing.T) {
 		mockRes := mocks.NewMockResult(ctrl)
 		mockRes.EXPECT().RowsAffected().Return(int64(10), nil).Times(1)
 
-		rows, err := newResultWrapper(mockRes, newMockLogLogger(ctrl)).RowsAffected()
+		var result driver.Result = mockRes
+		var logger Logger = newMockLogLogger(ctrl)
+		rows, err := (&resultWrapper{result: result, logger: logger}).RowsAffected()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(10), rows)
 	})
@@ -59,7 +66,9 @@ func TestResultWrapper_RowsAffected(t *testing.T) {
 		expectedError := errors.New("mock RowsAffected error")
 		mockRes.EXPECT().RowsAffected().Return(int64(0), expectedError).Times(1)
 
-		rows, err := newResultWrapper(mockRes, newMockErrorLogger(ctrl)).RowsAffected()
+		var result driver.Result = mockRes
+		var logger Logger = newMockErrorLogger(ctrl)
+		rows, err := (&resultWrapper{result: result, logger: logger}).RowsAffected()
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rows)
 	})
