@@ -1,20 +1,16 @@
 package log
 
-import "database/sql/driver"
+import (
+	"database/sql/driver"
+)
 
 type resultWrapper struct {
 	result driver.Result
 	logger Logger
 }
 
-func (r *resultWrapper) AllRowsAffected() []int64 {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (r *resultWrapper) AllLastInsertIds() []int64 {
-	// TODO implement me
-	panic("implement me")
+func newResultWrapper(result driver.Result, logger Logger) *resultWrapper {
+	return &resultWrapper{result: result, logger: logger}
 }
 
 func (r *resultWrapper) LastInsertId() (int64, error) {
