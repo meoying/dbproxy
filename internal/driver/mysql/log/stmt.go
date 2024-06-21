@@ -61,5 +61,5 @@ func (s *stmtWrapper) Query(args []driver.Value) (driver.Rows, error) {
 		s.logger.Errorf("Failed to Query statement: %v", err)
 		return nil, err
 	}
-	return &rowsWrapper{rows: rows, logger: s.logger}, nil
+	return newRowsWrapper(rows, s.logger), nil
 }

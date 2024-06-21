@@ -11,9 +11,21 @@ type connWrapper struct {
 	logger Logger
 }
 
+func newConnWrapper(conn driver.Conn, logger Logger) (driver.Conn, error) {
+	if _, ok := conn.(driver.QueryerContext); !ok {
+		return nil, fmt.Errorf("%w", ErrNotImplementQueryerContext)
+	}
+	return &connWrapper{conn: conn, logger: logger}, nil
+}
+
 func (c *connWrapper) Ping(ctx context.Context) error {
-	// TODO implement me
-	panic("implement me")
+	err := c.conn.(driver.Pinger).Ping(ctx)
+	if err != nil {
+		c.logger.Errorf("failed to ping: %v", err)
+		return err
+	}
+	c.logger.Logf("successfully ping")
+	return nil
 }
 
 func (c *connWrapper) Exec(query string, args []driver.Value) (driver.Result, error) {
@@ -90,12 +102,7 @@ func (c *connWrapper) Begin() (driver.Tx, error) {
 }
 
 func (c *connWrapper) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
-	qc, ok := c.conn.(driver.QueryerContext)
-	if !ok {
-		c.logger.Errorf("The underlying connection does not implement QueryerContext")
-		return nil, fmt.Errorf("%w", ErrNotImplementQueryerContext)
-	}
-	rows, err := qc.QueryContext(ctx, query, args)
+	rows, err := c.conn.(driver.QueryerContext).QueryContext(ctx, query, args)
 	if err != nil {
 		c.logger.Errorf("Failed to execute QueryContext: %v", err)
 		return nil, err

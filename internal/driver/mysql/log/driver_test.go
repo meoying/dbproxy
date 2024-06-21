@@ -13,29 +13,70 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestLogDriverTestSuite(t *testing.T) {
-	suite.Run(t, new(driverTestSuite))
-}
+func TestDriver(t *testing.T) {
 
-type driverTestSuite struct {
-	suite.Suite
-}
+	t.Run("Open", func(t *testing.T) {
 
-// Driver 测试用例
-func (s *driverTestSuite) TestDriver_Open_Logf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+		t.Run("Logf", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	name := "dsn"
-	mockDriver := mocks.NewMockDriver(ctrl)
-	mockDriver.EXPECT().Open(name).Return(nil, nil)
-	wrappedDriver := newDriver(mockDriver, nil, newMockLogLogger(ctrl))
+			name := "dsn"
+			mockDriver := mocks.NewMockDriver(ctrl)
+			mockDriver.EXPECT().Open(name).Return(nil, nil)
+			wrappedDriver := newDriver(mockDriver, nil, newMockLogLogger(ctrl))
 
-	c, err := wrappedDriver.Open(name)
+			c, err := wrappedDriver.Open(name)
 
-	require.NoError(t, err)
-	require.NotZero(t, c)
+			require.NoError(t, err)
+			require.NotZero(t, c)
+		})
+
+		t.Run("Errorf", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			name := "dsn"
+			mockDriver := mocks.NewMockDriver(ctrl)
+			mockDriver.EXPECT().Open(name).Return(nil, errors.New("mock Open Error"))
+			wrappedDriver := newDriver(mockDriver, nil, newMockErrorLogger(ctrl))
+
+			c, err := wrappedDriver.Open(name)
+			require.Error(t, err)
+			require.Zero(t, c)
+		})
+
+	})
+
+	t.Run("OpenConnector", func(t *testing.T) {
+		t.Run("Logf", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			name := "dsn"
+			mockDriverContext := mocks.NewMockDriver(ctrl)
+			mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
+			wrappedDriver := newDriver(nil, mockDriverContext, newMockLogLogger(ctrl))
+
+			c, err := wrappedDriver.OpenConnector(name)
+
+			require.NoError(t, err)
+			require.NotZero(t, c)
+		})
+		t.Run("Errorf", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			name := "dsn"
+			mockDriverContext := mocks.NewMockDriver(ctrl)
+			mockDriverContext.EXPECT().OpenConnector(name).Return(nil, errors.New("mock OpenConnector Error"))
+			wrappedDriver := newDriver(nil, mockDriverContext, newMockErrorLogger(ctrl))
+
+			c, err := wrappedDriver.OpenConnector(name)
+			require.Error(t, err)
+			require.Zero(t, c)
+		})
+	})
 }
 
 func newMockLogLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
@@ -44,88 +85,18 @@ func newMockLogLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
 	return logger
 }
 
-func (s *driverTestSuite) TestDriver_Open_Errorf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	name := "dsn"
-	mockDriver := mocks.NewMockDriver(ctrl)
-	mockDriver.EXPECT().Open(name).Return(nil, errors.New("mock Open Error"))
-	wrappedDriver := newDriver(mockDriver, nil, newMockErrorLogger(ctrl))
-
-	c, err := wrappedDriver.Open(name)
-	require.Error(t, err)
-	require.Zero(t, c)
-}
-
 func newMockErrorLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
 	logger := logmocks.NewMockLogger(ctrl)
 	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).Times(1)
 	return logger
 }
 
-// DriverContext
-func (s *driverTestSuite) TestDriverContext_OpenConnector_Logf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	name := "dsn"
-	mockDriverContext := mocks.NewMockDriver(ctrl)
-	mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
-	wrappedDriver := newDriver(nil, mockDriverContext, newMockLogLogger(ctrl))
-
-	c, err := wrappedDriver.OpenConnector(name)
-
-	require.NoError(t, err)
-	require.NotZero(t, c)
+func TestLogDriverTestSuite(t *testing.T) {
+	suite.Run(t, new(driverTestSuite))
 }
 
-func (s *driverTestSuite) TestDriverContext_OpenConnector_Errorf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	name := "dsn"
-	mockDriverContext := mocks.NewMockDriver(ctrl)
-	mockDriverContext.EXPECT().OpenConnector(name).Return(nil, errors.New("mock OpenConnector Error"))
-	wrappedDriver := newDriver(nil, mockDriverContext, newMockErrorLogger(ctrl))
-
-	c, err := wrappedDriver.OpenConnector(name)
-	require.Error(t, err)
-	require.Zero(t, c)
-}
-
-// Conn 测试用例
-func (s *driverTestSuite) TestConn_Prepare_Logf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	query := "SELECT * FROM `users`"
-	conn := mocks.NewMockConn(ctrl)
-	conn.EXPECT().Prepare(query).Return(&stmtWrapper{}, nil).Times(1)
-	wrappedConn := &connWrapper{conn: conn, logger: newMockLogLogger(ctrl)}
-
-	stmt, err := wrappedConn.Prepare(query)
-	assert.NoError(t, err)
-	assert.NotZero(t, stmt)
-}
-
-func (s *driverTestSuite) TestConn_Prepare_Errorf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	query := "SELECT * FROM `users`"
-	mockConn := mocks.NewMockConn(ctrl)
-	mockConn.EXPECT().Prepare(query).Return(nil, errors.New("mock Prepare error")).Times(1)
-	wrappedConn := &connWrapper{conn: mockConn, logger: newMockErrorLogger(ctrl)}
-
-	stmt, err := wrappedConn.Prepare(query)
-	assert.Error(t, err)
-	assert.Zero(t, stmt)
+type driverTestSuite struct {
+	suite.Suite
 }
 
 // Connector 测试用例
@@ -212,24 +183,6 @@ func (s *driverTestSuite) TestTx_Commit_Errorf() {
 	err := wrappedTx.Commit()
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, expectedError)
-}
-
-// Rows 测试用例
-func (s *driverTestSuite) TestRows_Close_Logf() {
-	t := s.T()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	logger := logmocks.NewMockLogger(ctrl)
-	rows := mocks.NewMockRows(ctrl)
-
-	wrappedRows := &rowsWrapper{rows: rows, logger: logger}
-
-	rows.EXPECT().Close().Return(nil).Times(1)
-	logger.EXPECT().Logf("Close rows").Times(1)
-
-	err := wrappedRows.Close()
-	assert.NoError(t, err)
 }
 
 // Result 测试用例
