@@ -3,14 +3,15 @@ package sharding
 import (
 	"context"
 	"database/sql"
+	"sync"
+
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"go.uber.org/multierr"
-	"sync"
 )
 
-//  几个dml语句共有的逻辑执行逻辑
-func exec(ctx context.Context, db datasource.DataSource,qs []sharding.Query)sharding.Result  {
+// 几个dml语句共有的逻辑执行逻辑
+func exec(ctx context.Context, db datasource.DataSource, qs []sharding.Query) sharding.Result {
 	errList := make([]error, len(qs))
 	resList := make([]sql.Result, len(qs))
 	var wg sync.WaitGroup
