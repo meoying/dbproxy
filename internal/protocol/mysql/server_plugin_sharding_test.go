@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
+	logdriver "github.com/meoying/dbproxy/internal/driver/mysql/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
 
@@ -67,7 +67,7 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 
 func (s *TestShardingPluginSuite) SetupSuite() {
 	dsn := "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := sql.Open("mysql", dsn)
+	db, err := openDB(dsn)
 	require.NoError(s.T(), err)
 	// 创建db
 	err = s.createDatabase(db, "order_db_0")
@@ -80,11 +80,11 @@ func (s *TestShardingPluginSuite) SetupSuite() {
 	dsn1 := "root:root@tcp(127.0.0.1:13306)/order_db_1?charset=utf8mb4&parseTime=True&loc=Local"
 	dsn2 := "root:root@tcp(127.0.0.1:13306)/order_db_2?charset=utf8mb4&parseTime=True&loc=Local"
 	// 创建表
-	db1, err := sql.Open("mysql", dsn0)
+	db1, err := openDB(dsn0)
 	require.NoError(s.T(), err)
-	db2, err := sql.Open("mysql", dsn1)
+	db2, err := openDB(dsn1)
 	require.NoError(s.T(), err)
-	db3, err := sql.Open("mysql", dsn2)
+	db3, err := openDB(dsn2)
 	require.NoError(s.T(), err)
 	err = s.createTable(db1, "order_tab")
 	require.NoError(s.T(), err)
@@ -172,7 +172,7 @@ func (s *TestShardingPluginSuite) TestSharding_Insert() {
 	}
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/")
+			db, err := openDB("root:root@tcp(localhost:8307)/")
 			require.NoError(s.T(), err)
 			_, err = db.Exec(tc.sql)
 			tc.after(t)
@@ -184,7 +184,7 @@ func (s *TestShardingPluginSuite) TestSharding_Insert() {
 }
 
 func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
-	//初始化数据
+	// 初始化数据
 	testcases := []struct {
 		name string
 		// 初始化数据
@@ -425,7 +425,7 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			tc.before(t)
-			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/mysql")
+			db, err := openDB("root:root@tcp(localhost:8307)/mysql")
 			require.NoError(t, err)
 			// 使用主库查找
 			rows, err := db.QueryContext(context.Background(), tc.sql)
@@ -498,4 +498,8 @@ func (s *TestShardingPluginSuite) MasterSlavesMysqlDB(db *sql.DB) *masterslave.M
 
 func TestTestShardingPluginSuite(t *testing.T) {
 	suite.Run(t, new(TestShardingPluginSuite))
+}
+
+func openDB(dsn string) (*sql.DB, error) {
+	return logdriver.Open(dsn)
 }
