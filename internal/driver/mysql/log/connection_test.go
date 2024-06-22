@@ -104,7 +104,7 @@ func TestConnPrepareContextWrapper_PrepareContext(t *testing.T) {
 		query := "SELECT * FROM `users`"
 		conn := mocks.NewMockConn(ctrl)
 		conn.EXPECT().PrepareContext(gomock.Any(), query).Return(&stmtWrapper{}, nil).Times(1)
-		wrappedConn := &connPrepareContextWrapper{ConnPrepareContext: conn, logger: newMockLogLogger(ctrl)}
+		wrappedConn := &connWrapper{conn: conn, logger: newMockLogLogger(ctrl)}
 
 		stmt, err := wrappedConn.PrepareContext(context.Background(), query)
 		assert.NoError(t, err)
@@ -118,7 +118,7 @@ func TestConnPrepareContextWrapper_PrepareContext(t *testing.T) {
 		query := "SELECT * FROM `users`"
 		conn := mocks.NewMockConn(ctrl)
 		conn.EXPECT().PrepareContext(gomock.Any(), query).Return(nil, errors.New("mock PrepareContext error")).Times(1)
-		wrappedConn := &connPrepareContextWrapper{ConnPrepareContext: conn, logger: newMockErrorLogger(ctrl)}
+		wrappedConn := &connWrapper{conn: conn, logger: newMockErrorLogger(ctrl)}
 
 		stmt, err := wrappedConn.PrepareContext(context.Background(), query)
 		assert.Error(t, err)
@@ -133,7 +133,7 @@ func TestPingerWrapper_Ping(t *testing.T) {
 
 		pinger := mocks.NewMockConn(ctrl)
 		pinger.EXPECT().Ping(gomock.Any()).Return(nil).Times(1)
-		wrappedPinger := &pingerWrapper{Pinger: pinger, logger: newMockLogLogger(ctrl)}
+		wrappedPinger := &connWrapper{conn: pinger, logger: newMockLogLogger(ctrl)}
 
 		err := wrappedPinger.Ping(context.Background())
 		assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestPingerWrapper_Ping(t *testing.T) {
 
 		pinger := mocks.NewMockConn(ctrl)
 		pinger.EXPECT().Ping(gomock.Any()).Return(errors.New("mock Ping error")).Times(1)
-		wrappedPinger := &pingerWrapper{Pinger: pinger, logger: newMockErrorLogger(ctrl)}
+		wrappedPinger := &connWrapper{conn: pinger, logger: newMockErrorLogger(ctrl)}
 
 		err := wrappedPinger.Ping(context.Background())
 		assert.Error(t, err)
@@ -162,7 +162,7 @@ func TestExecContextWrapper_ExecContext(t *testing.T) {
 		execer := mocks.NewMockConn(ctrl)
 		mockResult := mocks.NewMockResult(ctrl)
 		execer.EXPECT().ExecContext(gomock.Any(), query, args).Return(mockResult, nil).Times(1)
-		wrappedExecer := &execContextWrapper{ExecerContext: execer, logger: newMockLogLogger(ctrl)}
+		wrappedExecer := &connWrapper{conn: execer, logger: newMockLogLogger(ctrl)}
 
 		result, err := wrappedExecer.ExecContext(context.Background(), query, args)
 		assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestExecContextWrapper_ExecContext(t *testing.T) {
 		args := []driver.NamedValue{{Name: "name", Value: "John"}, {Name: "id", Value: 1}}
 		execer := mocks.NewMockConn(ctrl)
 		execer.EXPECT().ExecContext(gomock.Any(), query, args).Return(nil, errors.New("mock ExecContext error")).Times(1)
-		wrappedExecer := &execContextWrapper{ExecerContext: execer, logger: newMockErrorLogger(ctrl)}
+		wrappedExecer := &connWrapper{conn: execer, logger: newMockErrorLogger(ctrl)}
 
 		result, err := wrappedExecer.ExecContext(context.Background(), query, args)
 		assert.Error(t, err)
@@ -194,7 +194,7 @@ func TestQueryerContextWrapper_QueryContext(t *testing.T) {
 		args := []driver.NamedValue{{Name: "id", Value: 1}}
 		queryer := mocks.NewMockConn(ctrl)
 		queryer.EXPECT().QueryContext(gomock.Any(), query, args).Return(&rowsWrapper{}, nil).Times(1)
-		wrappedQueryer := &queryerContextWrapper{QueryerContext: queryer, logger: newMockLogLogger(ctrl)}
+		wrappedQueryer := &connWrapper{conn: queryer, logger: newMockLogLogger(ctrl)}
 
 		rows, err := wrappedQueryer.QueryContext(context.Background(), query, args)
 		assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestQueryerContextWrapper_QueryContext(t *testing.T) {
 		args := []driver.NamedValue{{Name: "id", Value: 1}}
 		queryer := mocks.NewMockConn(ctrl)
 		queryer.EXPECT().QueryContext(gomock.Any(), query, args).Return(nil, errors.New("mock QueryContext error")).Times(1)
-		wrappedQueryer := &queryerContextWrapper{QueryerContext: queryer, logger: newMockErrorLogger(ctrl)}
+		wrappedQueryer := &connWrapper{conn: queryer, logger: newMockErrorLogger(ctrl)}
 
 		rows, err := wrappedQueryer.QueryContext(context.Background(), query, args)
 		assert.Error(t, err)
@@ -225,7 +225,7 @@ func TestConnBeginTxWrapper_BeginTx(t *testing.T) {
 		opts := driver.TxOptions{}
 		conn := mocks.NewMockConn(ctrl)
 		conn.EXPECT().BeginTx(gomock.Any(), opts).Return(&txWrapper{}, nil).Times(1)
-		wrappedConn := &connBeginTxWrapper{ConnBeginTx: conn, logger: newMockLogLogger(ctrl)}
+		wrappedConn := &connWrapper{conn: conn, logger: newMockLogLogger(ctrl)}
 
 		tx, err := wrappedConn.BeginTx(context.Background(), opts)
 		assert.NoError(t, err)
@@ -240,7 +240,7 @@ func TestConnBeginTxWrapper_BeginTx(t *testing.T) {
 		opts := driver.TxOptions{}
 		conn := mocks.NewMockConn(ctrl)
 		conn.EXPECT().BeginTx(gomock.Any(), opts).Return(nil, errors.New("mock BeginTx error")).Times(1)
-		wrappedConn := &connBeginTxWrapper{ConnBeginTx: conn, logger: newMockErrorLogger(ctrl)}
+		wrappedConn := &connWrapper{conn: conn, logger: newMockErrorLogger(ctrl)}
 
 		tx, err := wrappedConn.BeginTx(context.Background(), opts)
 		assert.Error(t, err)
@@ -255,7 +255,7 @@ func TestResetSessionWrapper_ResetSession(t *testing.T) {
 
 		resetter := mocks.NewMockConn(ctrl)
 		resetter.EXPECT().ResetSession(gomock.Any()).Return(nil).Times(1)
-		wrappedResetter := &resetSessionWrapper{SessionResetter: resetter, logger: newMockLogLogger(ctrl)}
+		wrappedResetter := &connWrapper{conn: resetter, logger: newMockLogLogger(ctrl)}
 
 		err := wrappedResetter.ResetSession(context.Background())
 		assert.NoError(t, err)
@@ -267,7 +267,7 @@ func TestResetSessionWrapper_ResetSession(t *testing.T) {
 
 		resetter := mocks.NewMockConn(ctrl)
 		resetter.EXPECT().ResetSession(gomock.Any()).Return(errors.New("mock ResetSession error")).Times(1)
-		wrappedResetter := &resetSessionWrapper{SessionResetter: resetter, logger: newMockErrorLogger(ctrl)}
+		wrappedResetter := &connWrapper{conn: resetter, logger: newMockErrorLogger(ctrl)}
 
 		err := wrappedResetter.ResetSession(context.Background())
 		assert.Error(t, err)
@@ -280,7 +280,7 @@ func TestValidatorWrapper_IsValid(t *testing.T) {
 
 	validator := mocks.NewMockConn(ctrl)
 	validator.EXPECT().IsValid().Return(true).Times(1)
-	wrappedValidator := &validatorWrapper{Validator: validator, logger: newMockLogLogger(ctrl)}
+	wrappedValidator := &connWrapper{conn: validator, logger: newMockLogLogger(ctrl)}
 
 	valid := wrappedValidator.IsValid()
 	assert.True(t, valid)
@@ -296,7 +296,7 @@ func TestExecerWrapper_Exec(t *testing.T) {
 		execer := mocks.NewMockConn(ctrl)
 		mockResult := mocks.NewMockResult(ctrl)
 		execer.EXPECT().Exec(query, args).Return(mockResult, nil).Times(1)
-		wrappedExecer := &execerWrapper{Execer: execer, logger: newMockLogLogger(ctrl)}
+		wrappedExecer := &connWrapper{conn: execer, logger: newMockLogLogger(ctrl)}
 
 		result, err := wrappedExecer.Exec(query, args)
 		assert.NoError(t, err)
@@ -311,7 +311,7 @@ func TestExecerWrapper_Exec(t *testing.T) {
 		args := []driver.Value{"John"}
 		execer := mocks.NewMockConn(ctrl)
 		execer.EXPECT().Exec(query, args).Return(nil, errors.New("mock Exec error")).Times(1)
-		wrappedExecer := &execerWrapper{Execer: execer, logger: newMockErrorLogger(ctrl)}
+		wrappedExecer := &connWrapper{conn: execer, logger: newMockErrorLogger(ctrl)}
 
 		result, err := wrappedExecer.Exec(query, args)
 		assert.Error(t, err)
@@ -328,7 +328,7 @@ func TestQueryerWrapper_Query(t *testing.T) {
 		args := []driver.Value{1}
 		queryer := mocks.NewMockConn(ctrl)
 		queryer.EXPECT().Query(query, args).Return(&rowsWrapper{}, nil).Times(1)
-		wrappedQueryer := &queryerWrapper{Queryer: queryer, logger: newMockLogLogger(ctrl)}
+		wrappedQueryer := &connWrapper{conn: queryer, logger: newMockLogLogger(ctrl)}
 
 		rows, err := wrappedQueryer.Query(query, args)
 		assert.NoError(t, err)
@@ -343,7 +343,7 @@ func TestQueryerWrapper_Query(t *testing.T) {
 		args := []driver.Value{1}
 		queryer := mocks.NewMockConn(ctrl)
 		queryer.EXPECT().Query(query, args).Return(nil, errors.New("mock Query error")).Times(1)
-		wrappedQueryer := &queryerWrapper{Queryer: queryer, logger: newMockErrorLogger(ctrl)}
+		wrappedQueryer := &connWrapper{conn: queryer, logger: newMockErrorLogger(ctrl)}
 
 		rows, err := wrappedQueryer.Query(query, args)
 		assert.Error(t, err)

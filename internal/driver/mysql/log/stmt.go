@@ -10,6 +10,41 @@ type stmtWrapper struct {
 	logger Logger
 }
 
+func (s *stmtWrapper) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
+	result, err := s.stmt.(driver.StmtExecContext).ExecContext(ctx, args)
+	if err != nil {
+		s.logger.Errorf("Failed to Exec statement: %v", err)
+		return nil, err
+	}
+	s.logger.Logf("Exec statement with args: %v", args)
+	return &resultWrapper{result: result, logger: s.logger}, nil
+}
+
+func (s *stmtWrapper) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
+	rows, err := s.stmt.(driver.StmtQueryContext).QueryContext(ctx, args)
+	if err != nil {
+		s.logger.Errorf("Failed to Query statement: %v", err)
+		return nil, err
+	}
+	s.logger.Logf("Query statement with args: %v", args)
+	return &rowsWrapper{rows: rows, logger: s.logger}, nil
+}
+
+func (s *stmtWrapper) CheckNamedValue(value *driver.NamedValue) error {
+	err := s.stmt.(driver.NamedValueChecker).CheckNamedValue(value)
+	if err != nil {
+		s.logger.Errorf("Failed to CheckNamedValue statement: %v", err)
+		return err
+	}
+	s.logger.Logf("CheckNamedValue statement with args: %v", value)
+	return nil
+}
+
+func (s *stmtWrapper) ColumnConverter(idx int) driver.ValueConverter {
+	s.logger.Logf("Column converter with idx: %v", idx)
+	return s.stmt.(driver.ColumnConverter).ColumnConverter(idx)
+}
+
 func (s *stmtWrapper) Exec(args []driver.Value) (driver.Result, error) {
 	result, err := s.stmt.Exec(args)
 	if err != nil {
@@ -44,59 +79,4 @@ func (s *stmtWrapper) Close() error {
 	}
 	s.logger.Logf("Close statement")
 	return nil
-}
-
-type stmtQueryContextWrapper struct {
-	driver.StmtQueryContext
-	logger Logger
-}
-
-func (s *stmtQueryContextWrapper) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
-	rows, err := s.StmtQueryContext.QueryContext(ctx, args)
-	if err != nil {
-		s.logger.Errorf("Failed to Query statement: %v", err)
-		return nil, err
-	}
-	s.logger.Logf("Query statement with args: %v", args)
-	return &rowsWrapper{rows: rows, logger: s.logger}, nil
-}
-
-type stmtExecContextWrapper struct {
-	driver.StmtExecContext
-	logger Logger
-}
-
-func (s *stmtExecContextWrapper) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
-	result, err := s.StmtExecContext.ExecContext(ctx, args)
-	if err != nil {
-		s.logger.Errorf("Failed to Exec statement: %v", err)
-		return nil, err
-	}
-	s.logger.Logf("Exec statement with args: %v", args)
-	return &resultWrapper{result: result, logger: s.logger}, nil
-}
-
-type namedValueCheckerWrapper struct {
-	driver.NamedValueChecker
-	logger Logger
-}
-
-func (n *namedValueCheckerWrapper) CheckNamedValue(value *driver.NamedValue) error {
-	err := n.NamedValueChecker.CheckNamedValue(value)
-	if err != nil {
-		n.logger.Errorf("Failed to CheckNamedValue statement: %v", err)
-		return err
-	}
-	n.logger.Logf("CheckNamedValue statement with args: %v", value)
-	return nil
-}
-
-type columnConverterWrapper struct {
-	columnConverter driver.ColumnConverter
-	logger          Logger
-}
-
-func (c *columnConverterWrapper) ColumnConverter(idx int) driver.ValueConverter {
-	c.logger.Logf("Column converter with idx: %v", idx)
-	return c.columnConverter.ColumnConverter(idx)
 }

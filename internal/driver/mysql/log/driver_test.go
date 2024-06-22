@@ -18,7 +18,7 @@ func TestDriver_Open(t *testing.T) {
 		name := "dsn"
 		mockDriver := mocks.NewMockDriver(ctrl)
 		mockDriver.EXPECT().Open(name).Return(nil, nil)
-		wrappedDriver := newDriver(mockDriver, nil, newMockLogLogger(ctrl))
+		wrappedDriver := newDriver(mockDriver, newMockLogLogger(ctrl))
 
 		c, err := wrappedDriver.Open(name)
 
@@ -33,7 +33,7 @@ func TestDriver_Open(t *testing.T) {
 		name := "dsn"
 		mockDriver := mocks.NewMockDriver(ctrl)
 		mockDriver.EXPECT().Open(name).Return(nil, errors.New("mock Open Error"))
-		wrappedDriver := newDriver(mockDriver, nil, newMockErrorLogger(ctrl))
+		wrappedDriver := newDriver(mockDriver, newMockErrorLogger(ctrl))
 
 		c, err := wrappedDriver.Open(name)
 		require.Error(t, err)
@@ -49,7 +49,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		name := "dsn"
 		mockDriverContext := mocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
-		wrappedDriver := newDriver(nil, mockDriverContext, newMockLogLogger(ctrl))
+		wrappedDriver := newDriver(mockDriverContext, newMockLogLogger(ctrl))
 
 		c, err := wrappedDriver.OpenConnector(name)
 
@@ -63,7 +63,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		name := "dsn"
 		mockDriverContext := mocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, errors.New("mock OpenConnector Error"))
-		wrappedDriver := newDriver(nil, mockDriverContext, newMockErrorLogger(ctrl))
+		wrappedDriver := newDriver(mockDriverContext, newMockErrorLogger(ctrl))
 
 		c, err := wrappedDriver.OpenConnector(name)
 		require.Error(t, err)

@@ -97,7 +97,9 @@ func TestRowsColumnTypePrecisionScaleWrapper_ColumnTypePrecisionScale(t *testing
 	expectedPrecision, expectedScale := int64(10), int64(2)
 	rows.EXPECT().ColumnTypePrecisionScale(index).Return(expectedPrecision, expectedScale, true).Times(1)
 
-	precision, scale, ok := newRowsColumnTypePrecisionScaleWrapper(rows, newMockLogLogger(ctrl)).ColumnTypePrecisionScale(index)
+	var r driver.RowsColumnTypePrecisionScale = rows
+	var logger Logger = newMockLogLogger(ctrl)
+	precision, scale, ok := (&rowsWrapper{rows: r, logger: logger}).ColumnTypePrecisionScale(index)
 	assert.True(t, ok)
 	assert.Equal(t, expectedPrecision, precision)
 	assert.Equal(t, expectedScale, scale)
@@ -111,7 +113,9 @@ func TestRowsColumnTypeNullableWrapper_ColumnTypeNullable(t *testing.T) {
 	index := 1
 	rows.EXPECT().ColumnTypeNullable(index).Return(true, true).Times(1)
 
-	nullable, ok := newRowsColumnTypeNullableWrapper(rows, newMockLogLogger(ctrl)).ColumnTypeNullable(index)
+	var r driver.RowsColumnTypeNullable = rows
+	var logger Logger = newMockLogLogger(ctrl)
+	nullable, ok := (&rowsWrapper{rows: r, logger: logger}).ColumnTypeNullable(index)
 	assert.True(t, ok)
 	assert.True(t, nullable)
 }
@@ -123,7 +127,9 @@ func TestRowsNextResultSetWrapper_HasNextResultSet(t *testing.T) {
 	rows := mocks.NewMockRows(ctrl)
 	rows.EXPECT().HasNextResultSet().Return(true).Times(1)
 
-	hasNext := newRowsNextResultSetWrapper(rows, newMockLogLogger(ctrl)).HasNextResultSet()
+	var r driver.RowsNextResultSet = rows
+	var logger Logger = newMockLogLogger(ctrl)
+	hasNext := (&rowsWrapper{rows: r, logger: logger}).HasNextResultSet()
 	assert.True(t, hasNext)
 }
 
@@ -135,7 +141,9 @@ func TestRowsNextResultSetWrapper_NextResultSet(t *testing.T) {
 		rows := mocks.NewMockRows(ctrl)
 		rows.EXPECT().NextResultSet().Return(nil).Times(1)
 
-		err := newRowsNextResultSetWrapper(rows, newMockLogLogger(ctrl)).NextResultSet()
+		var r driver.RowsNextResultSet = rows
+		var logger Logger = newMockLogLogger(ctrl)
+		err := (&rowsWrapper{rows: r, logger: logger}).NextResultSet()
 		assert.NoError(t, err)
 	})
 
@@ -147,7 +155,9 @@ func TestRowsNextResultSetWrapper_NextResultSet(t *testing.T) {
 		expectedError := errors.New("mock next result set error")
 		rows.EXPECT().NextResultSet().Return(expectedError).Times(1)
 
-		err := newRowsNextResultSetWrapper(rows, newMockErrorLogger(ctrl)).NextResultSet()
+		var r driver.RowsNextResultSet = rows
+		var logger Logger = newMockErrorLogger(ctrl)
+		err := (&rowsWrapper{rows: r, logger: logger}).NextResultSet()
 		assert.Error(t, err)
 	})
 }
@@ -161,7 +171,9 @@ func TestRowsColumnTypeScanTypeWrapper_ColumnTypeScanType(t *testing.T) {
 	expectedType := reflect.TypeOf("")
 	rows.EXPECT().ColumnTypeScanType(index).Return(expectedType).Times(1)
 
-	scanType := newRowsColumnTypeScanTypeWrapper(rows, newMockLogLogger(ctrl)).ColumnTypeScanType(index)
+	var r driver.RowsColumnTypeScanType = rows
+	var logger Logger = newMockLogLogger(ctrl)
+	scanType := (&rowsWrapper{rows: r, logger: logger}).ColumnTypeScanType(index)
 	assert.Equal(t, expectedType, scanType)
 }
 
@@ -174,6 +186,8 @@ func TestRowsColumnTypeDatabaseTypeNameWrapper_ColumnTypeDatabaseTypeName(t *tes
 	expectedName := "VARCHAR"
 	rows.EXPECT().ColumnTypeDatabaseTypeName(index).Return(expectedName).Times(1)
 
-	dbTypeName := newRowsColumnTypeDatabaseTypeNameWrapper(rows, newMockLogLogger(ctrl)).ColumnTypeDatabaseTypeName(index)
+	var r driver.RowsColumnTypeDatabaseTypeName = rows
+	var logger Logger = newMockLogLogger(ctrl)
+	dbTypeName := (&rowsWrapper{rows: r, logger: logger}).ColumnTypeDatabaseTypeName(index)
 	assert.Equal(t, expectedName, dbTypeName)
 }

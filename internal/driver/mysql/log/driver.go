@@ -5,16 +5,14 @@ import (
 )
 
 type driverWrapper struct {
-	driver        driver.Driver
-	driverContext driver.DriverContext
-	logger        Logger
+	driver driver.Driver
+	logger Logger
 }
 
-func newDriver(d driver.Driver, dc driver.DriverContext, l Logger) *driverWrapper {
+func newDriver(d driver.Driver, l Logger) *driverWrapper {
 	return &driverWrapper{
-		driver:        d,
-		driverContext: dc,
-		logger:        l,
+		driver: d,
+		logger: l,
 	}
 }
 
@@ -29,7 +27,7 @@ func (d *driverWrapper) Open(name string) (driver.Conn, error) {
 }
 
 func (d *driverWrapper) OpenConnector(name string) (driver.Connector, error) {
-	openConnector, err := d.driverContext.OpenConnector(name)
+	openConnector, err := d.driver.(driver.DriverContext).OpenConnector(name)
 	if err != nil {
 		d.logger.Errorf("Failed to OpenConnector for %s: %v", name, err)
 		return nil, err

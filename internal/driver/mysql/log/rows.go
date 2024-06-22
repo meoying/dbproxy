@@ -10,6 +10,41 @@ type rowsWrapper struct {
 	logger Logger
 }
 
+func (r *rowsWrapper) HasNextResultSet() bool {
+	r.logger.Logf("HasNextResultSet\n")
+	return r.rows.(driver.RowsNextResultSet).HasNextResultSet()
+}
+
+func (r *rowsWrapper) NextResultSet() error {
+	err := r.rows.(driver.RowsNextResultSet).NextResultSet()
+	if err != nil {
+		r.logger.Errorf("Failed to fetch next result set: %v", err)
+		return err
+	}
+	r.logger.Logf("Fetch next result set")
+	return nil
+}
+
+func (r *rowsWrapper) ColumnTypeScanType(index int) reflect.Type {
+	r.logger.Logf("ColumnTypeScanType: %d", index)
+	return r.rows.(driver.RowsColumnTypeScanType).ColumnTypeScanType(index)
+}
+
+func (r *rowsWrapper) ColumnTypeDatabaseTypeName(index int) string {
+	r.logger.Logf("ColumnTypeDatabaseTypeName: %d", index)
+	return r.rows.(driver.RowsColumnTypeDatabaseTypeName).ColumnTypeDatabaseTypeName(index)
+}
+
+func (r *rowsWrapper) ColumnTypeNullable(index int) (nullable, ok bool) {
+	r.logger.Logf("ColumnTypeNullable: %d", index)
+	return r.rows.(driver.RowsColumnTypeNullable).ColumnTypeNullable(index)
+}
+
+func (r *rowsWrapper) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
+	r.logger.Logf("ColumnTypePrecisionScale: %d", index)
+	return r.rows.(driver.RowsColumnTypePrecisionScale).ColumnTypePrecisionScale(index)
+}
+
 func (r *rowsWrapper) Columns() []string {
 	cs := r.rows.Columns()
 	r.logger.Logf("Columns: %v", cs)
@@ -34,84 +69,4 @@ func (r *rowsWrapper) Next(dest []driver.Value) error {
 	}
 	r.logger.Logf("Fetch next row")
 	return nil
-}
-
-type rowsColumnTypePrecisionScaleWrapper struct {
-	*rowsWrapper
-	driver.RowsColumnTypePrecisionScale
-}
-
-func newRowsColumnTypePrecisionScaleWrapper(r driver.RowsColumnTypePrecisionScale, logger Logger) *rowsColumnTypePrecisionScaleWrapper {
-	return &rowsColumnTypePrecisionScaleWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypePrecisionScale: r}
-}
-
-func (r *rowsColumnTypePrecisionScaleWrapper) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
-	r.logger.Logf("ColumnTypePrecisionScale: %d", index)
-	return r.RowsColumnTypePrecisionScale.ColumnTypePrecisionScale(index)
-}
-
-type rowsColumnTypeNullableWrapper struct {
-	*rowsWrapper
-	driver.RowsColumnTypeNullable
-}
-
-func newRowsColumnTypeNullableWrapper(r driver.RowsColumnTypeNullable, logger Logger) *rowsColumnTypeNullableWrapper {
-	return &rowsColumnTypeNullableWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeNullable: r}
-}
-
-func (r *rowsColumnTypeNullableWrapper) ColumnTypeNullable(index int) (nullable, ok bool) {
-	r.logger.Logf("ColumnTypeNullable: %d", index)
-	return r.RowsColumnTypeNullable.ColumnTypeNullable(index)
-}
-
-type rowsNextResultSetWrapper struct {
-	*rowsWrapper
-	driver.RowsNextResultSet
-}
-
-func newRowsNextResultSetWrapper(r driver.RowsNextResultSet, logger Logger) *rowsNextResultSetWrapper {
-	return &rowsNextResultSetWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsNextResultSet: r}
-}
-
-func (r *rowsNextResultSetWrapper) HasNextResultSet() bool {
-	r.logger.Logf("HasNextResultSet\n")
-	return r.RowsNextResultSet.HasNextResultSet()
-}
-
-func (r *rowsNextResultSetWrapper) NextResultSet() error {
-	err := r.RowsNextResultSet.NextResultSet()
-	if err != nil {
-		r.logger.Errorf("Failed to fetch next result set: %v", err)
-		return err
-	}
-	r.logger.Logf("Fetch next result set")
-	return nil
-}
-
-type rowsColumnTypeScanTypeWrapper struct {
-	*rowsWrapper
-	driver.RowsColumnTypeScanType
-}
-
-func newRowsColumnTypeScanTypeWrapper(r driver.RowsColumnTypeScanType, logger Logger) *rowsColumnTypeScanTypeWrapper {
-	return &rowsColumnTypeScanTypeWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeScanType: r}
-}
-
-func (r *rowsColumnTypeScanTypeWrapper) ColumnTypeScanType(index int) reflect.Type {
-	r.logger.Logf("ColumnTypeScanType: %d", index)
-	return r.RowsColumnTypeScanType.ColumnTypeScanType(index)
-}
-
-type rowsColumnTypeDatabaseTypeNameWrapper struct {
-	*rowsWrapper
-	driver.RowsColumnTypeDatabaseTypeName
-}
-
-func newRowsColumnTypeDatabaseTypeNameWrapper(r driver.RowsColumnTypeDatabaseTypeName, logger Logger) *rowsColumnTypeDatabaseTypeNameWrapper {
-	return &rowsColumnTypeDatabaseTypeNameWrapper{rowsWrapper: &rowsWrapper{rows: r, logger: logger}, RowsColumnTypeDatabaseTypeName: r}
-}
-
-func (r *rowsColumnTypeDatabaseTypeNameWrapper) ColumnTypeDatabaseTypeName(index int) string {
-	r.logger.Logf("ColumnTypeDatabaseTypeName: %d", index)
-	return r.RowsColumnTypeDatabaseTypeName.ColumnTypeDatabaseTypeName(index)
 }

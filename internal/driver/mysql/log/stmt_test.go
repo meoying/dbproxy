@@ -129,7 +129,7 @@ func TestStmtQueryContextWrapper_QueryContext(t *testing.T) {
 		mockRows := mocks.NewMockRows(ctrl)
 		mockStmt.EXPECT().QueryContext(gomock.Any(), []driver.NamedValue{{Name: "arg1"}}).Return(mockRows, nil).Times(1)
 
-		wrappedStmt := &stmtQueryContextWrapper{StmtQueryContext: mockStmt, logger: newMockLogLogger(ctrl)}
+		wrappedStmt := &stmtWrapper{stmt: mockStmt, logger: newMockLogLogger(ctrl)}
 
 		rows, err := wrappedStmt.QueryContext(context.Background(), []driver.NamedValue{{Name: "arg1"}})
 		assert.NoError(t, err)
@@ -145,7 +145,7 @@ func TestStmtQueryContextWrapper_QueryContext(t *testing.T) {
 		stmt := mocks.NewMockStmt(ctrl)
 		stmt.EXPECT().QueryContext(gomock.Any(), values).Return(nil, expectedError).Times(1)
 
-		wrappedStmt := &stmtQueryContextWrapper{StmtQueryContext: stmt, logger: newMockErrorLogger(ctrl)}
+		wrappedStmt := &stmtWrapper{stmt: stmt, logger: newMockErrorLogger(ctrl)}
 
 		_, err := wrappedStmt.QueryContext(context.Background(), values)
 		assert.Error(t, err)
@@ -162,7 +162,7 @@ func TestStmtExecContextWrapper_ExecContext(t *testing.T) {
 		mockResult := mocks.NewMockResult(ctrl)
 		mockStmt.EXPECT().ExecContext(gomock.Any(), []driver.NamedValue{{Name: "arg1"}}).Return(mockResult, nil).Times(1)
 
-		wrappedStmt := &stmtExecContextWrapper{StmtExecContext: mockStmt, logger: newMockLogLogger(ctrl)}
+		wrappedStmt := &stmtWrapper{stmt: mockStmt, logger: newMockLogLogger(ctrl)}
 
 		result, err := wrappedStmt.ExecContext(context.Background(), []driver.NamedValue{{Name: "arg1"}})
 		assert.NoError(t, err)
@@ -178,7 +178,7 @@ func TestStmtExecContextWrapper_ExecContext(t *testing.T) {
 		stmt := mocks.NewMockStmt(ctrl)
 		stmt.EXPECT().ExecContext(gomock.Any(), values).Return(nil, expectedError).Times(1)
 
-		wrappedStmt := &stmtExecContextWrapper{StmtExecContext: stmt, logger: newMockErrorLogger(ctrl)}
+		wrappedStmt := &stmtWrapper{stmt: stmt, logger: newMockErrorLogger(ctrl)}
 
 		_, err := wrappedStmt.ExecContext(context.Background(), values)
 		assert.Error(t, err)
@@ -194,7 +194,7 @@ func TestNamedValueCheckerWrapper_CheckNamedValue(t *testing.T) {
 		mockChecker := mocks.NewMockStmt(ctrl)
 		mockChecker.EXPECT().CheckNamedValue(&driver.NamedValue{Name: "arg1"}).Return(nil).Times(1)
 
-		wrappedChecker := &namedValueCheckerWrapper{NamedValueChecker: mockChecker, logger: newMockLogLogger(ctrl)}
+		wrappedChecker := &stmtWrapper{stmt: mockChecker, logger: newMockLogLogger(ctrl)}
 
 		err := wrappedChecker.CheckNamedValue(&driver.NamedValue{Name: "arg1"})
 		assert.NoError(t, err)
@@ -209,7 +209,7 @@ func TestNamedValueCheckerWrapper_CheckNamedValue(t *testing.T) {
 		checker := mocks.NewMockStmt(ctrl)
 		checker.EXPECT().CheckNamedValue(value).Return(expectedError).Times(1)
 
-		wrappedChecker := &namedValueCheckerWrapper{NamedValueChecker: checker, logger: newMockErrorLogger(ctrl)}
+		wrappedChecker := &stmtWrapper{stmt: checker, logger: newMockErrorLogger(ctrl)}
 
 		err := wrappedChecker.CheckNamedValue(value)
 		assert.Error(t, err)
@@ -224,7 +224,7 @@ func TestColumnConverterWrapper_ColumnConverter(t *testing.T) {
 	mockConverter := mocks.NewMockStmt(ctrl)
 	mockConverter.EXPECT().ColumnConverter(1).Return(driver.DefaultParameterConverter).Times(1)
 
-	wrappedConverter := &columnConverterWrapper{columnConverter: mockConverter, logger: newMockLogLogger(ctrl)}
+	wrappedConverter := &stmtWrapper{stmt: mockConverter, logger: newMockLogLogger(ctrl)}
 
 	converter := wrappedConverter.ColumnConverter(1)
 	assert.Equal(t, driver.DefaultParameterConverter, converter)
