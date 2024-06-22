@@ -9,7 +9,7 @@ import (
 
 type rowsWrapper struct {
 	rows   driver.Rows
-	logger Logger
+	logger logger
 }
 
 func (r *rowsWrapper) HasNextResultSet() bool {

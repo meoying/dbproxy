@@ -5,8 +5,8 @@ import (
 	"log/slog"
 )
 
-//go:generate mockgen -source=./types.go -destination=mocks/logger.mock.go -package=logmocks -typed Logger
-type Logger interface {
+//go:generate mockgen -source=./types.go -destination=mocks/logger.mock.go -package=logmocks -typed logger
+type logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)
@@ -29,7 +29,7 @@ type defaultLogger struct {
 	*slog.Logger
 }
 
-func newLogger(l *slog.Logger) Logger {
+func newLogger(l *slog.Logger) logger {
 	if l == nil {
 		l = slog.Default()
 	}

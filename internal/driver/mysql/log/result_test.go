@@ -19,7 +19,7 @@ func TestResultWrapper_AllRowsAffected(t *testing.T) {
 	mockRes.EXPECT().AllRowsAffected().Return(expectedAffected).Times(1)
 
 	var result driver.Result = mockRes
-	var logger Logger = newMockInfoLogger(ctrl)
+	var logger logger = newMockInfoLogger(ctrl)
 	affected := (&resultWrapper{result: result, logger: logger}).AllRowsAffected()
 	assert.Equal(t, expectedAffected, affected)
 }
@@ -33,7 +33,7 @@ func TestResultWrapper_AllLastInsertIds(t *testing.T) {
 	mockRes.EXPECT().AllLastInsertIds().Return(expectedIDs).Times(1)
 
 	var result driver.Result = mockRes
-	var logger Logger = newMockInfoLogger(ctrl)
+	var logger logger = newMockInfoLogger(ctrl)
 	ids := (&resultWrapper{result: result, logger: logger}).AllLastInsertIds()
 	assert.Equal(t, expectedIDs, ids)
 }
@@ -48,7 +48,7 @@ func TestResultWrapper_LastInsertId(t *testing.T) {
 		mockRes.EXPECT().LastInsertId().Return(int64(1), nil).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockInfoLogger(ctrl)
+		var logger logger = newMockInfoLogger(ctrl)
 		id, err := (&resultWrapper{result: result, logger: logger}).LastInsertId()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), id)
@@ -63,7 +63,7 @@ func TestResultWrapper_LastInsertId(t *testing.T) {
 		mockRes.EXPECT().LastInsertId().Return(int64(0), expectedError).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockErrorLogger(ctrl)
+		var logger logger = newMockErrorLogger(ctrl)
 		id, err := (&resultWrapper{result: result, logger: logger}).LastInsertId()
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), id)
@@ -80,7 +80,7 @@ func TestResultWrapper_RowsAffected(t *testing.T) {
 		mockRes.EXPECT().RowsAffected().Return(int64(10), nil).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockInfoLogger(ctrl)
+		var logger logger = newMockInfoLogger(ctrl)
 		rows, err := (&resultWrapper{result: result, logger: logger}).RowsAffected()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(10), rows)
@@ -95,7 +95,7 @@ func TestResultWrapper_RowsAffected(t *testing.T) {
 		mockRes.EXPECT().RowsAffected().Return(int64(0), expectedError).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockErrorLogger(ctrl)
+		var logger logger = newMockErrorLogger(ctrl)
 		rows, err := (&resultWrapper{result: result, logger: logger}).RowsAffected()
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rows)

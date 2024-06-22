@@ -7,7 +7,7 @@ import (
 
 type stmtWrapper struct {
 	stmt   driver.Stmt
-	logger Logger
+	logger logger
 }
 
 func (s *stmtWrapper) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {

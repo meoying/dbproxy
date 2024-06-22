@@ -4,7 +4,7 @@ import "database/sql/driver"
 
 type txWrapper struct {
 	tx     driver.Tx
-	logger Logger
+	logger logger
 }
 
 func (t *txWrapper) Commit() error {

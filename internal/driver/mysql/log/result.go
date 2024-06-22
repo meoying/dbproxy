@@ -8,7 +8,7 @@ import (
 
 type resultWrapper struct {
 	result driver.Result
-	logger Logger
+	logger logger
 }
 
 func (r *resultWrapper) AllRowsAffected() []int64 {

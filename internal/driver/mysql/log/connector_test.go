@@ -23,7 +23,7 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 
 		var connector driver.Connector = mockConnector
 		var d driver.Driver = mockDriver
-		var logger Logger = newMockInfoLogger(ctrl)
+		var logger logger = newMockInfoLogger(ctrl)
 		var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
 		conn, err := r.Connect(context.Background())
 		assert.NoError(t, err)
@@ -41,7 +41,7 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 
 		var connector driver.Connector = mockConnector
 		var d driver.Driver = mockDriver
-		var logger Logger = newMockErrorLogger(ctrl)
+		var logger logger = newMockErrorLogger(ctrl)
 		var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
 		conn, err := r.Connect(context.Background())
 		assert.Error(t, err)
@@ -58,7 +58,7 @@ func TestConnectorWrapper_Driver(t *testing.T) {
 
 	var connector driver.Connector = mockConnector
 	var d driver.Driver = mockDriver
-	var logger Logger = newMockInfoLogger(ctrl)
+	var logger logger = newMockInfoLogger(ctrl)
 	var r driver.Connector = &connectorWrapper{connector: connector, driver: d, logger: logger}
 	wrappedConnector := r
 	assert.Equal(t, mockDriver, wrappedConnector.Driver())

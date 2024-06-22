@@ -7,7 +7,7 @@ import (
 
 type connWrapper struct {
 	conn   driver.Conn
-	logger Logger
+	logger logger
 }
 
 func (c *connWrapper) Ping(ctx context.Context) error {

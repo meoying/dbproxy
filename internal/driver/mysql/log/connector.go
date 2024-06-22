@@ -8,7 +8,7 @@ import (
 type connectorWrapper struct {
 	connector driver.Connector
 	driver    driver.Driver
-	logger    Logger
+	logger    logger
 }
 
 func (c *connectorWrapper) Connect(ctx context.Context) (driver.Conn, error) {

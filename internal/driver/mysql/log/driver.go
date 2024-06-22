@@ -6,10 +6,10 @@ import (
 
 type driverWrapper struct {
 	driver driver.Driver
-	logger Logger
+	logger logger
 }
 
-func newDriver(d driver.Driver, l Logger) *driverWrapper {
+func newDriver(d driver.Driver, l logger) *driverWrapper {
 	return &driverWrapper{
 		driver: d,
 		logger: l,

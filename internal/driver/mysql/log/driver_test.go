@@ -71,14 +71,14 @@ func TestDriver_OpenConnector(t *testing.T) {
 	})
 }
 
-func newMockInfoLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
-	logger := logmocks.NewMockLogger(ctrl)
+func newMockInfoLogger(ctrl *gomock.Controller) *logmocks.Mocklogger {
+	logger := logmocks.NewMocklogger(ctrl)
 	logger.EXPECT().Info(gomock.Any(), gomock.Any()).Times(1)
 	return logger
 }
 
-func newMockErrorLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
-	logger := logmocks.NewMockLogger(ctrl)
+func newMockErrorLogger(ctrl *gomock.Controller) *logmocks.Mocklogger {
+	logger := logmocks.NewMocklogger(ctrl)
 	logger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 	return logger
 }
