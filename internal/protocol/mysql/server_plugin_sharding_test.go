@@ -6,6 +6,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
+
+	"github.com/ecodeclub/ekit/retry"
 
 	"strconv"
 	"strings"
@@ -66,12 +69,39 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 	return nil
 }
 
+func WaitForDBSetup(dsn string) *sql.DB {
+	sqlDB, err := openDB(dsn)
+	if err != nil {
+		panic(err)
+	}
+	const maxInterval = 10 * time.Second
+	const maxRetries = 10
+	strategy, err := retry.NewExponentialBackoffRetryStrategy(time.Second, maxInterval, maxRetries)
+	if err != nil {
+		panic(err)
+	}
+	const timeout = 5 * time.Second
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		err = sqlDB.PingContext(ctx)
+		cancel()
+		if err == nil {
+			break
+		}
+		next, ok := strategy.Next()
+		if !ok {
+			panic("WaitForDBSetup 重试失败......")
+		}
+		time.Sleep(next)
+	}
+	return sqlDB
+}
+
 func (s *TestShardingPluginSuite) SetupSuite() {
 	dsn := "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := openDB(dsn)
-	require.NoError(s.T(), err)
+	db := WaitForDBSetup(dsn)
 	// 创建db
-	err = s.createDatabase(db, "order_db_0")
+	err := s.createDatabase(db, "order_db_0")
 	require.NoError(s.T(), err)
 	err = s.createDatabase(db, "order_db_1")
 	require.NoError(s.T(), err)
@@ -441,7 +471,7 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 
 func (s *TestShardingPluginSuite) clearTable() {
 	for i := 0; i < 3; i++ {
-		sql := fmt.Sprintf("delete from  order_db_%d.order_tab;", i)
+		sql := fmt.Sprintf("DELETE FROM order_db_%d.order_tab;", i)
 		_, err := s.db.Exec(sql)
 		require.NoError(s.T(), err)
 	}
@@ -454,7 +484,7 @@ func (s *TestShardingPluginSuite) getRowsFromTable(ids []int64) []*sql.Rows {
 	}
 	rowsList := make([]*sql.Rows, 0, 3)
 	for i := 0; i < 3; i++ {
-		query := fmt.Sprintf("select * from order_db_%d.order_tab where `user_id` in (%s)", i, strings.Join(idStr, ","))
+		query := fmt.Sprintf("SELECT * FROM order_db_%d.order_tab WHERE `user_id` in (%s)", i, strings.Join(idStr, ","))
 		rows, err := s.db.Query(query)
 		require.NoError(s.T(), err)
 		rowsList = append(rowsList, rows)
