@@ -2,6 +2,7 @@ package sharding
 
 import (
 	"context"
+
 	"github.com/ecodeclub/ekit/mapx"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"

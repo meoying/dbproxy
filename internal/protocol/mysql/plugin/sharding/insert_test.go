@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -18,8 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/multierr"
-	"regexp"
-	"testing"
 )
 
 func newMockErr(dbName string) error {
