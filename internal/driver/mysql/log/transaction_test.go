@@ -17,7 +17,7 @@ func TestTxWrapper_Commit(t *testing.T) {
 		tx := mocks.NewMockTx(ctrl)
 		tx.EXPECT().Commit().Return(nil).Times(1)
 
-		wrappedTx := &txWrapper{tx: tx, logger: newMockLogLogger(ctrl)}
+		wrappedTx := &txWrapper{tx: tx, logger: newMockInfoLogger(ctrl)}
 
 		err := wrappedTx.Commit()
 		assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestTxWrapper_Rollback(t *testing.T) {
 		tx := mocks.NewMockTx(ctrl)
 		tx.EXPECT().Rollback().Return(nil).Times(1)
 
-		wrappedTx := &txWrapper{tx: tx, logger: newMockLogLogger(ctrl)}
+		wrappedTx := &txWrapper{tx: tx, logger: newMockInfoLogger(ctrl)}
 
 		err := wrappedTx.Rollback()
 		assert.NoError(t, err)

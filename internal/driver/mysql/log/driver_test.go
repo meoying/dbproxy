@@ -18,7 +18,7 @@ func TestDriver_Open(t *testing.T) {
 		name := "dsn"
 		mockDriver := mocks.NewMockDriver(ctrl)
 		mockDriver.EXPECT().Open(name).Return(nil, nil)
-		wrappedDriver := newDriver(mockDriver, newMockLogLogger(ctrl))
+		wrappedDriver := newDriver(mockDriver, newMockInfoLogger(ctrl))
 
 		c, err := wrappedDriver.Open(name)
 
@@ -49,7 +49,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		name := "dsn"
 		mockDriverContext := mocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
-		wrappedDriver := newDriver(mockDriverContext, newMockLogLogger(ctrl))
+		wrappedDriver := newDriver(mockDriverContext, newMockInfoLogger(ctrl))
 
 		c, err := wrappedDriver.OpenConnector(name)
 
@@ -71,14 +71,14 @@ func TestDriver_OpenConnector(t *testing.T) {
 	})
 }
 
-func newMockLogLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
+func newMockInfoLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
 	logger := logmocks.NewMockLogger(ctrl)
-	logger.EXPECT().Logf(gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Info(gomock.Any(), gomock.Any()).Times(1)
 	return logger
 }
 
 func newMockErrorLogger(ctrl *gomock.Controller) *logmocks.MockLogger {
 	logger := logmocks.NewMockLogger(ctrl)
-	logger.EXPECT().Errorf(gomock.Any(), gomock.Any()).Times(1)
+	logger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
 	return logger
 }

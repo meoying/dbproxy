@@ -10,6 +10,34 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func TestResultWrapper_AllRowsAffected(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRes := mocks.NewMockResult(ctrl)
+	expectedAffected := []int64{1, 2, 3}
+	mockRes.EXPECT().AllRowsAffected().Return(expectedAffected).Times(1)
+
+	var result driver.Result = mockRes
+	var logger Logger = newMockInfoLogger(ctrl)
+	affected := (&resultWrapper{result: result, logger: logger}).AllRowsAffected()
+	assert.Equal(t, expectedAffected, affected)
+}
+
+func TestResultWrapper_AllLastInsertIds(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRes := mocks.NewMockResult(ctrl)
+	expectedIDs := []int64{100, 101, 102}
+	mockRes.EXPECT().AllLastInsertIds().Return(expectedIDs).Times(1)
+
+	var result driver.Result = mockRes
+	var logger Logger = newMockInfoLogger(ctrl)
+	ids := (&resultWrapper{result: result, logger: logger}).AllLastInsertIds()
+	assert.Equal(t, expectedIDs, ids)
+}
+
 func TestResultWrapper_LastInsertId(t *testing.T) {
 
 	t.Run("Logf", func(t *testing.T) {
@@ -20,7 +48,7 @@ func TestResultWrapper_LastInsertId(t *testing.T) {
 		mockRes.EXPECT().LastInsertId().Return(int64(1), nil).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockLogLogger(ctrl)
+		var logger Logger = newMockInfoLogger(ctrl)
 		id, err := (&resultWrapper{result: result, logger: logger}).LastInsertId()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(1), id)
@@ -52,7 +80,7 @@ func TestResultWrapper_RowsAffected(t *testing.T) {
 		mockRes.EXPECT().RowsAffected().Return(int64(10), nil).Times(1)
 
 		var result driver.Result = mockRes
-		var logger Logger = newMockLogLogger(ctrl)
+		var logger Logger = newMockInfoLogger(ctrl)
 		rows, err := (&resultWrapper{result: result, logger: logger}).RowsAffected()
 		assert.NoError(t, err)
 		assert.Equal(t, int64(10), rows)

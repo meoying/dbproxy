@@ -1,29 +1,39 @@
 package log
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
-	"os"
 )
 
 //go:generate mockgen -source=./types.go -destination=mocks/logger.mock.go -package=logmocks -typed Logger
 type Logger interface {
-	Logf(format string, args ...any)
-	Errorf(format string, args ...any)
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Error(msg string, args ...any)
+
+	DebugContext(ctx context.Context, msg string, args ...any)
+	InfoContext(ctx context.Context, msg string, args ...any)
+	WarnContext(ctx context.Context, msg string, args ...any)
+	ErrorContext(ctx context.Context, msg string, args ...any)
+
+	Enabled(ctx context.Context, level slog.Level) bool
+
+	With(args ...any) *slog.Logger
+	WithGroup(name string) *slog.Logger
+
+	Handler() slog.Handler
 }
 
-type defaultWrapper struct {
-	slogger *slog.Logger
+type defaultLogger struct {
+	*slog.Logger
 }
 
-func newDefaultLogger() Logger {
-	return &defaultWrapper{slogger: slog.New(slog.NewTextHandler(os.Stdout, nil))}
-}
-
-func (l *defaultWrapper) Logf(format string, args ...any) {
-	l.slogger.Info(fmt.Sprintf(format, args...))
-}
-
-func (l *defaultWrapper) Errorf(format string, args ...any) {
-	l.slogger.Error(fmt.Sprintf(format, args...))
+func newLogger(l *slog.Logger) Logger {
+	if l == nil {
+		l = slog.Default()
+	}
+	return &defaultLogger{
+		Logger: l,
+	}
 }

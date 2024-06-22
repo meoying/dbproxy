@@ -14,14 +14,14 @@ type connectorWrapper struct {
 func (c *connectorWrapper) Connect(ctx context.Context) (driver.Conn, error) {
 	con, err := c.connector.Connect(ctx)
 	if err != nil {
-		c.logger.Errorf("Failed to Connect: %v", err)
+		c.logger.Error("connection establishment failed", "error", err)
 		return nil, err
 	}
-	c.logger.Logf("Connect\n")
-	return &connWrapper{conn: con, logger: c.logger}, err
+	c.logger.Info("connection established successfully")
+	return &connWrapper{conn: con, logger: c.logger}, nil
 }
 
 func (c *connectorWrapper) Driver() driver.Driver {
-	c.logger.Logf("Driver\n")
+	c.logger.Info("driver requested")
 	return c.driver
 }

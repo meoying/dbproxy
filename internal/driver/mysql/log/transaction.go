@@ -10,19 +10,19 @@ type txWrapper struct {
 func (t *txWrapper) Commit() error {
 	err := t.tx.Commit()
 	if err != nil {
-		t.logger.Errorf("Failed to Commit transaction: %v", err)
+		t.logger.Error("failed to commit transaction", "error", err)
 		return err
 	}
-	t.logger.Logf("Commit transaction")
+	t.logger.Info("committed transaction")
 	return nil
 }
 
 func (t *txWrapper) Rollback() error {
 	err := t.tx.Rollback()
 	if err != nil {
-		t.logger.Errorf("Failed to Rollback transaction: %v", err)
+		t.logger.Error("failed to rollback transaction", "error", err)
 		return err
 	}
-	t.logger.Logf("Rollback transaction")
+	t.logger.Info("rolled back transaction")
 	return nil
 }

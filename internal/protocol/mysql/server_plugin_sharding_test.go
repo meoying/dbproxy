@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
@@ -501,5 +502,9 @@ func TestTestShardingPluginSuite(t *testing.T) {
 }
 
 func openDB(dsn string) (*sql.DB, error) {
-	return logdriver.Open(dsn)
+	connector, err := logdriver.NewConnector(&mysql.MySQLDriver{}, dsn, nil)
+	if err != nil {
+		return nil, err
+	}
+	return sql.OpenDB(connector), nil
 }

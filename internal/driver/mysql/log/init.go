@@ -1,16 +1,10 @@
 package log
 
 import (
-	"database/sql"
-
-	"github.com/go-sql-driver/mysql"
+	"database/sql/driver"
+	"log/slog"
 )
 
-func Open(name string) (*sql.DB, error) {
-	driver := newDriver(&mysql.MySQLDriver{}, newDefaultLogger())
-	connector, err := driver.OpenConnector(name)
-	if err != nil {
-		return nil, err
-	}
-	return sql.OpenDB(connector), nil
+func NewConnector(d driver.Driver, dsn string, l *slog.Logger) (driver.Connector, error) {
+	return newDriver(d, newLogger(l)).OpenConnector(dsn)
 }
