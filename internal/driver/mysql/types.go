@@ -20,9 +20,7 @@ type Connector interface {
 // Conn 接口表示mysql driver中表示连接的对象上实现的接口集合
 type Conn interface {
 	driver.Pinger
-	driver.Execer
 	driver.ExecerContext
-	driver.Queryer
 	driver.QueryerContext
 	driver.Conn
 	driver.ConnPrepareContext

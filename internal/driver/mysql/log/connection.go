@@ -20,16 +20,6 @@ func (c *connWrapper) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *connWrapper) Exec(query string, args []driver.Value) (driver.Result, error) {
-	r, err := c.conn.(driver.Execer).Exec(query, args)
-	if err != nil {
-		c.logger.Error("exec query failed", "query", query, "error", err)
-		return nil, err
-	}
-	c.logger.Info("exec query successful", "query", query, "args", args)
-	return r, nil
-}
-
 func (c *connWrapper) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 	result, err := c.conn.(driver.ExecerContext).ExecContext(ctx, query, args)
 	if err != nil {
@@ -38,16 +28,6 @@ func (c *connWrapper) ExecContext(ctx context.Context, query string, args []driv
 	}
 	c.logger.Info("exec context successful", "query", query, "args", args)
 	return result, nil
-}
-
-func (c *connWrapper) Query(query string, args []driver.Value) (driver.Rows, error) {
-	rows, err := c.conn.(driver.Queryer).Query(query, args)
-	if err != nil {
-		c.logger.Error("query failed", "query", query, "error", err)
-		return nil, err
-	}
-	c.logger.Info("query successful", "query", query, "args", args)
-	return &rowsWrapper{rows: rows, logger: c.logger}, nil
 }
 
 func (c *connWrapper) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {

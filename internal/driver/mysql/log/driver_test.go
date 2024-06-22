@@ -10,37 +10,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestDriver_Open(t *testing.T) {
-	t.Run("Logf", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		name := "dsn"
-		mockDriver := mocks.NewMockDriver(ctrl)
-		mockDriver.EXPECT().Open(name).Return(nil, nil)
-		wrappedDriver := newDriver(mockDriver, newMockInfoLogger(ctrl))
-
-		c, err := wrappedDriver.Open(name)
-
-		require.NoError(t, err)
-		require.NotZero(t, c)
-	})
-
-	t.Run("Errorf", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		name := "dsn"
-		mockDriver := mocks.NewMockDriver(ctrl)
-		mockDriver.EXPECT().Open(name).Return(nil, errors.New("mock Open Error"))
-		wrappedDriver := newDriver(mockDriver, newMockErrorLogger(ctrl))
-
-		c, err := wrappedDriver.Open(name)
-		require.Error(t, err)
-		require.Zero(t, c)
-	})
-}
-
 func TestDriver_OpenConnector(t *testing.T) {
 	t.Run("Logf", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

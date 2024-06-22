@@ -394,45 +394,6 @@ func (c *ConnCloseCall) DoAndReturn(f func() error) *ConnCloseCall {
 	return c
 }
 
-// Exec mocks base method.
-func (m *MockConn) Exec(query string, args []driver.Value) (driver.Result, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exec", query, args)
-	ret0, _ := ret[0].(driver.Result)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Exec indicates an expected call of Exec.
-func (mr *MockConnMockRecorder) Exec(query, args any) *ConnExecCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockConn)(nil).Exec), query, args)
-	return &ConnExecCall{Call: call}
-}
-
-// ConnExecCall wrap *gomock.Call
-type ConnExecCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *ConnExecCall) Return(arg0 driver.Result, arg1 error) *ConnExecCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *ConnExecCall) Do(f func(string, []driver.Value) (driver.Result, error)) *ConnExecCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *ConnExecCall) DoAndReturn(f func(string, []driver.Value) (driver.Result, error)) *ConnExecCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
 // ExecContext mocks base method.
 func (m *MockConn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
 	m.ctrl.T.Helper()
@@ -622,45 +583,6 @@ func (c *ConnPrepareContextCall) Do(f func(context.Context, string) (driver.Stmt
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *ConnPrepareContextCall) DoAndReturn(f func(context.Context, string) (driver.Stmt, error)) *ConnPrepareContextCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// Query mocks base method.
-func (m *MockConn) Query(query string, args []driver.Value) (driver.Rows, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Query", query, args)
-	ret0, _ := ret[0].(driver.Rows)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Query indicates an expected call of Query.
-func (mr *MockConnMockRecorder) Query(query, args any) *ConnQueryCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockConn)(nil).Query), query, args)
-	return &ConnQueryCall{Call: call}
-}
-
-// ConnQueryCall wrap *gomock.Call
-type ConnQueryCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *ConnQueryCall) Return(arg0 driver.Rows, arg1 error) *ConnQueryCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *ConnQueryCall) Do(f func(string, []driver.Value) (driver.Rows, error)) *ConnQueryCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *ConnQueryCall) DoAndReturn(f func(string, []driver.Value) (driver.Rows, error)) *ConnQueryCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
