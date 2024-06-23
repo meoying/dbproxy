@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/ecodeclub/ekit/retry"
@@ -13,11 +15,12 @@ import (
 	"strconv"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
+	logdriver "github.com/meoying/dbproxy/internal/driver/mysql/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
 
@@ -59,7 +62,6 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 		account DOUBLE,
 		PRIMARY KEY (user_id)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`, name)
-
 	// Execute the SQL statement
 	_, err := db.Exec(createTableSQL)
 	if err != nil {
@@ -69,7 +71,7 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 }
 
 func WaitForDBSetup(dsn string) *sql.DB {
-	sqlDB, err := sql.Open("mysql", dsn)
+	sqlDB, err := openDB(dsn)
 	if err != nil {
 		panic(err)
 	}
@@ -110,11 +112,11 @@ func (s *TestShardingPluginSuite) SetupSuite() {
 	dsn1 := "root:root@tcp(127.0.0.1:13306)/order_db_1?charset=utf8mb4&parseTime=True&loc=Local"
 	dsn2 := "root:root@tcp(127.0.0.1:13306)/order_db_2?charset=utf8mb4&parseTime=True&loc=Local"
 	// 创建表
-	db1, err := sql.Open("mysql", dsn0)
+	db1, err := openDB(dsn0)
 	require.NoError(s.T(), err)
-	db2, err := sql.Open("mysql", dsn1)
+	db2, err := openDB(dsn1)
 	require.NoError(s.T(), err)
-	db3, err := sql.Open("mysql", dsn2)
+	db3, err := openDB(dsn2)
 	require.NoError(s.T(), err)
 	err = s.createTable(db1, "order_tab")
 	require.NoError(s.T(), err)
@@ -202,7 +204,7 @@ func (s *TestShardingPluginSuite) TestSharding_Insert() {
 	}
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/")
+			db, err := openDB("root:root@tcp(localhost:8307)/")
 			require.NoError(s.T(), err)
 			_, err = db.Exec(tc.sql)
 			tc.after(t)
@@ -379,7 +381,7 @@ func (s *TestShardingPluginSuite) TestSharding_Delete() {
 }
 
 func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
-	//初始化数据
+	// 初始化数据
 	testcases := []struct {
 		name string
 		// 初始化数据
@@ -620,7 +622,7 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			tc.before(t)
-			db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/mysql")
+			db, err := openDB("root:root@tcp(localhost:8307)/mysql")
 			require.NoError(t, err)
 			// 使用主库查找
 			rows, err := db.QueryContext(context.Background(), tc.sql)
@@ -635,7 +637,7 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 
 func (s *TestShardingPluginSuite) clearTable() {
 	for i := 0; i < 3; i++ {
-		sql := fmt.Sprintf("delete from  order_db_%d.order_tab;", i)
+		sql := fmt.Sprintf("DELETE FROM order_db_%d.order_tab;", i)
 		_, err := s.db.Exec(sql)
 		require.NoError(s.T(), err)
 	}
@@ -648,7 +650,7 @@ func (s *TestShardingPluginSuite) getRowsFromTable(ids []int64) []*sql.Rows {
 	}
 	rowsList := make([]*sql.Rows, 0, 3)
 	for i := 0; i < 3; i++ {
-		query := fmt.Sprintf("select * from order_db_%d.order_tab where `user_id` in (%s)", i, strings.Join(idStr, ","))
+		query := fmt.Sprintf("SELECT * FROM order_db_%d.order_tab WHERE `user_id` in (%s)", i, strings.Join(idStr, ","))
 		rows, err := s.db.Query(query)
 		require.NoError(s.T(), err)
 		rowsList = append(rowsList, rows)
@@ -693,4 +695,13 @@ func (s *TestShardingPluginSuite) MasterSlavesMysqlDB(db *sql.DB) *masterslave.M
 
 func TestTestShardingPluginSuite(t *testing.T) {
 	suite.Run(t, new(TestShardingPluginSuite))
+}
+
+func openDB(dsn string) (*sql.DB, error) {
+	l := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	connector, err := logdriver.NewConnector(&mysql.MySQLDriver{}, dsn, logdriver.WithLogger(l))
+	if err != nil {
+		return nil, err
+	}
+	return sql.OpenDB(connector), nil
 }
