@@ -36,6 +36,8 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 		handlerMap: map[string]NewHandlerFunc{
 			vparser.SelectSql: NewSelectHandler,
 			vparser.InsertSql: NewInsertBuilder,
+			vparser.UpdateSql: NewUpdateHandler,
+			vparser.DeleteSql: NewDeleteHandler,
 		},
 	}
 }
