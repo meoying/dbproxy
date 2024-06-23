@@ -60,7 +60,6 @@ func (s *TestShardingPluginSuite) createTable(db *sql.DB, name string) error {
 		account DOUBLE,
 		PRIMARY KEY (user_id)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`, name)
-
 	// Execute the SQL statement
 	_, err := db.Exec(createTableSQL)
 	if err != nil {

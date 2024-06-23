@@ -6,5 +6,8 @@ import (
 )
 
 func NewConnector(d driver.Driver, dsn string, l *slog.Logger) (driver.Connector, error) {
-	return newDriver(d, newLogger(l)).OpenConnector(dsn)
+	if l == nil {
+		l = slog.Default()
+	}
+	return newDriver(d, l).OpenConnector(dsn)
 }

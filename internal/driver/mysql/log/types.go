@@ -24,16 +24,3 @@ type logger interface {
 
 	Handler() slog.Handler
 }
-
-type defaultLogger struct {
-	*slog.Logger
-}
-
-func newLogger(l *slog.Logger) logger {
-	if l == nil {
-		l = slog.Default()
-	}
-	return &defaultLogger{
-		Logger: l,
-	}
-}
