@@ -18,8 +18,7 @@ func TestConnWrapper_Prepare(t *testing.T) {
 
 		query := "SELECT * FROM `users`"
 		conn := mocks.NewMockConn(ctrl)
-		conn.EXPECT().Prepare(query).Return(&stmtWrapper{}, nil).Times(1)
-
+		conn.EXPECT().PrepareContext(gomock.Any(), query).Return(&stmtWrapper{}, nil).Times(1)
 		wrappedConn := &connWrapper{conn: conn, logger: newMockInfoLogger(ctrl)}
 
 		stmt, err := wrappedConn.Prepare(query)
@@ -33,7 +32,7 @@ func TestConnWrapper_Prepare(t *testing.T) {
 
 		query := "SELECT * FROM `users`"
 		conn := mocks.NewMockConn(ctrl)
-		conn.EXPECT().Prepare(query).Return(nil, errors.New("mock Prepare error")).Times(1)
+		conn.EXPECT().PrepareContext(gomock.Any(), query).Return(nil, errors.New("mock PrepareContext error")).Times(1)
 		wrappedConn := &connWrapper{conn: conn, logger: newMockErrorLogger(ctrl)}
 
 		stmt, err := wrappedConn.Prepare(query)
@@ -73,8 +72,9 @@ func TestConnWrapper_Begin(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
+		opts := driver.TxOptions{}
 		conn := mocks.NewMockConn(ctrl)
-		conn.EXPECT().Begin().Return(&txWrapper{}, nil).Times(1)
+		conn.EXPECT().BeginTx(gomock.Any(), opts).Return(&txWrapper{}, nil).Times(1)
 		wrappedConn := &connWrapper{conn: conn, logger: newMockInfoLogger(ctrl)}
 
 		tx, err := wrappedConn.Begin()
@@ -86,8 +86,9 @@ func TestConnWrapper_Begin(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
+		opts := driver.TxOptions{}
 		conn := mocks.NewMockConn(ctrl)
-		conn.EXPECT().Begin().Return(nil, errors.New("mock Begin error")).Times(1)
+		conn.EXPECT().BeginTx(gomock.Any(), opts).Return(nil, errors.New("mock BeginTx error")).Times(1)
 		wrappedConn := &connWrapper{conn: conn, logger: newMockErrorLogger(ctrl)}
 
 		tx, err := wrappedConn.Begin()

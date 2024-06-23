@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"database/sql/driver"
 	"log/slog"
 )
 
@@ -23,4 +24,27 @@ type logger interface {
 	WithGroup(name string) *slog.Logger
 
 	Handler() slog.Handler
+}
+
+type ConnectorOptions struct {
+	l *slog.Logger
+}
+
+type Option func(*ConnectorOptions)
+
+func WithLogger(l *slog.Logger) Option {
+	return func(opts *ConnectorOptions) {
+		opts.l = l
+	}
+}
+
+func NewConnector(d driver.Driver, dsn string, opts ...Option) (driver.Connector, error) {
+	options := &ConnectorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if options.l == nil {
+		options.l = slog.Default()
+	}
+	return newDriver(d, options.l).OpenConnector(dsn)
 }

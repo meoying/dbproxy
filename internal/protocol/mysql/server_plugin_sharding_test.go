@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/ecodeclub/ekit/retry"
@@ -531,7 +533,8 @@ func TestTestShardingPluginSuite(t *testing.T) {
 }
 
 func openDB(dsn string) (*sql.DB, error) {
-	connector, err := logdriver.NewConnector(&mysql.MySQLDriver{}, dsn, nil)
+	l := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	connector, err := logdriver.NewConnector(&mysql.MySQLDriver{}, dsn, logdriver.WithLogger(l))
 	if err != nil {
 		return nil, err
 	}

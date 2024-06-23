@@ -18,11 +18,12 @@ func TestStmtWrapper_Exec(t *testing.T) {
 
 		mockStmt := mocks.NewMockStmt(ctrl)
 		mockResult := mocks.NewMockResult(ctrl)
-		mockStmt.EXPECT().Exec([]driver.Value{"arg1"}).Return(mockResult, nil).Times(1)
+		values := []driver.Value{"arg1"}
+		mockStmt.EXPECT().ExecContext(gomock.Any(), []driver.NamedValue{{Value: "arg1"}}).Return(mockResult, nil).Times(1)
 
 		wrappedStmt := &stmtWrapper{stmt: mockStmt, logger: newMockInfoLogger(ctrl)}
 
-		result, err := wrappedStmt.Exec([]driver.Value{"arg1"})
+		result, err := wrappedStmt.Exec(values)
 		assert.NoError(t, err)
 		assert.NotZero(t, result)
 	})
@@ -30,15 +31,13 @@ func TestStmtWrapper_Exec(t *testing.T) {
 	t.Run("Errorf", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-
-		values := []driver.Value{"arg1"}
-		expectedError := errors.New("mock exec error")
+		expectedError := errors.New("mock exec context error")
 		stmt := mocks.NewMockStmt(ctrl)
-		stmt.EXPECT().Exec(values).Return(nil, expectedError).Times(1)
+		stmt.EXPECT().ExecContext(gomock.Any(), []driver.NamedValue{{Value: "arg1"}}).Return(nil, expectedError).Times(1)
 
 		wrappedStmt := &stmtWrapper{stmt: stmt, logger: newMockErrorLogger(ctrl)}
 
-		_, err := wrappedStmt.Exec(values)
+		_, err := wrappedStmt.Exec([]driver.Value{"arg1"})
 		assert.Error(t, err)
 		assert.Equal(t, expectedError, err)
 	})
@@ -51,7 +50,7 @@ func TestStmtWrapper_Query(t *testing.T) {
 
 		mockStmt := mocks.NewMockStmt(ctrl)
 		mockRows := mocks.NewMockRows(ctrl)
-		mockStmt.EXPECT().Query([]driver.Value{"arg1"}).Return(mockRows, nil).Times(1)
+		mockStmt.EXPECT().QueryContext(gomock.Any(), []driver.NamedValue{{Value: "arg1"}}).Return(mockRows, nil).Times(1)
 
 		wrappedStmt := &stmtWrapper{stmt: mockStmt, logger: newMockInfoLogger(ctrl)}
 
@@ -64,14 +63,13 @@ func TestStmtWrapper_Query(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		values := []driver.Value{"arg1"}
-		expectedError := errors.New("mock query error")
+		expectedError := errors.New("mock query context error")
 		stmt := mocks.NewMockStmt(ctrl)
-		stmt.EXPECT().Query(values).Return(nil, expectedError).Times(1)
+		stmt.EXPECT().QueryContext(gomock.Any(), []driver.NamedValue{{Value: "arg1"}}).Return(nil, expectedError).Times(1)
 
 		wrappedStmt := &stmtWrapper{stmt: stmt, logger: newMockErrorLogger(ctrl)}
 
-		_, err := wrappedStmt.Query(values)
+		_, err := wrappedStmt.Query([]driver.Value{"arg1"})
 		assert.Error(t, err)
 		assert.Equal(t, expectedError, err)
 	})
