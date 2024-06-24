@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 	"github.com/meoying/dbproxy/internal/sharding"
 )
 

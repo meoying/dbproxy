@@ -5,7 +5,7 @@ import (
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor/vparser"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -14,7 +14,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"

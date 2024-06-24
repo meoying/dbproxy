@@ -5,7 +5,7 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor"
 )
 
 type SelectVal struct {
@@ -247,16 +247,16 @@ func (s *SelectVisitor) VisitLimitClauseAtom(ctx *parser.LimitClauseAtomContext)
 }
 
 // 处理聚合函数
-func (b *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunctionCallContext) any {
+func (s *SelectVisitor) VisitAggregateFunctionCall(ctx *parser.AggregateFunctionCallContext) any {
 	aggCtx := ctx.AggregateWindowedFunction()
 	var name string
 	if aggCtx.STAR() != nil {
 		name = "*"
 	} else if aggCtx.FunctionArg() != nil {
 		if aggCtx.FunctionArg().FullColumnName() != nil {
-			name = b.VisitFullColumnName(aggCtx.FunctionArg().FullColumnName().(*parser.FullColumnNameContext)).(string)
+			name = s.VisitFullColumnName(aggCtx.FunctionArg().FullColumnName().(*parser.FullColumnNameContext)).(string)
 		} else if aggCtx.FunctionArg().Constant() != nil {
-			val := b.VisitConstant(aggCtx.FunctionArg().Constant().(*parser.ConstantContext))
+			val := s.VisitConstant(aggCtx.FunctionArg().Constant().(*parser.ConstantContext))
 			switch constant := val.(type) {
 			case string:
 				name = constant

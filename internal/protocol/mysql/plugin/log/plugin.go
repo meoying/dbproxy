@@ -3,20 +3,20 @@ package log
 import (
 	"log/slog"
 
+	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 )
 
 type Plugin struct {
 }
 
 func (p *Plugin) Name() string {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (p *Plugin) Init(cfg []byte) error {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

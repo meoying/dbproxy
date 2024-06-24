@@ -3,7 +3,7 @@ package vparser
 import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor"
 )
 
 type ValMap map[string]any
@@ -35,36 +35,36 @@ func (s *InsertVisitor) Visit(tree antlr.ParseTree) any {
 	return s.VisitRoot(ctx)
 }
 
-func (i *InsertVisitor) Name() string {
+func (s *InsertVisitor) Name() string {
 	return "InsertVisitor"
 }
 
-func (i *InsertVisitor) VisitRoot(ctx *parser.RootContext) any {
+func (s *InsertVisitor) VisitRoot(ctx *parser.RootContext) any {
 	sqlStmts := ctx.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]
 	stmtctx := sqlStmt.(*parser.SqlStatementContext)
-	return i.VisitSqlStatement(stmtctx)
+	return s.VisitSqlStatement(stmtctx)
 }
 
-func (i *InsertVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
+func (s *InsertVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 	dmstmt := ctx.DmlStatement().(*parser.DmlStatementContext)
-	return i.VisitDmlStatement(dmstmt)
+	return s.VisitDmlStatement(dmstmt)
 }
 
-func (i *InsertVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
+func (s *InsertVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	insertStmt := ctx.InsertStatement().(*parser.InsertStatementContext)
-	return i.VisitInsertStatement(insertStmt)
+	return s.VisitInsertStatement(insertStmt)
 }
 
-func (i *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext) any {
+func (s *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext) any {
 	if ctx == nil {
 		return BaseVal{
 			Err: errStmtMatch,
 		}
 	}
 	iVal := InsertVal{
-		TableName: i.VisitTableName(ctx.TableName().(*parser.TableNameContext)).(string),
-		Cols:      i.columns(ctx),
+		TableName: s.VisitTableName(ctx.TableName().(*parser.TableNameContext)).(string),
+		Cols:      s.columns(ctx),
 	}
 
 	insertCtx := ctx.InsertStatementValue().(*parser.InsertStatementValueContext)
@@ -73,7 +73,7 @@ func (i *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext)
 			Err: errStmtMatch,
 		}
 	}
-	vv, astVals, err := i.visitInsertStatementValue(insertCtx, iVal.Cols)
+	vv, astVals, err := s.visitInsertStatementValue(insertCtx, iVal.Cols)
 	if err != nil {
 		return BaseVal{
 			Err: err,
@@ -86,13 +86,13 @@ func (i *InsertVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext)
 	}
 }
 
-func (i *InsertVisitor) visitInsertStatementValue(ctx *parser.InsertStatementValueContext, cols []string) ([]ValMap, []*parser.ExpressionsWithDefaultsContext, error) {
+func (s *InsertVisitor) visitInsertStatementValue(ctx *parser.InsertStatementValueContext, cols []string) ([]ValMap, []*parser.ExpressionsWithDefaultsContext, error) {
 	exPressCtxs := ctx.AllExpressionsWithDefaults()
 	ans := make([]ValMap, 0, len(exPressCtxs))
 	astValues := make([]*parser.ExpressionsWithDefaultsContext, 0, len(exPressCtxs))
 	for _, expressCtx := range exPressCtxs {
 		eCtx := expressCtx.(*parser.ExpressionsWithDefaultsContext)
-		v, err := i.visitExpressionsWithDefaults(eCtx, cols)
+		v, err := s.visitExpressionsWithDefaults(eCtx, cols)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -102,30 +102,30 @@ func (i *InsertVisitor) visitInsertStatementValue(ctx *parser.InsertStatementVal
 	return ans, astValues, nil
 }
 
-func (i *InsertVisitor) visitExpressionsWithDefaults(ctx *parser.ExpressionsWithDefaultsContext, cols []string) (ValMap, error) {
+func (s *InsertVisitor) visitExpressionsWithDefaults(ctx *parser.ExpressionsWithDefaultsContext, cols []string) (ValMap, error) {
 	res := ValMap{}
 	ivals := ctx.AllExpressionOrDefault()
 	if len(cols) != len(ivals) {
 		return nil, errQueryInvalid
 	}
 	for idx, ival := range ivals {
-		v := i.VisitExpressionOrDefault(ival.(*parser.ExpressionOrDefaultContext))
+		v := s.VisitExpressionOrDefault(ival.(*parser.ExpressionOrDefaultContext))
 		res[cols[idx]] = v
 	}
 	return res, nil
 }
 
-func (i *InsertVisitor) VisitExpressionOrDefault(ctx *parser.ExpressionOrDefaultContext) any {
-	val := i.BaseVisitor.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
+func (s *InsertVisitor) VisitExpressionOrDefault(ctx *parser.ExpressionOrDefaultContext) any {
+	val := s.BaseVisitor.VisitPredicateExpression(ctx.Expression().(*parser.PredicateExpressionContext))
 	return val.(visitor.ValueExpr).Val
 }
 
-func (i *InsertVisitor) columns(insertStmt parser.IInsertStatementContext) []string {
+func (s *InsertVisitor) columns(insertStmt parser.IInsertStatementContext) []string {
 	cols := make([]string, 0, 16)
 	if insertStmt.FullColumnNameList() != nil {
 		columnStmts := insertStmt.FullColumnNameList().AllFullColumnName()
 		for _, colStmt := range columnStmts {
-			cols = append(cols, i.RemoveQuote(colStmt.Uid().GetText()))
+			cols = append(cols, s.RemoveQuote(colStmt.Uid().GetText()))
 		}
 	}
 	return cols
