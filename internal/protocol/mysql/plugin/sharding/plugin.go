@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/meoying/dbproxy/internal/datasource"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
-	sharding2 "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	shardinghandler "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/sharding"
@@ -14,7 +14,7 @@ import (
 type Plugin struct {
 	ds         datasource.DataSource
 	algorithm  sharding.Algorithm
-	handlerMap map[string]sharding2.NewHandlerFunc
+	handlerMap map[string]shardinghandler.NewHandlerFunc
 }
 
 func (p *Plugin) Name() string {
@@ -34,11 +34,11 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 	return &Plugin{
 		ds:        ds,
 		algorithm: algorithm,
-		handlerMap: map[string]sharding2.NewHandlerFunc{
-			vparser.SelectSql: sharding2.NewSelectHandler,
-			vparser.InsertSql: sharding2.NewInsertBuilder,
-			vparser.UpdateSql: sharding2.NewUpdateHandler,
-			vparser.DeleteSql: sharding2.NewDeleteHandler,
+		handlerMap: map[string]shardinghandler.NewHandlerFunc{
+			vparser.SelectSql: shardinghandler.NewSelectHandler,
+			vparser.InsertSql: shardinghandler.NewInsertBuilder,
+			vparser.UpdateSql: shardinghandler.NewUpdateHandler,
+			vparser.DeleteSql: shardinghandler.NewDeleteHandler,
 		},
 	}
 }
@@ -62,7 +62,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		sqlName := checkVisitor.Visit(ctx.ParsedQuery.Root).(string)
 		newHandlerFunc, ok := p.handlerMap[sqlName]
 		if !ok {
-			return nil, sharding2.ErrUnKnowSql
+			return nil, shardinghandler.ErrUnKnowSql
 		}
 		handler, err := newHandlerFunc(p.algorithm, p.ds, ctx)
 		if err != nil {

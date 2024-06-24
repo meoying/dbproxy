@@ -3,7 +3,7 @@ package log
 import (
 	"log/slog"
 
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
