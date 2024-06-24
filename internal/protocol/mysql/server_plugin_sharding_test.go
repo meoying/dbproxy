@@ -10,10 +10,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/ecodeclub/ekit/retry"
-
 	"strconv"
 	"strings"
+
+	"github.com/ecodeclub/ekit/retry"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/sharding"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -26,7 +27,6 @@ import (
 
 	"testing"
 
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

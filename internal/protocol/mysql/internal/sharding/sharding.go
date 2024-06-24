@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ecodeclub/ekit/slice"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/visitor"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 )

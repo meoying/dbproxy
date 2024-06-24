@@ -7,8 +7,8 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
 )
 
 var _ Executor = &QueryExecutor{}

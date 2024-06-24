@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/ecodeclub/ekit/sqlx"
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/context"
+	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 )
 
 // Plugin 代表的是插件
