@@ -3,7 +3,11 @@ package log
 import (
 	"context"
 	"database/sql/driver"
+
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 )
+
+var _ driver2.Conn = &connWrapper{}
 
 type connWrapper struct {
 	conn   driver.Conn

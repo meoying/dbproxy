@@ -5,7 +5,10 @@ import (
 	"database/sql/driver"
 
 	"github.com/ecodeclub/ekit/slice"
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 )
+
+var _ driver2.Stmt = &stmtWrapper{}
 
 type stmtWrapper struct {
 	stmt   driver.Stmt

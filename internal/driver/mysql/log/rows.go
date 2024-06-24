@@ -5,7 +5,11 @@ import (
 	"errors"
 	"io"
 	"reflect"
+
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 )
+
+var _ driver2.Rows = &rowsWrapper{}
 
 type rowsWrapper struct {
 	rows   driver.Rows

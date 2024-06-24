@@ -2,7 +2,11 @@ package log
 
 import (
 	"database/sql/driver"
+
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 )
+
+var _ driver2.Driver = &driverWrapper{}
 
 type driverWrapper struct {
 	driver driver.Driver

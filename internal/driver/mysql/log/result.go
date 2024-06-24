@@ -3,24 +3,14 @@ package log
 import (
 	"database/sql/driver"
 
-	"github.com/go-sql-driver/mysql"
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 )
+
+var _ driver2.Result = &resultWrapper{}
 
 type resultWrapper struct {
 	result driver.Result
 	logger logger
-}
-
-func (r *resultWrapper) AllRowsAffected() []int64 {
-	affected := r.result.(mysql.Result).AllRowsAffected()
-	r.logger.Info("获取所有受影响的行数", "行数", affected)
-	return affected
-}
-
-func (r *resultWrapper) AllLastInsertIds() []int64 {
-	ids := r.result.(mysql.Result).AllLastInsertIds()
-	r.logger.Info("获取所有最后插入的ID", "IDs", ids)
-	return ids
 }
 
 func (r *resultWrapper) LastInsertId() (int64, error) {

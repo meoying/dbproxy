@@ -1,14 +1,21 @@
 package log
 
 import (
+	"database/sql/driver"
 	"errors"
 	"testing"
 
+	driver2 "github.com/meoying/dbproxy/internal/driver"
 	logmocks "github.com/meoying/dbproxy/internal/driver/mysql/log/mocks"
-	"github.com/meoying/dbproxy/internal/driver/mysql/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
+
+//go:generate mockgen -source=./driver_test.go -destination=mocks/driver.mock.go -package=logmocks -typed Driver
+type Driver interface {
+	driver.Driver
+	driver2.Driver
+}
 
 func TestDriver_OpenConnector(t *testing.T) {
 	t.Run("Logf", func(t *testing.T) {
@@ -16,7 +23,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		defer ctrl.Finish()
 
 		name := "dsn"
-		mockDriverContext := mocks.NewMockDriver(ctrl)
+		mockDriverContext := logmocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
 		wrappedDriver := newDriver(mockDriverContext, newMockInfoLogger(ctrl))
 
@@ -30,7 +37,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		defer ctrl.Finish()
 
 		name := "dsn"
-		mockDriverContext := mocks.NewMockDriver(ctrl)
+		mockDriverContext := logmocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, errors.New("mock OpenConnector Error"))
 		wrappedDriver := newDriver(mockDriverContext, newMockErrorLogger(ctrl))
 
