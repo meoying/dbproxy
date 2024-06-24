@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	driver2 "github.com/meoying/dbproxy/internal/driver"
-	logmocks "github.com/meoying/dbproxy/internal/driver/mysql/log/mocks"
+	driver2 "github.com/meoying/dbproxy/internal/protocol/mysql/driver"
+	logmocks "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )

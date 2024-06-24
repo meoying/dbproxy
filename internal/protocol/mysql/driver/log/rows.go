@@ -6,7 +6,7 @@ import (
 	"io"
 	"reflect"
 
-	driver2 "github.com/meoying/dbproxy/internal/driver"
+	driver2 "github.com/meoying/dbproxy/internal/protocol/mysql/driver"
 )
 
 var _ driver2.Rows = &rowsWrapper{}
