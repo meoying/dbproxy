@@ -21,7 +21,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
-	logdriver "github.com/meoying/dbproxy/internal/driver/mysql/log"
+	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/stretchr/testify/assert"
 

@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/meoying/dbproxy/internal/driver/mocks"
-	logmocks "github.com/meoying/dbproxy/internal/driver/mysql/log/mocks"
+	logmocks "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log/mocks"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
