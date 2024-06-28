@@ -8,7 +8,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
 type Handler struct {
@@ -21,7 +21,7 @@ type Handler struct {
 // 1. SELECT 语句：默认走从库
 // 2. 其它语句：默认走主库
 // 3. 在 SELECT 语句中 proxy hint 中使用了 useMaster 的标记，则走主库
-func (h *Handler) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
+func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	dml := ctx.ParsedQuery.FirstDML()
 	sql := dml.GetChildren()[0]
 
@@ -41,7 +41,7 @@ func (h *Handler) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
-		return &sharding.Result{
+		return &plugin.Result{
 			Rows: res,
 		}, err
 	default:
@@ -50,7 +50,7 @@ func (h *Handler) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
-		return &sharding.Result{
+		return &plugin.Result{
 			Result: res,
 		}, err
 	}

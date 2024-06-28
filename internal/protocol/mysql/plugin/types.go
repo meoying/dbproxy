@@ -19,13 +19,15 @@ type Plugin interface {
 	Join(next Handler) Handler
 }
 
-type HandleFunc func(ctx *pcontext.Context) (*sharding.Result, error)
+type HandleFunc func(ctx *pcontext.Context) (*Result, error)
 
-func (h HandleFunc) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
+func (h HandleFunc) Handle(ctx *pcontext.Context) (*Result, error) {
 	return h(ctx)
 }
 
 type Handler interface {
 	// Handle 返回的 error 只会在网关这边，而不会传递回去客户端
-	Handle(ctx *pcontext.Context) (*sharding.Result, error)
+	Handle(ctx *pcontext.Context) (*Result, error)
 }
+
+type Result sharding.Result
