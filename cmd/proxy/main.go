@@ -1,14 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/ecodeclub/ekit/spi"
+	"github.com/spf13/viper"
+	"log"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/forward"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/log"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 func main() {
@@ -27,15 +28,56 @@ func main() {
 		panic(fmt.Errorf("解析配置文件失败 %w", err))
 	}
 	// TODO 加载 .so 来完成
-	plugins := []plugin.Plugin{
-		&forward.Plugin{},
-		&log.Plugin{},
+	var plugins []plugin.Plugin
+	for _, p := range cfg.Plugins.Items {
+		// 加载配置文件
+		configFile := fmt.Sprintf("%s/config.yaml", p.ConfigLocation)
+		viper.SetConfigFile(configFile)
+		err = viper.ReadInConfig()
+		if err != nil {
+			panic(fmt.Errorf("解析配置文件失败 %w", err))
+		}
+		configData := make(map[string]any, 16)
+		viper.Unmarshal(&configData)
+		configByte, err := json.Marshal(configData)
+		if err != nil {
+			panic(fmt.Errorf("解析配置文件失败 %w", err))
+		}
+		// 加载插件
+		ps, err := spi.LoadService[plugin.Plugin](p.Location, "Plugin")
+		if err != nil {
+			panic(fmt.Errorf("加载插件失败 %w", err))
+		}
+		log.Println("加载插件成功")
+		log.Println("开始初始化插件")
+		// 初始化插件
+		err = ps[0].Init(configByte)
+		if err != nil {
+			panic(fmt.Errorf("加载插件失败 %w", err))
+		}
+		plugins = append(plugins, ps[0])
 	}
-
 	server := mysql.NewServer(cfg.Addr, plugins)
+	log.Println("服务开启。。。。")
 	err = server.Start()
 	if err != nil {
 		// 可以是正常退出，也可能是异常退出，暂时还没区分并且解决
 		panic(err)
 	}
+}
+
+type Config struct {
+	Addr    string  `yaml:"addr"`
+	Plugins Plugins `yaml:"plugins"`
+}
+
+type Plugins struct {
+	Location string   `yaml:"location"`
+	Items    []Plugin `yaml:"items"`
+}
+
+type Plugin struct {
+	Name           string `yaml:"name"`
+	Location       string `yaml:"location"`
+	ConfigLocation string `yaml:"config_location"`
 }

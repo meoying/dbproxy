@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/antlr4-go/antlr/v4 v4.13.0
-	github.com/ecodeclub/ekit v0.0.9
+	github.com/ecodeclub/ekit v0.0.9-0.20240604015119-6fdf3ad42c4b
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/magiconair/properties v1.8.7
