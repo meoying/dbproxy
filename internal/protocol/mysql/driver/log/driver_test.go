@@ -1,20 +1,43 @@
 package log
 
 import (
-	"database/sql/driver"
 	"errors"
 	"testing"
 
-	driver2 "github.com/meoying/dbproxy/internal/protocol/mysql/driver"
 	logmocks "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log/mocks"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
-//go:generate mockgen -source=./driver_test.go -destination=mocks/driver.mock.go -package=logmocks -typed Driver
-type Driver interface {
-	driver.Driver
-	driver2.Driver
+func TestDriver_Open(t *testing.T) {
+	t.Run("Logf", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		name := "dsn"
+		mockDriver := mocks.NewMockDriver(ctrl)
+		mockDriver.EXPECT().Open(name).Return(nil, nil)
+		wrappedDriver := newDriver(mockDriver, newMockInfoLogger(ctrl))
+
+		c, err := wrappedDriver.Open(name)
+
+		require.NoError(t, err)
+		require.NotZero(t, c)
+	})
+	t.Run("Errorf", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		name := "dsn"
+		mockDriver := mocks.NewMockDriver(ctrl)
+		mockDriver.EXPECT().Open(name).Return(nil, errors.New("mock Open Error"))
+		wrappedDriver := newDriver(mockDriver, newMockErrorLogger(ctrl))
+
+		c, err := wrappedDriver.Open(name)
+		require.Error(t, err)
+		require.Zero(t, c)
+	})
 }
 
 func TestDriver_OpenConnector(t *testing.T) {
@@ -23,7 +46,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		defer ctrl.Finish()
 
 		name := "dsn"
-		mockDriverContext := logmocks.NewMockDriver(ctrl)
+		mockDriverContext := mocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, nil)
 		wrappedDriver := newDriver(mockDriverContext, newMockInfoLogger(ctrl))
 
@@ -37,7 +60,7 @@ func TestDriver_OpenConnector(t *testing.T) {
 		defer ctrl.Finish()
 
 		name := "dsn"
-		mockDriverContext := logmocks.NewMockDriver(ctrl)
+		mockDriverContext := mocks.NewMockDriver(ctrl)
 		mockDriverContext.EXPECT().OpenConnector(name).Return(nil, errors.New("mock OpenConnector Error"))
 		wrappedDriver := newDriver(mockDriverContext, newMockErrorLogger(ctrl))
 
