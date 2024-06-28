@@ -39,6 +39,45 @@ func (m *MockDriver) EXPECT() *MockDriverMockRecorder {
 	return m.recorder
 }
 
+// Open mocks base method.
+func (m *MockDriver) Open(name string) (driver.Conn, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Open", name)
+	ret0, _ := ret[0].(driver.Conn)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Open indicates an expected call of Open.
+func (mr *MockDriverMockRecorder) Open(name any) *DriverOpenCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockDriver)(nil).Open), name)
+	return &DriverOpenCall{Call: call}
+}
+
+// DriverOpenCall wrap *gomock.Call
+type DriverOpenCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *DriverOpenCall) Return(arg0 driver.Conn, arg1 error) *DriverOpenCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *DriverOpenCall) Do(f func(string) (driver.Conn, error)) *DriverOpenCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *DriverOpenCall) DoAndReturn(f func(string) (driver.Conn, error)) *DriverOpenCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // OpenConnector mocks base method.
 func (m *MockDriver) OpenConnector(name string) (driver.Connector, error) {
 	m.ctrl.T.Helper()

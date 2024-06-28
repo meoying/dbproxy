@@ -9,6 +9,7 @@ import (
 // Driver 表示driver包中的[驱动]对象要实现的方法集合
 // 注意: 常用的SQLite3包实现了 Driver 接口但未实现 DriverContext 接口
 type Driver interface {
+	driver.Driver
 	driver.DriverContext
 }
 

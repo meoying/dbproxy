@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	logmocks "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log/mocks"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -20,7 +19,7 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 		mockConnector := mocks.NewMockConnector(ctrl)
 		mockConn := mocks.NewMockConn(ctrl)
 		mockConnector.EXPECT().Connect(gomock.Any()).Return(mockConn, nil).Times(1)
-		mockDriver := logmocks.NewMockDriver(ctrl)
+		mockDriver := mocks.NewMockDriver(ctrl)
 
 		var connector driver.Connector = mockConnector
 		var d driver.Driver = mockDriver
@@ -38,7 +37,7 @@ func TestConnectorWrapper_Connect(t *testing.T) {
 		mockConnector := mocks.NewMockConnector(ctrl)
 		expectedError := errors.New("mock Connect error")
 		mockConnector.EXPECT().Connect(gomock.Any()).Return(nil, expectedError).Times(1)
-		mockDriver := logmocks.NewMockDriver(ctrl)
+		mockDriver := mocks.NewMockDriver(ctrl)
 
 		var connector driver.Connector = mockConnector
 		var d driver.Driver = mockDriver
@@ -55,7 +54,7 @@ func TestConnectorWrapper_Driver(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockConnector := mocks.NewMockConnector(ctrl)
-	mockDriver := logmocks.NewMockDriver(ctrl)
+	mockDriver := mocks.NewMockDriver(ctrl)
 
 	var connector driver.Connector = mockConnector
 	var d driver.Driver = mockDriver

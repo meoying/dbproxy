@@ -20,6 +20,16 @@ func newDriver(d driver.Driver, l logger) *driverWrapper {
 	}
 }
 
+func (d *driverWrapper) Open(name string) (driver.Conn, error) {
+	conn, err := d.driver.Open(name)
+	if err != nil {
+		d.logger.Error("打开连接失败", "名称", name, "错误", err)
+		return nil, err
+	}
+	d.logger.Info("打开连接成功", "名称", name)
+	return &connWrapper{conn: conn, logger: d.logger}, nil
+}
+
 func (d *driverWrapper) OpenConnector(name string) (driver.Connector, error) {
 	openConnector, err := d.driver.(driver.DriverContext).OpenConnector(name)
 	if err != nil {
