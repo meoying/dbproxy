@@ -69,6 +69,9 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 			return nil, err
 		}
 		r, err := handler.QueryOrExec(ctx.Context)
-		return (*plugin.Result)(r), err
+		if err != nil {
+			return nil, err
+		}
+		return (*plugin.Result)(r), nil
 	})
 }
