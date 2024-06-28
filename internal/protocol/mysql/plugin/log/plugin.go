@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
@@ -21,7 +22,7 @@ func (p *Plugin) Init(cfg []byte) error {
 }
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
-	return plugin.HandleFunc(func(ctx *pcontext.Context) (*plugin.Result, error) {
+	return plugin.HandleFunc(func(ctx *pcontext.Context) (*sharding.Result, error) {
 		slog.Debug("处理查询：", slog.String("sql", ctx.Query))
 		return next.Handle(ctx)
 	})

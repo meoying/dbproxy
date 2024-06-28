@@ -1,10 +1,8 @@
 package plugin
 
 import (
-	"database/sql"
-
-	"github.com/ecodeclub/ekit/sqlx"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 )
 
 // Plugin 代表的是插件
@@ -21,23 +19,13 @@ type Plugin interface {
 	Join(next Handler) Handler
 }
 
-type HandleFunc func(ctx *pcontext.Context) (*Result, error)
+type HandleFunc func(ctx *pcontext.Context) (*sharding.Result, error)
 
-func (h HandleFunc) Handle(ctx *pcontext.Context) (*Result, error) {
+func (h HandleFunc) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
 	return h(ctx)
 }
 
 type Handler interface {
 	// Handle 返回的 error 只会在网关这边，而不会传递回去客户端
-	Handle(ctx *pcontext.Context) (*Result, error)
-}
-
-type Result struct {
-	// 这两个字段中只能有一个
-	// Rows 的 error 会被传递过去客户端
-	Rows sqlx.Rows
-	// Result 的 error 会被传递过去客户端
-	Result sql.Result
-	// ChangeTransaction 是否改变事务的状态
-	ChangeTransaction bool
+	Handle(ctx *pcontext.Context) (*sharding.Result, error)
 }

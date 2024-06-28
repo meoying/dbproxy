@@ -6,7 +6,7 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 )
 
 // Handler 什么也不做，就是转发请求
@@ -16,9 +16,9 @@ type Handler struct {
 	tx datasource.Tx
 }
 
-func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
+func (f *Handler) Handle(ctx *pcontext.Context) (*sharding.Result, error) {
 	var err error
-	result := &plugin.Result{}
+	result := &sharding.Result{}
 	sqlStmt := ctx.ParsedQuery.SqlStatement()
 	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
@@ -32,7 +32,7 @@ func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 }
 
 // handleDml 处理DML语句
-func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
+func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*sharding.Result, error) {
 	switch stmt.GetChildren()[0].(type) {
 	case *parser.SimpleSelectContext:
 		return f.handleSelect(ctx)
@@ -43,11 +43,11 @@ func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementCont
 	case *parser.DeleteStatementContext:
 		return f.handleCUD(ctx)
 	}
-	return &plugin.Result{}, nil
+	return &sharding.Result{}, nil
 }
 
 // handleSelect 处理Select语句
-func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
+func (f *Handler) handleSelect(ctx *pcontext.Context) (*sharding.Result, error) {
 	var rows *sql.Rows
 	var err error
 	if ctx.InTransition {
@@ -62,13 +62,13 @@ func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 		})
 	}
 
-	return &plugin.Result{
+	return &sharding.Result{
 		Rows: rows,
 	}, err
 }
 
 // handleCUD 操作数据
-func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
+func (f *Handler) handleCUD(ctx *pcontext.Context) (*sharding.Result, error) {
 	var err error
 	var res sql.Result
 	if ctx.InTransition {
@@ -83,7 +83,7 @@ func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 		})
 	}
 
-	return &plugin.Result{
+	return &sharding.Result{
 		Result: res,
 	}, err
 }

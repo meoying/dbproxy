@@ -44,7 +44,7 @@ func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
 }
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
-	return plugin.HandleFunc(func(ctx *pcontext.Context) (*plugin.Result, error) {
+	return plugin.HandleFunc(func(ctx *pcontext.Context) (*shardinghandler.Result, error) {
 		// 要完成几个步骤：
 		// 1. 从 ctx.ParsedQuery 里面拿到 Where 部分，参考 ast 里面的东西来看怎么拿 WHERE
 		// 如果是 INSERT，则是拿到 VALUE 或者 VALUES 的部分

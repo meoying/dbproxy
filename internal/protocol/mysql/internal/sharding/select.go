@@ -16,7 +16,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor"
 	visitorBuilder "github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/query"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/pkg/errors"
@@ -70,7 +69,7 @@ func (s *SelectHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 
 }
 
-func (s *SelectHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error) {
+func (s *SelectHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 	qs, err := s.Build(ctx)
 	if err != nil {
 		return nil, err
@@ -91,7 +90,7 @@ func (s *SelectHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error)
 	if err != nil {
 		return nil, err
 	}
-	return &plugin.Result{
+	return &Result{
 		Rows: rows,
 	}, nil
 }
