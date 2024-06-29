@@ -86,18 +86,7 @@ func (c *connection) QueryContext(ctx context.Context, query string, args []driv
 }
 
 func (c *connection) Prepare(query string) (driver.Stmt, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *connection) Close() error {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (c *connection) Begin() (driver.Tx, error) {
-	// TODO implement me
-	panic("implement me")
+	return &stmt{}, nil
 }
 
 func (c *connection) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
@@ -105,9 +94,16 @@ func (c *connection) PrepareContext(ctx context.Context, query string) (driver.S
 	panic("implement me")
 }
 
+func (c *connection) Begin() (driver.Tx, error) {
+	return &transaction{}, nil
+}
+
 func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
-	// TODO implement me
-	panic("implement me")
+	return &transaction{}, nil
+}
+
+func (c *connection) Close() error {
+	return nil
 }
 
 // func (c *connection) ResetSession(ctx context.Context) error {

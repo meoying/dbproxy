@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestTestShardingDriverSuite(t *testing.T) {
+func TestShardingDriverTestSuite(t *testing.T) {
 	suite.Run(t, new(shardingDriverTestSuite))
 }
 
@@ -157,7 +157,7 @@ func openDB(dsn string) (*sql.DB, error) {
 
 // TODO: TearDownSuite
 
-func (s *shardingDriverTestSuite) TestDriver_NormalSelect() {
+func (s *shardingDriverTestSuite) TestDriver_Select() {
 	t := s.T()
 	// 初始化数据
 	testcases := []struct {
@@ -413,30 +413,190 @@ func (s *shardingDriverTestSuite) TestDriver_NormalSelect() {
 	}
 }
 
+func (s *shardingDriverTestSuite) TestDriver_CUD() {
+	t := s.T()
+	testcases := []struct {
+		name   string
+		sql    string
+		before func(t *testing.T)
+		after  func(t *testing.T)
+	}{
+		// Insert
+		{
+			name:   "插入多条数据",
+			sql:    "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
+			before: func(t *testing.T) {},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1, 2, 3})
+				// 表示每个库的数据
+				wantOrderList := []Order{
+					{
+						UserId:  3,
+						OrderId: 3,
+						Content: "content3",
+						Account: 1.3,
+					},
+					{
+						UserId:  1,
+						OrderId: 3,
+						Content: "content",
+						Account: 1.1,
+					},
+					{
+						UserId:  2,
+						OrderId: 4,
+						Content: "content4",
+						Account: 1.3,
+					},
+				}
+				actualOrderList := s.getColsFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, actualOrderList)
+			},
+		},
+		// Update
+		{
+			name: "更新一行",
+			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1;",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+				}
+				s.execSql(t, sqls)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1, 2})
+				wantOrderList := []Order{
+					{
+						UserId:  1,
+						OrderId: 3,
+						Content: "content",
+						Account: 1.6,
+					},
+					{
+						UserId:  2,
+						OrderId: 4,
+						Content: "content4",
+						Account: 1.3,
+					},
+				}
+				orders := s.getColsFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "更新多行",
+			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` in (1,2);",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+				}
+				s.execSql(t, sqls)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1, 2, 3})
+				wantOrderList := []Order{
+					{
+						UserId:  3,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+					{
+						UserId:  1,
+						OrderId: 3,
+						Content: "content",
+						Account: 1.6,
+					},
+					{
+						UserId:  2,
+						OrderId: 3,
+						Content: "content",
+						Account: 1.6,
+					},
+				}
+				orders := s.getColsFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		// Delete
+		{
+			name: "删除一行",
+			sql:  "DELETE FROM `order` WHERE `user_id` = 1;",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+				}
+				s.execSql(t, sqls)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1, 2, 3})
+				wantOrderList := []Order{
+					{
+						UserId:  3,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+					{
+						UserId:  2,
+						OrderId: 4,
+						Content: "content4",
+						Account: 1.3,
+					},
+				}
+				orders := s.getColsFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.before(t)
+
+			_, err := s.db.Exec(tc.sql)
+			require.NoError(t, err)
+
+			tc.after(t)
+			// 清理数据
+			s.clearTable(t)
+		})
+	}
+}
+
 func (s *shardingDriverTestSuite) clearTable(t *testing.T) {
+	t.Helper()
 	for i := 0; i < 3; i++ {
 		_, err := s.db.Exec(fmt.Sprintf("DELETE FROM `driver_db_%d.order_tab`;", i))
 		require.NoError(t, err)
 	}
 }
 
-func (s *shardingDriverTestSuite) getRowsFromTable(ids []int64) []*sql.Rows {
+func (s *shardingDriverTestSuite) getRowsFromTable(t *testing.T, ids []int64) *sql.Rows {
+	t.Helper()
 	idStr := make([]string, 0, len(ids))
 	for _, id := range ids {
 		idStr = append(idStr, strconv.FormatInt(id, 10))
 	}
-	rowsList := make([]*sql.Rows, 0, 3)
-	for i := 0; i < 3; i++ {
-		query := fmt.Sprintf("SELECT * FROM `driver_db_%d.order_tab` WHERE `user_id` in (%s)", i, strings.Join(idStr, ","))
-		rows, err := s.db.Query(query)
-		require.NoError(s.T(), err)
-		rowsList = append(rowsList, rows)
-	}
-	return rowsList
-
+	query := fmt.Sprintf("SELECT /* useMaster */ `user_id`, `order_id`, `content`, `account` FROM `order_tab` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
+	rows, err := s.db.Query(query)
+	require.NoError(t, err)
+	return rows
 }
 
 func (s *shardingDriverTestSuite) execSql(t *testing.T, sqls []string) {
+	t.Helper()
 	for _, vsql := range sqls {
 		_, err := s.db.Exec(vsql)
 		require.NoError(t, err)
@@ -455,6 +615,7 @@ func (s *shardingDriverTestSuite) getOrder(row *sql.Rows) (Order, error) {
 }
 
 func (s *shardingDriverTestSuite) getColsFromRows(t *testing.T, rows *sql.Rows) []Order {
+	t.Helper()
 	res := make([]Order, 0, 2)
 	for rows.Next() {
 		order := Order{}
