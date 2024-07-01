@@ -24,9 +24,6 @@ type connector struct {
 	algorithm sharding.Algorithm
 }
 
-// loadConfig, ConnectorBuilder.loadConfigFile(path), setConfig(cfg Config)
-// Build() (driver.Connector, error)
-// BuildDB() (*sql.DB, error)
 func newConnector(ds datasource.DataSource, algorithm sharding.Algorithm) *connector {
 	return &connector{ds: ds, algorithm: algorithm}
 }
