@@ -57,8 +57,8 @@ func main() {
 		}
 		plugins = append(plugins, ps[0])
 	}
-	server := mysql.NewServer(cfg.Addr, plugins)
-	log.Println("服务开启。。。。")
+	server := mysql.NewServer(cfg.Server.Addr, plugins)
+	log.Printf("服务开启。。。。端口：%s", cfg.Server.Addr)
 	err = server.Start()
 	if err != nil {
 		// 可以是正常退出，也可能是异常退出，暂时还没区分并且解决
@@ -67,8 +67,12 @@ func main() {
 }
 
 type Config struct {
-	Addr    string  `yaml:"addr"`
+	Server  Server  `yaml:"server"`
 	Plugins Plugins `yaml:"plugins"`
+}
+
+type Server struct {
+	Addr string `yaml:"addr"`
 }
 
 type Plugins struct {

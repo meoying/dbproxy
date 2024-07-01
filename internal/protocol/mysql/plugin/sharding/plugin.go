@@ -34,7 +34,7 @@ func (p *Plugin) Name() string {
 func (p *Plugin) Init(cfg []byte) error {
 	// 从配置文件加载ds 和 algorithm
 	var shardingCfg Config
-	err := json.Unmarshal(cfg,&shardingCfg)
+	err := json.Unmarshal(cfg, &shardingCfg)
 	if err != nil {
 		return fmt.Errorf("解析配置文件失败 %w", err)
 	}
@@ -121,6 +121,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		// 如果是 INSERT，则是拿到 VALUE 或者 VALUES 的部分
 		// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 		// 3. 调用 p.ds.Exec 或者 p.ds.Query
+		log.Println("xxxxxx dasndosandosa")
 		if next != nil {
 			_, _ = next.Handle(ctx)
 		}
@@ -135,6 +136,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		if !ok {
 			return nil, shardinghandler.ErrUnKnowSql
 		}
+
 		handler, err := newHandlerFunc(p.algorithm, p.ds, ctx)
 		if err != nil {
 			return nil, err

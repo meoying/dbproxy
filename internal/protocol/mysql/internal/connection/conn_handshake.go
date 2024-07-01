@@ -15,7 +15,7 @@ import (
 // TODO 支持 SSL
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase.html#sect_protocol_connection_phase_initial_handshake
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake_v10.html
-// 可以参考 README 中的一个例子
+// 可以参考 README.md 中的一个例子
 func (mc *Conn) startHandshake() error {
 	// 报文比较复杂
 	data := make([]byte, 1)

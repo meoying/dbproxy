@@ -1,7 +1,7 @@
 # 代理 server 有关的配置
 server:
   # 服务器启动监听的端口
-  addr: ":8306"
+  addr: ":8307"
 # 使用的插件的配置，我们会按照插件的顺序进行加载和初始化
 plugins:
   # 插件所在的位置，必须是一个目录
@@ -19,4 +19,5 @@ plugins:
       # so文件
       location: "./plugin/sharding"
       # so的配置文件
-      configLocation: "./plugin/sharding"
+      configLocation: "./plugin/sharding/config"
+

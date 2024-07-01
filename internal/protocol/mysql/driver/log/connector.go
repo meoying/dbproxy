@@ -3,7 +3,6 @@ package log
 import (
 	"context"
 	"database/sql/driver"
-
 	driver2 "github.com/meoying/dbproxy/internal/protocol/mysql/driver"
 )
 
