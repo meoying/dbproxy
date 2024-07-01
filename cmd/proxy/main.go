@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+
 	"github.com/ecodeclub/ekit/spi"
 	"github.com/spf13/viper"
-	"log"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
@@ -38,7 +39,10 @@ func main() {
 			panic(fmt.Errorf("解析配置文件失败 %w", err))
 		}
 		configData := make(map[string]any, 16)
-		viper.Unmarshal(&configData)
+		err = viper.Unmarshal(&configData)
+		if err != nil {
+			panic(fmt.Errorf("解析配置文件失败 %w", err))
+		}
 		configByte, err := json.Marshal(configData)
 		if err != nil {
 			panic(fmt.Errorf("解析配置文件失败 %w", err))

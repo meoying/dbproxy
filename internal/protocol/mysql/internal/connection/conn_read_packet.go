@@ -2,6 +2,7 @@ package connection
 
 import (
 	"fmt"
+
 	"github.com/meoying/dbproxy/internal/errs"
 )
 

@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
+	"log/slog"
+	"os"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
@@ -16,9 +20,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
-	"log"
-	"log/slog"
-	"os"
 )
 
 type Plugin struct {
