@@ -1,13 +1,14 @@
 package sharding
 
 import (
+	"log"
+
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	shardinghandler "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/sharding"
-	"log"
 )
 
 type Plugin struct {

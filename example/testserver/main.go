@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/spf13/viper"
 	"net/http"
 	"strconv"
+
+	"github.com/spf13/viper"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"

@@ -3,12 +3,13 @@ package forward
 import (
 	"database/sql"
 	"encoding/json"
+	"log/slog"
+	"os"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	"log/slog"
-	"os"
 )
 
 var _ plugin.Plugin = &Plugin{}
@@ -23,11 +24,11 @@ func (p *Plugin) Name() string {
 
 func (p *Plugin) Init(cfg []byte) error {
 	var config Config
-	err := json.Unmarshal(cfg,&config)
+	err := json.Unmarshal(cfg, &config)
 	if err != nil {
 		return err
 	}
-	db,err := openDB(config.Dsn)
+	db, err := openDB(config.Dsn)
 	if err != nil {
 		return err
 	}
