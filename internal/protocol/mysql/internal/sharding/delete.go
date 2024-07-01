@@ -7,7 +7,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/sharding"
 )
 
@@ -59,13 +58,13 @@ func (d *DeleteHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 	return res, nil
 }
 
-func (d *DeleteHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error) {
+func (d *DeleteHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 	qs, err := d.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
 	res := exec(ctx, d.db, qs)
-	return &plugin.Result{
+	return &Result{
 		Result: res,
 	}, nil
 }

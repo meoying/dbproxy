@@ -9,7 +9,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	vbuilder "github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/operator"
 	"github.com/pkg/errors"
@@ -24,13 +23,13 @@ type InsertHandler struct {
 	ctx       *pcontext.Context
 }
 
-func (i *InsertHandler) QueryOrExec(ctx context.Context) (*plugin.Result, error) {
+func (i *InsertHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 	qs, err := i.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
 	res := exec(ctx, i.db, qs)
-	return &plugin.Result{
+	return &Result{
 		Result: res,
 	}, res.Err()
 }

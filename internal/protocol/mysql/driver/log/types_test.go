@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
-	logmocks "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log/mocks"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ func TestNewConnector(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		d := logmocks.NewMockDriver(ctrl)
+		d := mocks.NewMockDriver(ctrl)
 		dsn := "valid_dsn"
 		d.EXPECT().OpenConnector(dsn).Return(mocks.NewMockConnector(ctrl), nil)
 
@@ -35,7 +34,7 @@ func TestNewConnector(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		d := logmocks.NewMockDriver(ctrl)
+		d := mocks.NewMockDriver(ctrl)
 		dsn := "valid_dsn"
 		d.EXPECT().OpenConnector(dsn).Return(mocks.NewMockConnector(ctrl), nil)
 

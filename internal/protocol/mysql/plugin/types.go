@@ -1,10 +1,8 @@
 package plugin
 
 import (
-	"database/sql"
-
-	"github.com/ecodeclub/ekit/sqlx"
 	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 )
 
 // Plugin 代表的是插件
@@ -32,12 +30,4 @@ type Handler interface {
 	Handle(ctx *pcontext.Context) (*Result, error)
 }
 
-type Result struct {
-	// 这两个字段中只能有一个
-	// Rows 的 error 会被传递过去客户端
-	Rows sqlx.Rows
-	// Result 的 error 会被传递过去客户端
-	Result sql.Result
-	// ChangeTransaction 是否改变事务的状态
-	ChangeTransaction bool
-}
+type Result sharding.Result
