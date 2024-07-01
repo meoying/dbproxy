@@ -1,0 +1,11 @@
+db_pattern: "order_db_%d"
+table_pattern: "order_tab"
+dsp_pattern: "0.db.cluster.company.com:3306"
+db_base: 3
+ds_base: 0
+table_base: 0
+sharding_key: "user_id"
+db_dsns:
+  - "root:root@tcp(127.0.0.1:13306)/order_db_0?charset=utf8mb4&parseTime=True&loc=Local"
+  - "root:root@tcp(127.0.0.1:13306)/order_db_1?charset=utf8mb4&parseTime=True&loc=Local"
+  - "root:root@tcp(127.0.0.1:13306)/order_db_2?charset=utf8mb4&parseTime=True&loc=Local"

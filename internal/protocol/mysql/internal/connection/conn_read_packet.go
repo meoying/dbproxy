@@ -31,7 +31,6 @@ func (mc *Conn) readPacket() ([]byte, error) {
 			return nil, errs.ErrPktSync
 		}
 		mc.sequence++
-
 		// packets with length 0 terminate a previous packet which is a
 		// multiple of (2^24)-1 bytes long
 		if pktLen == 0 {
@@ -41,21 +40,18 @@ func (mc *Conn) readPacket() ([]byte, error) {
 			}
 			return prevData, nil
 		}
-
 		// read packet body [pktLen bytes]
 		body := make([]byte, pktLen)
 		_, err = mc.conn.Read(body)
 		if err != nil {
 			return nil, fmt.Errorf("%w，读取报文体失败 %w", errs.ErrInvalidConn, err)
 		}
-
 		// return data if this was the last packet
 		if pktLen < maxPacketSize {
 			// zero allocations for non-split packets
 			if prevData == nil {
 				return body, nil
 			}
-
 			return append(prevData, body...), nil
 		}
 		prevData = append(prevData, body...)
