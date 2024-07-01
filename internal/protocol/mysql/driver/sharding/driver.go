@@ -2,24 +2,15 @@ package sharding
 
 import (
 	"database/sql/driver"
-
-	"github.com/meoying/dbproxy/internal/datasource"
-	"github.com/meoying/dbproxy/internal/sharding"
 )
 
-type Driver struct {
+type driverImpl struct {
 }
 
-func (d *Driver) Open(name string) (driver.Conn, error) {
-	// TODO implement me
-	panic("implement me")
+func (d *driverImpl) Open(name string) (driver.Conn, error) {
+	panic("暂不支持,有需要可以提issue")
 }
 
-func (d *Driver) OpenConnector(name string) (driver.Connector, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func NewConnector(ds datasource.DataSource, algorithm sharding.Algorithm) (driver.Connector, error) {
-	return newConnector(ds, algorithm), nil
+func (d *driverImpl) OpenConnector(name string) (driver.Connector, error) {
+	panic("暂不支持,有需要可以提issue")
 }

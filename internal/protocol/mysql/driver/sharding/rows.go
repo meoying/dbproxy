@@ -11,6 +11,7 @@ import (
 	"github.com/ecodeclub/ekit/sqlx"
 )
 
+// 不支持nextResSet
 type rows struct {
 	sqlxRows sqlx.Rows
 }
@@ -42,32 +43,17 @@ func (r *rows) Next(dest []driver.Value) error {
 }
 
 func (r *rows) ColumnTypeScanType(index int) reflect.Type {
-	// TODO implement me
-	panic("implement me")
+	panic("暂不支持,有需要可以提issue")
 }
 
 func (r *rows) ColumnTypeDatabaseTypeName(index int) string {
-	// TODO implement me
-	panic("implement me")
+	panic("暂不支持,有需要可以提issue")
 }
 
 func (r *rows) ColumnTypeNullable(index int) (nullable, ok bool) {
-	// TODO implement me
-	panic("implement me")
+	panic("暂不支持,有需要可以提issue")
 }
 
 func (r *rows) ColumnTypePrecisionScale(index int) (precision, scale int64, ok bool) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (r *rows) HasNextResultSet() bool {
-	return r.sqlxRows.NextResultSet()
-}
-
-func (r *rows) NextResultSet() error {
-	if !r.HasNextResultSet() {
-		return fmt.Errorf("%w", io.EOF)
-	}
-	return nil
+	panic("暂不支持,有需要可以提issue")
 }

@@ -15,16 +15,12 @@ import (
 
 	"github.com/ecodeclub/ekit/retry"
 	"github.com/go-sql-driver/mysql"
-	"github.com/meoying/dbproxy/internal/datasource"
-	"github.com/meoying/dbproxy/internal/datasource/cluster"
-	"github.com/meoying/dbproxy/internal/datasource/masterslave"
-	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
-	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/yaml.v3"
 )
 
 func TestShardingDriverTestSuite(t *testing.T) {
@@ -67,49 +63,50 @@ func (s *shardingDriverTestSuite) createTables(db *sql.DB, names ...string) {
 }
 
 func (s *shardingDriverTestSuite) SetupSuite() {
+	yamlData, err := os.ReadFile("testdata/config/e2e.yaml")
+	s.NoError(err)
 
-	db := WaitForMySQLSetup(s.newDSN(""))
+	var config sharding.Config
+	err = yaml.Unmarshal(yamlData, &config)
+	s.NoError(err)
 
-	// 初始化
-	dbBase := 3
-	dbPattern, tablePattern, dsPattern := "driver_db_%d", "order_tab", "0.db.cluster.company.com:3306"
+	// 调整e2e后,有时需要调整createDBsAndTables中创建数据库的个数及数据表个数等
+	s.createDBsAndTables(config)
 
-	shardAlgorithm := &hash.Hash{
-		ShardingKey:  "user_id",
-		DBPattern:    &hash.Pattern{Name: dbPattern, Base: dbBase},
-		TablePattern: &hash.Pattern{Name: tablePattern, NotSharding: true},
-		DsPattern:    &hash.Pattern{Name: dsPattern, NotSharding: true},
-	}
+	cb := &sharding.ConnectorBuilder{}
+	cb.SetConfig(config)
+	s.NoError(err)
 
+	buildDB, err := cb.BuildDB()
+	s.NoError(err)
+	s.db = buildDB
+}
+
+func (s *shardingDriverTestSuite) createDBsAndTables(config sharding.Config) {
+	// 该方法中的各种*sql.DB仅是用来创建节点机器上的数据库(mysql中的库概念)和库中的数据表
+	// 创建完成后就会被关闭,用户执行SQL只通过s.db
+	clusterDB := WaitForMySQLSetup(s.newDSN(""))
+
+	hash := config.Algorithm.Hash
+	dbBase := hash.DBPattern.Base
+	dbPattern := hash.DBPattern.Name
+	tablePattern := hash.TBPattern.Name
+
+	// 为节点创建数据库
 	dbNames := make([]string, 0, dbBase)
 	for i := 0; i < dbBase; i++ {
 		dbNames = append(dbNames, fmt.Sprintf(dbPattern, i))
 	}
+	s.createDatabases(clusterDB, dbNames...)
+	s.NoError(clusterDB.Close())
 
-	s.createDatabases(db, dbNames...)
-
-	// dsn0 := "root:root@tcp(127.0.0.1:13306)/driver_db_0?charset=utf8mb4&parseTime=True&loc=Local"
-	// dsn1 := "root:root@tcp(127.0.0.1:13306)/driver_db_1?charset=utf8mb4&parseTime=True&loc=Local"
-	// dsn2 := "root:root@tcp(127.0.0.1:13306)/driver_db_2?charset=utf8mb4&parseTime=True&loc=Local"
-
-	dbs := make([]*sql.DB, 0, len(dbNames))
-	m := make(map[string]*masterslave.MasterSlavesDB, len(dbNames))
+	// 为节点创建数据表
 	for _, name := range dbNames {
-		d, err := openDB(s.newDSN(name))
-		s.NoError(err)
+		d, er := openDB(s.newDSN(name))
+		s.NoError(er)
 		s.createTables(d, tablePattern)
-		dbs = append(dbs, d)
-		m[name] = masterslave.NewMasterSlavesDB(d)
+		s.NoError(d.Close())
 	}
-
-	ds := map[string]datasource.DataSource{
-		"0.db.cluster.company.com:3306": cluster.NewClusterDB(m),
-	}
-	sds := shardingsource.NewShardingDataSource(ds)
-
-	connector, err := sharding.NewConnector(sds, shardAlgorithm)
-	s.NoError(err)
-	s.db = sql.OpenDB(connector)
 }
 
 func (s *shardingDriverTestSuite) newDSN(name string) string {

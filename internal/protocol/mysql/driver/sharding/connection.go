@@ -33,10 +33,9 @@ func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *conn
 }
 
 // Ping
-// TODO: 它的语义是什么?对每个分库进行ping?
+// TODO: 需要委派给ds来检查连通性
 func (c *connection) Ping(ctx context.Context) error {
-	// TODO implement me
-	panic("implement me")
+	panic("暂不支持,有需要可以提issue")
 }
 
 func (c *connection) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
@@ -59,7 +58,6 @@ func (c *connection) queryOrExec(ctx context.Context, query string, args []drive
 		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
 			return src
 		}),
-		// TODO: 这个的作用是什么?
 		InTransition: false,
 	}
 	checkVisitor := vparser.NewCheckVisitor()
@@ -90,8 +88,7 @@ func (c *connection) Prepare(query string) (driver.Stmt, error) {
 }
 
 func (c *connection) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	// TODO implement me
-	panic("implement me")
+	return &stmt{}, nil
 }
 
 func (c *connection) Begin() (driver.Tx, error) {
@@ -106,17 +103,14 @@ func (c *connection) Close() error {
 	return nil
 }
 
-// func (c *connection) ResetSession(ctx context.Context) error {
-// 	// TODO implement me
-// 	panic("implement me")
-// }
+func (c *connection) ResetSession(ctx context.Context) error {
+	return nil
+}
 
-// func (c *connection) IsValid() bool {
-// 	// TODO implement me
-// 	panic("implement me")
-// }
+func (c *connection) IsValid() bool {
+	return true
+}
 
 func (c *connection) CheckNamedValue(value *driver.NamedValue) error {
-	// TODO implement me
-	panic("implement me")
+	return nil
 }
