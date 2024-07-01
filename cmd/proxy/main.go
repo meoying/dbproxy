@@ -52,9 +52,8 @@ func main() {
 		if err != nil {
 			panic(fmt.Errorf("加载插件失败 %w", err))
 		}
-		log.Println("加载插件成功")
-		log.Println("开始初始化插件")
 		// 初始化插件
+
 		err = ps[0].Init(configByte)
 		if err != nil {
 			panic(fmt.Errorf("加载插件失败 %w", err))

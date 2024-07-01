@@ -1,4 +1,4 @@
-# 使用官方的 golang 基础镜像
+# 使用一个带有cgo的golang构建镜像，因为编译插件的时候需要cgo
 FROM  bitnami/golang:1.22 AS build
 
 # 设置工作目录

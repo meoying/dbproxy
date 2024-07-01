@@ -11,5 +11,5 @@ data:
       location: "./plugins"
       items:
         - name: "sharding"
-          location: "./plugin/sharding"
-          configLocation: "./plugin/sharding/config"
+          location: "./plugin/forward"
+          configLocation: "./plugin/forward/config"

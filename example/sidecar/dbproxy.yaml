@@ -27,14 +27,14 @@ spec:
               mountPath: /docker-entrypoint-initdb.d/init.sql
               subPath: init.sql  # 指定子路径，确保正确挂载
         - name: dbproxy
-          image: registry.cn-hangzhou.aliyuncs.com/juniaoshaonian/k8s:dbproxy-v0.2
+          image: registry.cn-hangzhou.aliyuncs.com/juniaoshaonian/k8s:dbproxy-v0.6
           volumeMounts:
             - name: config-volume
               mountPath: /root/config
-            - name: sharding-config-volume
-              mountPath: /root/plugin/sharding/config
+            - name: forward-config-volume
+              mountPath: /root/plugin/forward/config
         - name: myapp
-          image: registry.cn-hangzhou.aliyuncs.com/juniaoshaonian/k8s:httpserver-v0.4
+          image: registry.cn-hangzhou.aliyuncs.com/juniaoshaonian/k8s:httpserver-v0.6
           ## 方便测试现象
           ports:
             - containerPort: 8080  # 设置 myapp 容器的端口为 8080
@@ -46,9 +46,9 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
-        - name: sharding-config-volume
+        - name: forward-config-volume
           configMap:
-            name: sharding-plugin-configmap
+            name: forward-plugin-configmap
             items:
               - key: config.yaml
                 path: config.yaml

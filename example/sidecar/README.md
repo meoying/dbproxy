@@ -1,8 +1,12 @@
+
+
+
+## 运行
 ```shell
 加载配置文件
 kubectl apply -f shardingConfig.yaml
 kubectl apply -f config.yaml
-
+kubectl create configmap  mysql-init-script-configmap --from-file=init.sql
 运行deployment
 kubectl apply -f dbproxy.yaml
 
