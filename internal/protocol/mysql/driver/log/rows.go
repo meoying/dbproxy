@@ -18,7 +18,7 @@ type rowsWrapper struct {
 
 func (r *rowsWrapper) HasNextResultSet() bool {
 	hasNext := r.rows.(driver.RowsNextResultSet).HasNextResultSet()
-	r.logger.Info("检查是否有下一个结果集", hasNext)
+	r.logger.Info("检查是否有下一个结果集", "有", hasNext)
 	return hasNext
 }
 
