@@ -76,7 +76,7 @@ func (c *connWrapper) ResetSession(ctx context.Context) error {
 
 func (c *connWrapper) IsValid() bool {
 	valid := c.conn.(driver.Validator).IsValid()
-	c.logger.Info("连接是否有效", valid)
+	c.logger.Info("连接是否有效", "有效", valid)
 	return valid
 }
 

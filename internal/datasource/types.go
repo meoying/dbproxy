@@ -29,6 +29,7 @@ type Tx interface {
 type DataSource interface {
 	TxBeginner
 	Executor
+	// TODO 添加driver.Pinger接口中的ping方法
 	Close() error
 }
 
