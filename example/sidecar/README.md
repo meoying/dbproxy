@@ -21,4 +21,7 @@ curl --location '127.0.0.1:8080/order' \
     "account": 1.1
 }'
 
+返回{"message":"Order created successfully"}表示成功插入，可以进测试pod的mysql容器直接查看插入的数据
+ kubectl exec -ti test-pod1 -c mysql -- /bin/bash
+
 ```
