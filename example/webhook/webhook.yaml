@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbproxy-webhook
+  labels:
+    app: dbproxy-webhook
+spec:
+  selector:
+    matchLabels:
+      app: dbproxy-webhook
+  template:
+    metadata:
+      labels:
+        app: dbproxy-webhook
+    spec:
+      containers:
+        - name: dbproxy-webhook
+          image: flycash/dbproxy:webhook-v0.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 443
+          volumeMounts:
+            - name: dbproxy-webhook-certs
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        - name: dbproxy-webhook-certs
+          secret:
+            secretName: dbproxy-webhook-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbproxy-webhook
+  labels:
+    app: dbproxy-webhook
+spec:
+  ports:
+    - port: 443
+      targetPort: 443
+  selector:
+    app: dbproxy-webhook
