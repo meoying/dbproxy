@@ -45,7 +45,7 @@ EOF
 
 cat > server-csr.json <<EOF
 {
-  "CN": "admission",
+  "CN": "dbproxy",
   "key": {
     "algo": "rsa",
     "size": 2048
@@ -62,7 +62,7 @@ cat > server-csr.json <<EOF
 }
 EOF
 
-创建证书
+创建ca证书
  cfssl gencert -initca ca-csr.json | cfssljson -bare ca
 为服务端创建证书
 cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json \
@@ -76,10 +76,20 @@ kubectl create secret tls dbproxy-webhook-tls \
         --cert=server.pem
 secret/dbproxy-webhook-tls created
 ```
+### 启动webhook服务
+```shell
+kubectl apply -f webhook.yaml
+```
+
 
 ### 注册webhook
 ```shell
 kubectl apply -f register.yaml
+## 注意
+caBundle: 指定ca证书来表示apiserver作为客户端来验证服务端的证书
+cat ca.pem | base64 
+执行上面命令得到的字符串，作为caBundle的值。
+
 ```
 
 ### 设置dbproxy的配置文件

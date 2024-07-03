@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,8 +30,6 @@ func (m *MutatingServer) MutateHandler(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Error decoding admission review")
 		return
 	}
-	str, _ := json.Marshal(admissionReview)
-	fmt.Println("xxxxxxxoooooooooooo", string(str))
 
 	// 处理 Mutating Webhook 请求并返回响应
 	resp := mutatePod(admissionReview.Request)
@@ -80,6 +77,7 @@ func mutatePod(req *v1.AdmissionRequest) *v1.AdmissionResponse {
 			},
 		}
 	}
+	// k8s操作json的方式参考RFC 6902对json做增删改
 	patch := []JSONPatchEntry{
 		{
 			OP:    "replace",
