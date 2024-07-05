@@ -113,9 +113,9 @@ func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 	if c.origin == nil {
 		c.origin = c.ds
 	}
-	// 因用户在tx上的Exec/Query调用最终会回到当前Conn上
+	// 因用户调用的tx的Exec/Query方法最终会委派给创建该tx的Conn的Exec/Query方法
 	// 所以需要将tx伪装成datasource并替换原始ds
-	// 当当前Conn被重用时调用ResetSession将ds还原为原始ds
+	// 当该Conn被复用时ResetSession方法会被调用并将ds还原为原始ds
 	c.ds = transaction.NewTransactionDataSource(tx)
 	return c.ds.(driver.Tx), nil
 }
