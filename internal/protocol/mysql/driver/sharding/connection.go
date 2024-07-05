@@ -113,8 +113,9 @@ func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 	if c.origin == nil {
 		c.origin = c.ds
 	}
-	// 使用tx伪装成datasource并替换初始化时候的ds
-	// 这样在当前conn上执行的SQL底层都是走tx
+	// 因用户在tx上的Exec/Query调用最终会回到当前Conn上
+	// 所以需要将tx伪装成datasource并替换原始ds
+	// 当当前Conn被重用时调用ResetSession将ds还原为原始ds
 	c.ds = transaction.NewTransactionDataSource(tx)
 	return c.ds.(driver.Tx), nil
 }
@@ -125,7 +126,7 @@ func (c *connection) Close() error {
 
 func (c *connection) ResetSession(ctx context.Context) error {
 	if c.origin != nil {
-		// 此时表明创建过tx,需要ds还原回newConnection时传入传入的ds
+		// 已创建过tx且当前ds是tx伪装的,需要还原回newConnection时传入的原始ds
 		c.ds = c.origin
 		c.origin = nil
 	}
