@@ -3,11 +3,16 @@ package transaction
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 
 	"github.com/meoying/dbproxy/internal/datasource"
 )
 
-var _ datasource.DataSource = &txDataSourceWrapper{}
+var (
+	_                       datasource.DataSource = &txDataSourceWrapper{}
+	ErrUnSupportedOperation                       = errors.New("用Tx封装的DataSource暂不支持该操作")
+)
 
 // txDataSourceWrapper 用于将datasource.Tx伪装成datasource.DataSource
 type txDataSourceWrapper struct {
@@ -27,7 +32,7 @@ func (t *txDataSourceWrapper) Rollback() error {
 }
 
 func (t *txDataSourceWrapper) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, error) {
-	panic("暂不支持,有需要可以提issue")
+	return nil, fmt.Errorf("%w", ErrUnSupportedOperation)
 }
 
 func (t *txDataSourceWrapper) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
@@ -39,5 +44,5 @@ func (t *txDataSourceWrapper) Exec(ctx context.Context, query datasource.Query) 
 }
 
 func (t *txDataSourceWrapper) Close() error {
-	panic("暂不支持,有需要可以提issue")
+	return fmt.Errorf("%w", ErrUnSupportedOperation)
 }

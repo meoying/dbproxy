@@ -52,14 +52,6 @@ func (c *connection) ExecContext(ctx context.Context, query string, args []drive
 }
 
 func (c *connection) queryOrExec(ctx context.Context, query string, args []driver.NamedValue) (*shardinghandler.Result, error) {
-	handler, err := c.getShardingHandler(ctx, query, args)
-	if err != nil {
-		return nil, err
-	}
-	return handler.QueryOrExec(ctx)
-}
-
-func (c *connection) getShardingHandler(ctx context.Context, query string, args []driver.NamedValue) (shardinghandler.ShardingHandler, error) {
 	pctx := &pcontext.Context{
 		Context: ctx,
 		ParsedQuery: pcontext.ParsedQuery{
@@ -71,6 +63,14 @@ func (c *connection) getShardingHandler(ctx context.Context, query string, args 
 		}),
 		InTransition: false,
 	}
+	handler, err := c.getShardingHandler(pctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+	return handler.QueryOrExec(pctx.Context)
+}
+
+func (c *connection) getShardingHandler(pctx *pcontext.Context, query string, args []driver.NamedValue) (shardinghandler.ShardingHandler, error) {
 	checkVisitor := vparser.NewCheckVisitor()
 	sqlName := checkVisitor.Visit(pctx.ParsedQuery.Root).(string)
 	newHandlerFunc, ok := c.handlerMap[sqlName]
@@ -99,10 +99,7 @@ func (c *connection) PrepareContext(ctx context.Context, query string) (driver.S
 }
 
 func (c *connection) Begin() (driver.Tx, error) {
-	// 默认使用DelayTx
-	return c.BeginTx(NewDelayTxContext(context.Background()), driver.TxOptions{
-		Isolation: driver.IsolationLevel(sql.LevelDefault),
-	})
+	panic("暂不支持,请使用BeginTx")
 }
 
 func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
