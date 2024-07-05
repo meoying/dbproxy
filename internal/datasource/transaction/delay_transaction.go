@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -63,6 +64,7 @@ func (t *DelayTx) findOrBeginTx(ctx context.Context, query datasource.Query) (da
 		return nil, err
 	}
 	t.txs[query.DB] = tx
+	log.Printf(">>>> txs = %#v\n", t.txs)
 	return tx, nil
 }
 

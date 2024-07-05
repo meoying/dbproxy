@@ -1,14 +1,15 @@
 package sharding
 
-type transaction struct {
+import (
+	"context"
+
+	"github.com/meoying/dbproxy/internal/datasource/transaction"
+)
+
+func NewDelayTxContext(ctx context.Context) context.Context {
+	return transaction.UsingTxType(ctx, transaction.Delay)
 }
 
-func (t *transaction) Commit() error {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (t *transaction) Rollback() error {
-	// TODO implement me
-	panic("implement me")
+func NewSingleTxContext(ctx context.Context) context.Context {
+	return transaction.UsingTxType(ctx, transaction.Single)
 }
