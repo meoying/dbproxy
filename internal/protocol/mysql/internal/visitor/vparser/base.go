@@ -208,6 +208,8 @@ func (b *BaseVisitor) visitExpression(ctx parser.IExpressionContext) visitor.Exp
 	switch v := ctx.(type) {
 	case *parser.PredicateExpressionContext:
 		return b.VisitPredicateExpression(v).(visitor.Expr)
+	case *parser.LogicalExpressionContext:
+		return b.VisitLogicalExpression(v).(visitor.Expr)
 	}
 	return e
 }
