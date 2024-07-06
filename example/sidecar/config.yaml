@@ -1,0 +1,15 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dbproxy-configmap
+data:
+  config.yaml: |
+    server:
+      addr: ":8307"
+    plugins:
+      location: "./plugins"
+      items:
+        - name: "sharding"
+          location: "./plugin/forward"
+          configLocation: "./plugin/forward/config"

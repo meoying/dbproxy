@@ -13,9 +13,16 @@ plugins:
   location: "./plugins"
   items:
     # 一个叫做 forward 的插件
-    - name: "log"
-      location: "./plugins/log"
+#    - name: "log"
+#      location: "./plugins/log"
     - name: "forward"
-      # 如果配置了，则必须是一个文件
-      # 在没有配置的情况下，默认是 $location/$name.so => ./plugins/forward.so
-      # location: "./plugins/word"
+       如果配置了，则必须是一个文件
+       在没有配置的情况下，默认是 $location/$name.so => ./plugins/forward.so
+       location: "./plugin/forward"
+       configLocation: "./plugin/forward"
+#    - name: "sharding"
+#      # so文件
+#      location: "./plugin/sharding"
+#      # so的配置文件
+#      configLocation: "./plugin/sharding"
+
