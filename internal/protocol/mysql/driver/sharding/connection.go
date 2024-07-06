@@ -2,10 +2,12 @@ package sharding
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/transaction"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	shardinghandler "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
@@ -15,6 +17,7 @@ import (
 
 type connection struct {
 	ds         datasource.DataSource
+	exec       datasource.DataSource
 	algorithm  sharding.Algorithm
 	handlerMap map[string]shardinghandler.NewHandlerFunc
 }
@@ -22,6 +25,7 @@ type connection struct {
 func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *connection {
 	return &connection{
 		ds:        ds,
+		exec:      ds,
 		algorithm: algorithm,
 		handlerMap: map[string]shardinghandler.NewHandlerFunc{
 			vparser.SelectSql: shardinghandler.NewSelectHandler,
@@ -34,7 +38,7 @@ func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *conn
 
 // Ping
 // TODO: 需要委派给ds来检查连通性
-func (c *connection) Ping(ctx context.Context) error {
+func (c *connection) Ping(_ context.Context) error {
 	panic("暂不支持,有需要可以提issue")
 }
 
@@ -60,17 +64,21 @@ func (c *connection) queryOrExec(ctx context.Context, query string, args []drive
 		}),
 		InTransition: false,
 	}
+	handler, err := c.getShardingHandler(pctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+	return handler.QueryOrExec(pctx.Context)
+}
+
+func (c *connection) getShardingHandler(pctx *pcontext.Context, query string, args []driver.NamedValue) (shardinghandler.ShardingHandler, error) {
 	checkVisitor := vparser.NewCheckVisitor()
 	sqlName := checkVisitor.Visit(pctx.ParsedQuery.Root).(string)
 	newHandlerFunc, ok := c.handlerMap[sqlName]
 	if !ok {
 		return nil, shardinghandler.ErrUnKnowSql
 	}
-	handler, err := newHandlerFunc(c.algorithm, c.ds, pctx)
-	if err != nil {
-		return nil, err
-	}
-	return handler.QueryOrExec(pctx.Context)
+	return newHandlerFunc(c.algorithm, c.exec, pctx)
 }
 
 func (c *connection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
@@ -84,7 +92,7 @@ func (c *connection) QueryContext(ctx context.Context, query string, args []driv
 }
 
 func (c *connection) Prepare(query string) (driver.Stmt, error) {
-	return &stmt{}, nil
+	return c.PrepareContext(context.Background(), query)
 }
 
 func (c *connection) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
@@ -92,11 +100,23 @@ func (c *connection) PrepareContext(ctx context.Context, query string) (driver.S
 }
 
 func (c *connection) Begin() (driver.Tx, error) {
-	return &transaction{}, nil
+	return c.BeginTx(context.Background(), driver.TxOptions{})
 }
 
 func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
-	return &transaction{}, nil
+	tx, err := c.ds.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.IsolationLevel(opts.Isolation),
+		ReadOnly:  opts.ReadOnly,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 因用户调用的*sql.Tx上的Exec/Query方法最终会委派给创建该*sql.Tx的connection的Exec/Query方法
+	// 并且要复用handlerMap中的SQL处理器所以需要将tx伪装成datasource以替换当前ds(原始ds)
+	// 当该connection被复用时ResetSession方法会被调用并将ds还原为原始ds
+	c.exec = transaction.NewTransactionDataSource(tx)
+	return c.exec.(driver.Tx), nil
 }
 
 func (c *connection) Close() error {
@@ -104,6 +124,7 @@ func (c *connection) Close() error {
 }
 
 func (c *connection) ResetSession(ctx context.Context) error {
+	c.exec = c.ds
 	return nil
 }
 

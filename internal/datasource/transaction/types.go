@@ -39,14 +39,14 @@ type Context struct {
 	Opts   *sql.TxOptions
 }
 
-type TypeKey struct{}
+type txTypeKey struct{}
 
 func UsingTxType(ctx context.Context, val string) context.Context {
-	return context.WithValue(ctx, TypeKey{}, val)
+	return context.WithValue(ctx, txTypeKey{}, val)
 }
 
 func GetCtxTypeKey(ctx context.Context) any {
-	return ctx.Value(TypeKey{})
+	return ctx.Value(txTypeKey{})
 }
 
 type TxFacade struct {

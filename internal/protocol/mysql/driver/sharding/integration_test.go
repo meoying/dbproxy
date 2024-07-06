@@ -170,14 +170,13 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "简单查询",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `driver_db_2.order_tab` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO `driver_db_1.order_tab` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1), (2,4,'content4',1.3);",
 				}
 				s.execSql(t, sqls)
 			},
 			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` = 2);",
 			after: func(t *testing.T, rows *sql.Rows) {
-				res := s.getColsFromRows(t, rows)
+				res := s.getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, []Order{
 					{
 						UserId:  2,
@@ -198,10 +197,7 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "聚合函数AVG",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',0.1);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) values (3,1,'content1',7.1);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -226,10 +222,7 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "聚合函数MAX",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',0.1);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) values (3,1,'content1',7.1);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) values (4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -254,18 +247,18 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "ORDER BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,9,'content4',1.4);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,9,'content4',1.1);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,11,'content4',1.6);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,8,'content4',1.1);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,10,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,9,'content4',1.4);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,9,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,11,'content4',1.6);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,8,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,10,'content4',1.1);",
 				}
 				s.execSql(t, sqls)
 			},
 			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` ORDER BY `account` DESC,`order_id`;",
 			after: func(t *testing.T, rows *sql.Rows) {
-				res := s.getColsFromRows(t, rows)
+				res := s.getOrdersFromRows(t, rows)
 				assert.Equal(t, []Order{
 					{
 						UserId:  3,
@@ -310,15 +303,15 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "GROUP BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -340,15 +333,15 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "Limit",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -370,15 +363,15 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 			name: "SELECT DISTINCT",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO driver_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO driver_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO driver_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -401,7 +394,7 @@ func (s *shardingDriverTestSuite) TestDriver_Select() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 			// 使用主库查找
-			rows, err := s.db.QueryContext(context.Background(), tc.sql)
+			rows, err := s.db.Query(tc.sql)
 			require.NoError(t, err)
 			tc.after(t, rows)
 			// 清理数据
@@ -447,7 +440,7 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 						Account: 1.3,
 					},
 				}
-				actualOrderList := s.getColsFromRows(t, rows)
+				actualOrderList := s.getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, wantOrderList, actualOrderList)
 			},
 		},
@@ -458,8 +451,8 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -480,7 +473,7 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 						Account: 1.3,
 					},
 				}
-				orders := s.getColsFromRows(t, rows)
+				orders := s.getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, wantOrderList, orders)
 			},
 		},
@@ -490,9 +483,9 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
-					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -519,7 +512,7 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 						Account: 1.6,
 					},
 				}
-				orders := s.getColsFromRows(t, rows)
+				orders := s.getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, wantOrderList, orders)
 			},
 		},
@@ -530,9 +523,9 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
-					"INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
 				}
 				s.execSql(t, sqls)
 			},
@@ -553,7 +546,7 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 						Account: 1.3,
 					},
 				}
-				orders := s.getColsFromRows(t, rows)
+				orders := s.getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, wantOrderList, orders)
 			},
 		},
@@ -574,10 +567,8 @@ func (s *shardingDriverTestSuite) TestDriver_CUD() {
 
 func (s *shardingDriverTestSuite) clearTable(t *testing.T) {
 	t.Helper()
-	for i := 0; i < 3; i++ {
-		_, err := s.db.Exec(fmt.Sprintf("DELETE FROM `driver_db_%d.order_tab`;", i))
-		require.NoError(t, err)
-	}
+	_, err := s.db.Exec("DELETE FROM `order`;")
+	require.NoError(t, err)
 }
 
 func (s *shardingDriverTestSuite) getRowsFromTable(t *testing.T, ids []int64) *sql.Rows {
@@ -586,7 +577,7 @@ func (s *shardingDriverTestSuite) getRowsFromTable(t *testing.T, ids []int64) *s
 	for _, id := range ids {
 		idStr = append(idStr, strconv.FormatInt(id, 10))
 	}
-	query := fmt.Sprintf("SELECT /* useMaster */ `user_id`, `order_id`, `content`, `account` FROM `order_tab` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
+	query := fmt.Sprintf("SELECT /*useMaster*/ `user_id`, `order_id`, `content`, `account` FROM `order` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
 	rows, err := s.db.Query(query)
 	require.NoError(t, err)
 	return rows
@@ -600,18 +591,7 @@ func (s *shardingDriverTestSuite) execSql(t *testing.T, sqls []string) {
 	}
 }
 
-func (s *shardingDriverTestSuite) getOrder(row *sql.Rows) (Order, error) {
-	var order Order
-	if row.Next() {
-		err := row.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Account)
-		if err != nil {
-			return Order{}, err
-		}
-	}
-	return order, nil
-}
-
-func (s *shardingDriverTestSuite) getColsFromRows(t *testing.T, rows *sql.Rows) []Order {
+func (s *shardingDriverTestSuite) getOrdersFromRows(t *testing.T, rows *sql.Rows) []Order {
 	t.Helper()
 	res := make([]Order, 0, 2)
 	for rows.Next() {
@@ -621,4 +601,781 @@ func (s *shardingDriverTestSuite) getColsFromRows(t *testing.T, rows *sql.Rows) 
 		res = append(res, order)
 	}
 	return res
+}
+
+func (s *shardingDriverTestSuite) TestDriver_Transaction() {
+	t := s.T()
+
+	testcases := []struct {
+		name         string
+		before       func(t *testing.T)
+		ctxFunc      func() context.Context
+		sqlStmts     []string
+		execSQLStmts func(t *testing.T, sqlStmts []string, tx *sql.Tx)
+		after        func(t *testing.T)
+	}{
+		{
+			name:     "DelayTx_插入操作_提交事务",
+			before:   func(t *testing.T) {},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'sample content', 10.0),(2, 2002, 'sample content', 20.0);"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1, 2})
+				wantOrderList := []Order{
+					{
+						UserId:  1,
+						OrderId: 1001,
+						Content: "sample content",
+						Account: 10.0,
+					},
+					{
+						UserId:  2,
+						OrderId: 2002,
+						Content: "sample content",
+						Account: 20.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name:     "DelayTx_插入操作_回滚事务",
+			before:   func(t *testing.T) {},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'sample content', 10.0),(2, 2002, 'sample content', 20.0);"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1})
+				orders := s.getOrdersFromRows(t, rows)
+				assert.Equal(t, 0, len(orders))
+			},
+		},
+		{
+			name: "DelayTx_读取操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2;"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				sqlStmt := sqlStmts[0]
+				var content string
+				err := tx.QueryRow(sqlStmt).Scan(&content)
+				require.NoError(t, err)
+				require.Equal(t, "initial content", content)
+				err = tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "initial content",
+						Account: 20.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "DelayTx_读取操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				sqlStmt := sqlStmts[0]
+				var content string
+				err := tx.QueryRow(sqlStmt).Scan(&content)
+				require.NoError(t, err)
+				require.Equal(t, "initial content", content)
+				err = tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {},
+		},
+		{
+			name: "DelayTx_更新操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (12, 1102, 'initial content', 120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (112, 1112, 'initial content', 1120.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` in (2,12,112)"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2, 12, 112})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "updated content",
+						Account: 20.0,
+					},
+					{
+						UserId:  12,
+						OrderId: 1102,
+						Content: "updated content",
+						Account: 120.0,
+					},
+					{
+						UserId:  112,
+						OrderId: 1112,
+						Content: "updated content",
+						Account: 1120.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "DelayTx_更新操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (12, 1102, 'initial content', 120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (112, 1112, 'initial content', 1120.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = 2) OR (`user_id` = 12);"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2, 12, 112})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "initial content",
+						Account: 20.0,
+					},
+					{
+						UserId:  12,
+						OrderId: 1102,
+						Content: "initial content",
+						Account: 120.0,
+					},
+					{
+						UserId:  112,
+						OrderId: 1112,
+						Content: "initial content",
+						Account: 1120.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "DelayTx_删除操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3, 1003, 'delete content', 30.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (13, 1103, 'delete content', 130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (113, 1113, 'delete content', 1130.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (3,13,113)"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{3, 13, 113})
+				orders := s.getOrdersFromRows(t, rows)
+				assert.Equal(t, 0, len(orders))
+			},
+		},
+		{
+			name: "DelayTx_删除操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (9, 1003, 'delete content', 30.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (19, 1103, 'delete content', 130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (119, 1113, 'delete content', 1130.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (9, 19, 119)"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{9, 19, 119})
+				wantOrderList := []Order{
+					{
+						UserId:  9,
+						OrderId: 1003,
+						Content: "delete content",
+						Account: 30.0,
+					},
+					{
+						UserId:  19,
+						OrderId: 1103,
+						Content: "delete content",
+						Account: 130.0,
+					},
+					{
+						UserId:  119,
+						OrderId: 1113,
+						Content: "delete content",
+						Account: 1130.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "DelayTx_组合操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (23, 2003, 'delete content', 230.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (24, 2004, 'insert content', 240.0);",
+				"UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = 22;",
+				"DELETE FROM `order` WHERE `user_id` = 23;",
+			},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{22, 23, 24})
+				wantOrderList := []Order{
+					{
+						UserId:  22,
+						OrderId: 2002,
+						Content: "updated content again",
+						Account: 220.0,
+					},
+					{
+						UserId:  24,
+						OrderId: 2004,
+						Content: "insert content",
+						Account: 240.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "DelayTx_组合操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (23, 2003, 'delete content', 230.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (25, 2005, 'rollback insert content', 250.0);",
+				"UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = 22;",
+				"DELETE FROM `order` WHERE `user_id` = 23;",
+			},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{22, 23})
+				wantOrderList := []Order{
+					{
+						UserId:  22,
+						OrderId: 2002,
+						Content: "initial content",
+						Account: 220.0,
+					},
+					{
+						UserId:  23,
+						OrderId: 2003,
+						Content: "delete content",
+						Account: 230.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name:     "SingleTx_插入操作_提交事务",
+			before:   func(t *testing.T) {},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'sample content', 10.0);"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1})
+				wantOrderList := []Order{
+					{
+						UserId:  1,
+						OrderId: 1001,
+						Content: "sample content",
+						Account: 10.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name:     "SingleTx_插入操作_回滚事务",
+			before:   func(t *testing.T) {},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'abc_sample content', 10.0)"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{1})
+				orders := s.getOrdersFromRows(t, rows)
+				assert.Equal(t, 0, len(orders))
+			},
+		},
+		{
+			name: "SingleTx_读取操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2;"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				sqlStmt := sqlStmts[0]
+				var content string
+				err := tx.QueryRow(sqlStmt).Scan(&content)
+				require.NoError(t, err)
+				require.Equal(t, "initial content", content)
+				err = tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "initial content",
+						Account: 20.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "SingleTx_读取操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				sqlStmt := sqlStmts[0]
+				var content string
+				err := tx.QueryRow(sqlStmt).Scan(&content)
+				require.NoError(t, err)
+				require.Equal(t, "initial content", content)
+				err = tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {},
+		},
+		{
+			name: "SingleTx_更新操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` = 2;"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "updated content",
+						Account: 20.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "SingleTx_更新操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (12, 1102, 'initial content', 120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (112, 1112, 'initial content', 1120.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = 2) OR (`user_id` = 12);"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{2, 12, 112})
+				wantOrderList := []Order{
+					{
+						UserId:  2,
+						OrderId: 1002,
+						Content: "initial content",
+						Account: 20.0,
+					},
+					{
+						UserId:  12,
+						OrderId: 1102,
+						Content: "initial content",
+						Account: 120.0,
+					},
+					{
+						UserId:  112,
+						OrderId: 1112,
+						Content: "initial content",
+						Account: 1120.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "SingleTx_删除操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (113, 1113, 'delete content', 1130.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` = 113;"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{113})
+				orders := s.getOrdersFromRows(t, rows)
+				assert.Equal(t, 0, len(orders))
+			},
+		},
+		{
+			name: "SingleTx_删除操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (9, 1003, 'delete content', 30.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (19, 1103, 'delete content', 130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (119, 1113, 'delete content', 1130.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc:  func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (9, 19, 119)"},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{9, 19, 119})
+				wantOrderList := []Order{
+					{
+						UserId:  9,
+						OrderId: 1003,
+						Content: "delete content",
+						Account: 30.0,
+					},
+					{
+						UserId:  19,
+						OrderId: 1103,
+						Content: "delete content",
+						Account: 130.0,
+					},
+					{
+						UserId:  119,
+						OrderId: 1113,
+						Content: "delete content",
+						Account: 1130.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "SingleTx_组合操作_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{
+				"INSERT INTO `order` (user_id, order_id, content, account) VALUES (25, 2005, 'insert content', 250.0);",
+				"UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = 22;",
+			},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Commit()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{22, 25})
+				wantOrderList := []Order{
+					{
+						UserId:  22,
+						OrderId: 2002,
+						Content: "updated content again",
+						Account: 220.0,
+					},
+					{
+						UserId:  25,
+						OrderId: 2005,
+						Content: "insert content",
+						Account: 250.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+		{
+			name: "SingleTx_组合操作_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (23, 2003, 'delete content', 230.0)",
+				}
+				s.execSql(t, sqls)
+			},
+			ctxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			sqlStmts: []string{
+				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (25, 2005, 'rollback insert content', 250.0);",
+				"UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = 22;",
+				"DELETE FROM `order` WHERE `user_id` = 23;",
+			},
+			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+				t.Helper()
+				for _, sqlStmt := range sqlStmts {
+					_, err := tx.Exec(sqlStmt)
+					require.NoError(t, err)
+				}
+				err := tx.Rollback()
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := s.getRowsFromTable(t, []int64{22, 23})
+				wantOrderList := []Order{
+					{
+						UserId:  22,
+						OrderId: 2002,
+						Content: "initial content",
+						Account: 220.0,
+					},
+					{
+						UserId:  23,
+						OrderId: 2003,
+						Content: "delete content",
+						Account: 230.0,
+					},
+				}
+				orders := s.getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			// 准备测试数据
+			tc.before(t)
+
+			// 开启事务
+			tx, err := s.db.BeginTx(tc.ctxFunc(), nil)
+			require.NoError(t, err)
+
+			// 在事务tx中执行SQL语句
+			tc.execSQLStmts(t, tc.sqlStmts, tx)
+
+			// 验证结果, 使用s.db验证执行tc.sqlStmt后的影响
+			tc.after(t)
+
+			// 清理数据
+			s.clearTable(t)
+		})
+	}
+
 }
