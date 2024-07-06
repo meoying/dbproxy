@@ -17,7 +17,7 @@ import (
 
 type connection struct {
 	ds         datasource.DataSource
-	origin     datasource.DataSource
+	exec       datasource.DataSource
 	algorithm  sharding.Algorithm
 	handlerMap map[string]shardinghandler.NewHandlerFunc
 }
@@ -25,6 +25,7 @@ type connection struct {
 func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *connection {
 	return &connection{
 		ds:        ds,
+		exec:      ds,
 		algorithm: algorithm,
 		handlerMap: map[string]shardinghandler.NewHandlerFunc{
 			vparser.SelectSql: shardinghandler.NewSelectHandler,
@@ -77,7 +78,7 @@ func (c *connection) getShardingHandler(pctx *pcontext.Context, query string, ar
 	if !ok {
 		return nil, shardinghandler.ErrUnKnowSql
 	}
-	return newHandlerFunc(c.algorithm, c.ds, pctx)
+	return newHandlerFunc(c.algorithm, c.exec, pctx)
 }
 
 func (c *connection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
@@ -99,7 +100,7 @@ func (c *connection) PrepareContext(ctx context.Context, query string) (driver.S
 }
 
 func (c *connection) Begin() (driver.Tx, error) {
-	panic("暂不支持,请使用BeginTx")
+	return c.BeginTx(context.Background(), driver.TxOptions{})
 }
 
 func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, error) {
@@ -110,15 +111,12 @@ func (c *connection) BeginTx(ctx context.Context, opts driver.TxOptions) (driver
 	if err != nil {
 		return nil, err
 	}
-	if c.origin == nil {
-		c.origin = c.ds
-	}
 
 	// 因用户调用的*sql.Tx上的Exec/Query方法最终会委派给创建该*sql.Tx的connection的Exec/Query方法
 	// 并且要复用handlerMap中的SQL处理器所以需要将tx伪装成datasource以替换当前ds(原始ds)
 	// 当该connection被复用时ResetSession方法会被调用并将ds还原为原始ds
-	c.ds = transaction.NewTransactionDataSource(tx)
-	return c.ds.(driver.Tx), nil
+	c.exec = transaction.NewTransactionDataSource(tx)
+	return c.exec.(driver.Tx), nil
 }
 
 func (c *connection) Close() error {
@@ -126,11 +124,7 @@ func (c *connection) Close() error {
 }
 
 func (c *connection) ResetSession(ctx context.Context) error {
-	if c.origin != nil {
-		// 已创建过tx且当前ds是tx伪装的,需要还原回newConnection时传入的原始ds
-		c.ds = c.origin
-		c.origin = nil
-	}
+	c.exec = c.ds
 	return nil
 }
 
