@@ -421,6 +421,40 @@ func (s *TestShardingPluginSuite) TestSharding_NormalSelect() {
 			},
 		},
 		{
+			name: "多个or不带括号连接",
+			before: func(t *testing.T) {
+				sql1 := "INSERT INTO order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);"
+				sql2 := "INSERT INTO order_db_1.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);"
+				sql3 := "INSERT INTO order_db_0.order_tab (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);"
+				s.execSql([]string{sql1, sql2, sql3})
+
+			},
+			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`   FROM order WHERE (user_id = 1) OR (user_id =2) OR (user_id = 3) ;",
+			after: func(t *testing.T, rows *sql.Rows) {
+				res := s.getColsFromRows(rows)
+				assert.ElementsMatch(t, []Order{
+					{
+						UserId:  2,
+						OrderId: 4,
+						Content: "content4",
+						Account: 1.3,
+					},
+					{
+						UserId:  1,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+					{
+						UserId:  3,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+				}, res)
+			},
+		},
+		{
 			name: "聚合函数AVG",
 			before: func(t *testing.T) {
 				sql1 := "insert into order_db_2.order_tab (`user_id`,`order_id`,`content`,`account`) values (2,4,'content4',0.1);"

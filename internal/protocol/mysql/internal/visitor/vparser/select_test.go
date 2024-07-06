@@ -672,6 +672,74 @@ LIMIT 10;
 				},
 			},
 		},
+		{
+			name: "多个or",
+			sql:  "select * from t1 where id > 10 or id < 100 or id > 9;",
+			wantVal: SelectVal{
+				Cols: []visitor.Selectable{},
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
+								Name: "id",
+							},
+							Op:    operator.OpGT,
+							Right: visitor.ValueOf(10),
+						},
+						Op: operator.OpOr,
+						Right: visitor.Predicate{
+							Left: visitor.Column{
+								Name: "id",
+							},
+							Op:    operator.OpLT,
+							Right: visitor.ValueOf(100),
+						},
+					},
+					Op: operator.OpOr,
+					Right: visitor.Predicate{
+						Left: visitor.Column{
+							Name: "id",
+						},
+						Op:    operator.OpGT,
+						Right: visitor.ValueOf(9),
+					},
+				},
+			},
+		},
+		{
+			name: "多个or",
+			sql:  "select * from t1 where id > 10 and (id < 100 or id > 9);",
+			wantVal: SelectVal{
+				Cols: []visitor.Selectable{},
+				Predicate: visitor.Predicate{
+					Left: visitor.Predicate{
+						Left: visitor.Column{
+							Name: "id",
+						},
+						Op:    operator.OpGT,
+						Right: visitor.ValueOf(10),
+					},
+					Op: operator.OpAnd,
+					Right: visitor.Predicate{
+						Left: visitor.Predicate{
+							Left: visitor.Column{
+								Name: "id",
+							},
+							Op:    operator.OpLT,
+							Right: visitor.ValueOf(100),
+						},
+						Op: operator.OpOr,
+						Right: visitor.Predicate{
+							Left: visitor.Column{
+								Name: "id",
+							},
+							Op:    operator.OpGT,
+							Right: visitor.ValueOf(9),
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
