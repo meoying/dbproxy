@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/meoying/dbproxy/internal/datasource"
-
+	"github.com/meoying/dbproxy/internal/datasource/preparestament"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 )
 
@@ -72,6 +72,14 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, 
 		return nil, err
 	}
 	return transaction.NewTx(tx), nil
+}
+
+func (db *DB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+	stmt, err := db.db.PrepareContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return preparestament.NewPrep(stmt), nil
 }
 
 // Wait 会等待数据库连接

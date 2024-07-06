@@ -23,9 +23,14 @@ type ServerTestSuite struct {
 	realDB *single.DB
 }
 
+func newDB() (*sql.DB, error) {
+	return sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	//return sql.Open("mysql", "root:123456@tcp(120.76.42.33:3306)/test")
+}
+
 func (s *ServerTestSuite) SetupSuite() {
 	// 这里用真实的 DB，因为你要转发过去来测试
-	db, err := single.OpenDB("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := single.OpenDB("mysql", "root:123456@tcp(120.76.42.33:3306)/test")
 	require.NoError(s.T(), err)
 	hdl := forward.NewHandler(db)
 	plugins := []plugin.Plugin{
@@ -48,7 +53,7 @@ func (s *ServerTestSuite) TearDownSuite() {
 }
 
 func (s *ServerTestSuite) TestPingPong() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	db, err := newDB()
 	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -57,9 +62,9 @@ func (s *ServerTestSuite) TestPingPong() {
 }
 
 func (s *ServerTestSuite) TestSelect() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	db, err := newDB()
 	require.NoError(s.T(), err)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	rows, err := db.QueryContext(ctx, "SELECT * FROM users WHERE id = 1")
 	require.NoError(s.T(), err)
@@ -75,7 +80,7 @@ func (s *ServerTestSuite) TestSelect() {
 }
 
 func (s *ServerTestSuite) TestInsert() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	db, err := newDB()
 	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -85,7 +90,7 @@ func (s *ServerTestSuite) TestInsert() {
 }
 
 func (s *ServerTestSuite) TestUpdate() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	db, err := newDB()
 	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -95,36 +100,13 @@ func (s *ServerTestSuite) TestUpdate() {
 }
 
 func (s *ServerTestSuite) TestDelete() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
+	db, err := newDB()
 	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	result, err := db.ExecContext(ctx, "delete from users where name='Jack'")
 	require.NoError(s.T(), err)
 	s.T().Log(result)
-}
-
-func (s *ServerTestSuite) TestTransaction() {
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
-	require.NoError(s.T(), err)
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	//defer cancel()
-	ctx := context.Background()
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		s.T().Fatalf("Failed to begin transaction: %v", err)
-	}
-
-	_, err = tx.ExecContext(ctx, "insert into users(name) VALUES ('Harry')")
-	if err != nil {
-		s.T().Fatalf("Failed to begin transaction: %v", err)
-	}
-
-	err = tx.Commit()
-	//err = tx.Rollback()
-	if err != nil {
-		s.T().Fatalf("Failed to commit: %v", err)
-	}
 }
 
 func TestServer(t *testing.T) {

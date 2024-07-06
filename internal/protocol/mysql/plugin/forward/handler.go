@@ -12,8 +12,9 @@ import (
 // Handler 什么也不做，就是转发请求
 // 一般用于测试环境
 type Handler struct {
-	ds datasource.DataSource
-	tx datasource.Tx
+	ds   datasource.DataSource
+	tx   datasource.Tx
+	stmt map[int]datasource.Stmt
 }
 
 func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
@@ -23,17 +24,21 @@ func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
 		err = f.handleTransaction(ctx, typ)
+		if err != nil {
+			return result, err
+		}
 		result.ChangeTransaction = true
-		return result, err
 	case *parser.DmlStatementContext:
 		return f.handleDml(ctx, typ)
+	case *parser.PreparedStatementContext:
+		return f.handlePrepared(ctx, typ)
 	}
 	return result, nil
 }
 
 // handleDml 处理DML语句
-func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
-	switch stmt.GetChildren()[0].(type) {
+func (f *Handler) handleDml(ctx *pcontext.Context, typ *parser.DmlStatementContext) (*plugin.Result, error) {
+	switch typ.GetChildren()[0].(type) {
 	case *parser.SimpleSelectContext:
 		return f.handleSelect(ctx)
 	case *parser.InsertStatementContext:
@@ -89,8 +94,8 @@ func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 }
 
 // handleTransaction 处理事务相关语句
-func (f *Handler) handleTransaction(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) error {
-	switch stmt.GetChildren()[0].(type) {
+func (f *Handler) handleTransaction(ctx *pcontext.Context, typ *parser.TransactionStatementContext) error {
+	switch typ.GetChildren()[0].(type) {
 	case *parser.StartTransactionContext:
 		var err error
 		f.tx, err = f.ds.BeginTx(ctx, nil)
@@ -103,8 +108,43 @@ func (f *Handler) handleTransaction(ctx *pcontext.Context, stmt *parser.Transact
 	return nil
 }
 
+// handlePrepared 处理预处理相关语句
+func (f *Handler) handlePrepared(ctx *pcontext.Context, typ *parser.PreparedStatementContext) (*plugin.Result, error) {
+	var err error
+	switch typ.GetChildren()[0].(type) {
+	case *parser.PrepareStatementContext:
+		f.stmt[ctx.StmtId], err = f.ds.Prepare(ctx, ctx.Query)
+		return &plugin.Result{
+			StmtId: ctx.StmtId,
+		}, err
+	case *parser.ExecuteStatementContext:
+		stmt, ok := f.stmt[ctx.StmtId]
+		if !ok {
+
+		}
+		rows, err := stmt.Query(ctx, datasource.Query{
+			Args: ctx.Args,
+		})
+
+		return &plugin.Result{
+			Rows: rows,
+		}, err
+	case *parser.DeallocatePrepareContext:
+		stmt, ok := f.stmt[ctx.StmtId]
+		if !ok {
+
+		}
+		if err = stmt.Close(); err != nil {
+
+		}
+		delete(f.stmt, ctx.StmtId)
+	}
+	return &plugin.Result{}, err
+}
+
 func NewHandler(ds datasource.DataSource) *Handler {
 	return &Handler{
-		ds: ds,
+		ds:   ds,
+		stmt: map[int]datasource.Stmt{},
 	}
 }

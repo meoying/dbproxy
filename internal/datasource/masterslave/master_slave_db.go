@@ -64,6 +64,10 @@ func (m *MasterSlavesDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (data
 	return transaction.NewTx(tx), nil
 }
 
+func (m *MasterSlavesDB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+	panic("replace me")
+}
+
 func NewMasterSlavesDB(master *sql.DB, opts ...MasterSlavesDBOption) *MasterSlavesDB {
 	db := &MasterSlavesDB{
 		master: master,

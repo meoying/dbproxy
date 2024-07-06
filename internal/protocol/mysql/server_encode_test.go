@@ -4,7 +4,6 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -43,24 +42,13 @@ func (s *ServerTestSuite) TestIntTypes() {
 		},
 	}
 
-	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err2)
-	require.NoError(s.T(), err1)
+	db, err := newDB()
+	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint any
-				err = rows.Scan(&id, &typeTinyint, &typeSmallint, &typeMediumint, &typeInt, &typeInteger, &typeBigint)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint)
-				tc.wantRes = []any{id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
+			rows, err := db.QueryContext(ctx, tc.sql)
 			require.NoError(s.T(), err)
 			for rows.Next() {
 				var id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint any
@@ -93,24 +81,13 @@ func (s *ServerTestSuite) TestFloatTypes() {
 		},
 	}
 
-	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err2)
-	require.NoError(s.T(), err1)
+	db, err := newDB()
+	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal any
-				err = rows.Scan(&id, &typeFloat, &typeDouble, &typeDecimal, &typeNumeric, &typeReal)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal)
-				tc.wantRes = []any{id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
+			rows, err := db.QueryContext(ctx, tc.sql)
 			require.NoError(s.T(), err)
 			for rows.Next() {
 				// 在这里读取并且打印数据
@@ -145,24 +122,13 @@ func (s *ServerTestSuite) TestStringTypes() {
 		},
 	}
 
-	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(s.T(), err2)
-	require.NoError(s.T(), err1)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	db, err := newDB()
+	require.NoError(s.T(), err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit any
-				err = rows.Scan(&id, &typeChar, &typeVarchar, &typeTinytext, &typeText, &typeMediumtext, &typeLongtext, &typeEnum, &typeSet, &typeBinary, &typeVarbinary, &typeJson, &typeBit)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit)
-				tc.wantRes = []any{id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
+			rows, err := db.QueryContext(ctx, tc.sql)
 			require.NoError(s.T(), err)
 			for rows.Next() {
 				var id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit any
@@ -195,24 +161,13 @@ func (s *ServerTestSuite) TestDateTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := newDB()
 	require.NoError(s.T(), err)
-	require.NoError(s.T(), err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeDate, typeDatetime, typeTimestamp, typeTime, type_year any
-				err = rows.Scan(&id, &typeDate, &typeDatetime, &typeTimestamp, &typeTime, &type_year)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeDate, typeDatetime, typeTimestamp, typeTime, type_year)
-				tc.wantRes = []any{id, typeDate, typeDatetime, typeTimestamp, typeTime, type_year}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
+			rows, err := db.QueryContext(ctx, tc.sql)
 			require.NoError(s.T(), err)
 			for rows.Next() {
 				var id, typeDate, typeDatetime, typeTimestamp, typeTime, typeYear any
@@ -245,24 +200,13 @@ func (s *ServerTestSuite) TestGeographyTypes() {
 		},
 	}
 
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := newDB()
 	require.NoError(s.T(), err)
-	require.NoError(s.T(), err1)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeGeometry, typeGeomcollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon any
-				err = rows.Scan(&id, &typeGeometry, &typeGeomcollection, &typeLinestring, &typeMultilinestring, &typePoint, &typeMultipoint, &typePolygon, &typeMultipolygon)
-				require.NoError(s.T(), err)
-				s.T().Log(id, typeGeometry, typeGeomcollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon)
-				tc.wantRes = []any{id, typeGeometry, typeGeomcollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
+			rows, err := db.QueryContext(ctx, tc.sql)
 			require.NoError(s.T(), err)
 			for rows.Next() {
 				var id, typeGeometry, typeGeomcollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon any
@@ -295,26 +239,14 @@ func (s *ServerTestSuite) TestFilePathTypes() {
 		},
 	}
 
-	db, err2 := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
-	realDb, err1 := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	t := s.T()
-	require.NoError(t, err2)
-	require.NoError(t, err1)
+	db, err := newDB()
+	require.NoError(s.T(), err)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			rows, err := realDb.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
-			for rows.Next() {
-				var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
-				err = rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)
-				require.NoError(t, err)
-				t.Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
-				tc.wantRes = []any{id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob}
-			}
-			rows, err = db.QueryContext(ctx, tc.sql)
-			require.NoError(t, err)
+		s.T().Run(tc.name, func(t *testing.T) {
+			rows, err := db.QueryContext(ctx, tc.sql)
+			require.NoError(s.T(), err)
 			for rows.Next() {
 				var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
 				err = rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)

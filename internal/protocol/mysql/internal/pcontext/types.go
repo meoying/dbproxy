@@ -11,4 +11,5 @@ type Context struct {
 	Query        string
 	Args         []any
 	InTransition bool
+	StmtId       int
 }

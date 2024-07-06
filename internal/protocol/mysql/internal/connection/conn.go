@@ -29,6 +29,8 @@ type Conn struct {
 	onCmd        OnCmd
 	cmdTimeout   time.Duration
 	InTransition bool
+	// 维护prepare语句，TODO 后面可以改用线程安全的map
+	Prepares map[int]bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32
@@ -39,10 +41,11 @@ func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
 		conn:             rc,
 		maxAllowedPacket: maxPacketSize,
 		// 后续要考虑做成可配置的
-		writeTimeout: time.Second * 3,
+		writeTimeout: time.Second,
 		onCmd:        onCmd,
 		Id:           id,
-		cmdTimeout:   time.Second * 3,
+		cmdTimeout:   time.Second,
+		Prepares:     map[int]bool{},
 	}
 }
 
@@ -69,7 +72,7 @@ func (mc *Conn) Loop() error {
 		//ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		ctx := context.Background()
 		err1 = mc.onCmd(ctx, mc, pkt)
-		//cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
+		//cancel() // TODO：暂时注释，每次取消会影响事务和prepare的后续操作
 		if err1 != nil {
 			return err1
 		}

@@ -26,4 +26,5 @@ type Result struct {
 	Result sql.Result
 	// ChangeTransaction 是否改变事务的状态
 	ChangeTransaction bool
+	StmtId            int
 }

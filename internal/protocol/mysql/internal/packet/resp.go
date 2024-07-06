@@ -1,8 +1,8 @@
 package packet
 
 import (
-	"database/sql"
 	"encoding/binary"
+	"github.com/meoying/dbproxy/internal/datasource/column"
 )
 
 // 构造返回给客户端响应的 packet
@@ -57,7 +57,7 @@ func BuildEOFPacket() []byte {
 
 // BuildColumnDefinitionPacket 构建字段描述包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
-func BuildColumnDefinitionPacket(col *sql.ColumnType, charset uint32) []byte {
+func BuildColumnDefinitionPacket(col column.Column, charset uint32) []byte {
 	// 减少切片扩容
 	p := make([]byte, 4, 32)
 
@@ -95,12 +95,12 @@ func BuildColumnDefinitionPacket(col *sql.ColumnType, charset uint32) []byte {
 
 // BuildRowPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildRowPacket(value ...any) []byte {
+func BuildRowPacket(values ...any) []byte {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	// 减少切片扩容
 	//return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
 	p := make([]byte, 4, 20)
-	for _, v := range value {
+	for _, v := range values {
 		// 字段值为null 默认返回0xFB
 		data := *(v.(*[]byte))
 		if data == nil {
@@ -114,12 +114,38 @@ func BuildRowPacket(value ...any) []byte {
 	return p
 }
 
+// BuildBinaryRowPacket
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
+func BuildBinaryRowPacket(values ...any) []byte {
+	p := make([]byte, 4, 20)
+
+	// header
+	p = append(p, 0)
+
+	// null_bitmap TODO 暂定不会有null的情况，后续再优化NULL bitmap, length= (column_count + 7 + 2) / 8
+	p = append(p, 0)
+
+	// TODO 暂定先判断类型，后续要根据每个字段的类型去返回不同长度的包数据
+	for key, val := range values {
+		data := *(val.(*[]byte))
+		if key == 0 {
+			p = append(p, []byte{0x01, 0x00, 0x00, 0x00}...)
+		} else {
+			p = append(p, EncodeStringLenenc(string(data))...)
+		}
+	}
+
+	return p
+}
+
 // getMysqlTypeMaxLength 获取字段类型最大长度
 func getMysqlTypeMaxLength(dataType string) uint32 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
 	switch dataType {
 	case "INT":
 		return MySqlMaxLengthInt
+	case "BIGINT":
+		return MySqlMaxLengthBigInt
 	case "VARCHAR":
 		return MySqlMaxLengthVarChar
 	default:
@@ -181,4 +207,30 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 	default:
 		return uint16(MySQLTypeVarString) // 未知类型
 	}
+}
+
+// BuildStmtPacket 构建预处理响应包
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
+func BuildStmtPacket(stmtId int, countCol int, countParam int) []byte {
+	res := make([]byte, 4, 20)
+
+	// status int<1>
+	res = append(res, 0)
+
+	// statement_id int<4>
+	res = append(res, UintLengthEncode(uint32(stmtId), 4)...)
+
+	// num_columns int<2>
+	res = append(res, UintLengthEncode(uint32(countCol), 2)...)
+
+	// num_params int<2>
+	res = append(res, UintLengthEncode(uint32(countParam), 2)...)
+
+	// reserved_1 int<1>
+	res = append(res, 0)
+
+	// warning_count int<2>
+	res = append(res, 0, 0)
+
+	return res
 }

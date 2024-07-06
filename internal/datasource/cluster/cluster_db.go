@@ -89,6 +89,10 @@ func (c *clusterDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasourc
 	return facade.BeginTx(ctx, opts)
 }
 
+func (c *clusterDB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+	panic("replace me")
+}
+
 func NewClusterDB(ms map[string]*masterslave.MasterSlavesDB) datasource.DataSource {
 	return &clusterDB{masterSlavesDBs: ms}
 }
