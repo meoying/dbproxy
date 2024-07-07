@@ -129,8 +129,7 @@ func (exec *StmtExecuteExecutor) resp(cols []*sql.ColumnType, rows [][]any, char
 
 // parseQuery 获取sql语句
 func (exec *StmtExecuteExecutor) parseQuery(stmtId int) string {
-	// 这里的1是随便写的为了能让ast能正常解析，后续参数是根据解析出来传的
-	parseQue := fmt.Sprintf("EXECUTE stmt%d 1", stmtId)
+	parseQue := fmt.Sprintf("EXECUTE stmt%d", stmtId)
 	return parseQue
 }
 

@@ -50,6 +50,7 @@ func (exec *StmtCloseExecutor) Exec(
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(parseQue),
 		},
+		StmtId: stmtId,
 	}
 
 	// 在这里执行 que，并且写回响应
@@ -67,8 +68,7 @@ func (exec *StmtCloseExecutor) Exec(
 
 // parseQuery 获取sql语句
 func (exec *StmtCloseExecutor) parseQuery(stmtId int) string {
-	return fmt.Sprintf("EXECUTE stmt%d 1", stmtId)
-	//return fmt.Sprintf("DEALLOCATE PREPARE stmt%d", stmtId)
+	return fmt.Sprintf("DEALLOCATE PREPARE stmt%d", stmtId)
 }
 
 // stmtId 获取对应prepare ID
