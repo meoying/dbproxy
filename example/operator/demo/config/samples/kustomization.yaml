@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- proxy_v1alpha1_dbproxy.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

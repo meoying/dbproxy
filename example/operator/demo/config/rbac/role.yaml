@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - proxy.meoying.com
+  resources:
+  - dbproxies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - proxy.meoying.com
+  resources:
+  - dbproxies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - proxy.meoying.com
+  resources:
+  - dbproxies/status
+  verbs:
+  - get
+  - patch
+  - update
