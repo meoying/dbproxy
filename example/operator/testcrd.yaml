@@ -1,0 +1,35 @@
+apiVersion: proxy.meoying.com/v1alpha1
+kind: Dbproxy
+metadata:
+  namespace: "default"
+  name: app-dbproxy
+  labels:
+    app: app-dbproxy
+spec:
+  ## deploy的spec定义
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      annotations:
+        app: "dsadsadsa"
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: flycash/dbproxy:testserver-v0.1
+          ## 方便测试现象
+          ports:
+            - containerPort: 8080  # 设置 myapp 容器的端口为 8080
+              hostPort: 8080        # 将容器端口映射到节点的 8080 端口
+  image: "flycash/dbproxy:dbproxy-v0.1"
+  plugins:
+    - name: "forward"
+      config: "forward-plugin-configmap"
+  config: "dbproxy-configmap"
+
+
+
