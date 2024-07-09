@@ -41,7 +41,6 @@ type DbproxySpec struct {
 	Image   string         `json:"image"`
 	Plugins []PluginConfig `json:"plugins"`
 	Config  string         `json:"config"`
-
 }
 
 type PodTemplateSpec struct {
