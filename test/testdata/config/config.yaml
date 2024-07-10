@@ -1,0 +1,35 @@
+algorithm:
+  hash:
+    shardingKey: "user_id"
+    # 分集群
+    dsPattern:
+      base: 0
+      name: "0.db.cluster.company.com:3306"
+      notSharding: true
+    # 分库
+    dbPattern:
+      base: 3
+      name: "driver_db_%d"
+      notSharding: false
+    # 分表
+    tbPattern:
+      base: 0
+      name: "order_tab"
+      notSharding: true
+
+datasource:
+  clusters:
+    - address: "0.db.cluster.company.com:3306"
+      nodes:
+        - master:
+            name: "driver_db_0"
+            dsn: "root:root@tcp(127.0.0.1:13306)/driver_db_0?charset=utf8mb4&parseTime=True&loc=Local"
+          slaves:
+            - name: "slave-01"
+              dsn: "root:root@tcp(127.0.0.1:13306)/driver_db_0?charset=utf8mb4&parseTime=True&loc=Local"
+        - master:
+            name: "driver_db_1"
+            dsn: "root:root@tcp(127.0.0.1:13306)/driver_db_1?charset=utf8mb4&parseTime=True&loc=Local"
+        - master:
+            name: "driver_db_2"
+            dsn: "root:root@tcp(127.0.0.1:13306)/driver_db_2?charset=utf8mb4&parseTime=True&loc=Local"

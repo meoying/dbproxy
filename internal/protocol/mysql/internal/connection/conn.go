@@ -3,7 +3,6 @@ package connection
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
@@ -63,13 +62,12 @@ func (mc *Conn) Loop() error {
 		// 开始不断接收客户端的请求
 		pkt, err1 := mc.readPacket()
 		if err1 != nil {
-			log.Println(err1, "xxxxxxxxxxxxxxx")
-			return fmt.Errorf("读取客户端请求失败 %w", err)
+			return fmt.Errorf("读取客户端请求失败 %w", err1)
 		}
-		//ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
+		// ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		ctx := context.Background()
 		err1 = mc.onCmd(ctx, mc, pkt)
-		//cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
+		// cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
 		if err1 != nil {
 			return err1
 		}
