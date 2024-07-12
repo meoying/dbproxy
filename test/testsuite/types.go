@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"strconv"
@@ -17,12 +18,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	MYSQLDSNTmpl = "root:root@tcp(localhost:13306)/%s?charset=utf8mb4&parseTime=True&loc=Local"
+)
+
 type Order struct {
 	UserId  int
 	OrderId int64
 	Content string
 	// TODO 修改为Amount
 	Account float64
+}
+
+func OpenDefaultDB() (*sql.DB, error) {
+	return OpenSQLDB(fmt.Sprintf(MYSQLDSNTmpl, ""))
 }
 
 func CreateDatabases(t *testing.T, db *sql.DB, names ...string) {
@@ -43,9 +52,13 @@ func CreateTables(t *testing.T, db *sql.DB, tableNames ...string) {
 		"account DOUBLE," +
 		"PRIMARY KEY (user_id)" +
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
-
+	if len(tableNames) == 0 {
+		tableNames = append(tableNames, "order")
+	}
 	for _, name := range tableNames {
-		_, err := db.Exec(fmt.Sprintf(tableTemplate, name))
+		c := fmt.Sprintf(tableTemplate, name)
+		log.Printf("create table `%s`\n", c)
+		_, err := db.Exec(c)
 		require.NoError(t, err, fmt.Errorf("创建表=%s失败", name))
 	}
 }
@@ -121,7 +134,7 @@ func getOrdersFromRows(t *testing.T, rows *sql.Rows) []Order {
 	return res
 }
 
-func clearTable(t *testing.T, db *sql.DB, tableNames ...string) {
+func ClearTables(t *testing.T, db *sql.DB, tableNames ...string) {
 	t.Helper()
 	if len(tableNames) == 0 {
 		tableNames = append(tableNames, "order")

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/go-sql-driver/mysql"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
@@ -38,7 +39,7 @@ func (c *connector) Driver() driver.Driver {
 
 // ConnectorBuilder 根据配置信息构建driver.Connector对象或者*sql.DB对象
 type ConnectorBuilder struct {
-	config *Config
+	config *shardingconfig.Config
 }
 
 func (c *ConnectorBuilder) LoadConfigFile(path string) error {
@@ -46,7 +47,7 @@ func (c *ConnectorBuilder) LoadConfigFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("读取配置文件失败: %w", err)
 	}
-	var cfg Config
+	var cfg shardingconfig.Config
 	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return fmt.Errorf("解析配置文件失败: %w", err)
@@ -55,7 +56,7 @@ func (c *ConnectorBuilder) LoadConfigFile(path string) error {
 	return nil
 }
 
-func (c *ConnectorBuilder) SetConfig(cfg Config) {
+func (c *ConnectorBuilder) SetConfig(cfg shardingconfig.Config) {
 	cc := cfg
 	c.config = &cc
 }

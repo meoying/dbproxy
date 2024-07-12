@@ -3,40 +3,69 @@
 package test
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"testing"
 
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v3"
 )
 
-// TestDriver 测试driver形态
+// TestDriver 测试driver形态的dbproxy
 func TestDriver(t *testing.T) {
+	t.Run("TestSingleSuite", func(t *testing.T) {
+		// TODO: forward 单个连接对应单个mysql
+		// TODO: forward 对应的config, 我就想用
+		t.Skip()
+		suite.Run(t, new(singleDriverTestSuite))
+	})
 
-	// TODO: forward 单个连接对应单个mysql
-	// TODO: forward 对应的config, 我就想用
-
-	t.Run("sharding", func(t *testing.T) {
+	t.Run("TestShardingSuite", func(t *testing.T) {
 		suite.Run(t, new(shardingDriverTestSuite))
 	})
+}
+
+// singleDriverTestSuite 测试单机driver
+type singleDriverTestSuite struct {
+	suite.Suite
+	basicSuite    testsuite.BasicTestSuite
+	singleTxSuite testsuite.SingleTXTestSuite
+}
+
+func (s *singleDriverTestSuite) SetupSuite() {
 
 }
 
-// shardingDriverTestSuite 只提供初始化测试集操作
+func (s *singleDriverTestSuite) TestBasicSuite() {
+	suite.Run(s.T(), &s.basicSuite)
+}
+
+func (s *singleDriverTestSuite) TestSingleTXSuite() {
+	suite.Run(s.T(), &s.singleTxSuite)
+}
+
+// shardingDriverTestSuite 测试分库分表driver
 type shardingDriverTestSuite struct {
 	suite.Suite
-	crudSuite             testsuite.CRUDTestSuite
+	basicSuite            testsuite.BasicTestSuite
 	distributeTXTestSuite testsuite.DistributeTXTestSuite
 }
 
 func (s *shardingDriverTestSuite) SetupSuite() {
+	driverDB := s.setupDriverDB()
+	s.basicSuite.SetDB(driverDB)
+	s.distributeTXTestSuite.SetDB(driverDB)
+}
+
+func (s *shardingDriverTestSuite) setupDriverDB() *sql.DB {
 	yamlData, err := os.ReadFile("testdata/config/driver/sharding.yaml")
 	s.NoError(err)
 
-	var config sharding.Config
+	var config shardingconfig.Config
 	err = yaml.Unmarshal(yamlData, &config)
 	s.NoError(err)
 
@@ -49,12 +78,10 @@ func (s *shardingDriverTestSuite) SetupSuite() {
 
 	buildDB, err := cb.BuildDB()
 	s.NoError(err)
-
-	s.crudSuite.SetDB(buildDB)
-	s.distributeTXTestSuite.SetDB(buildDB)
+	return buildDB
 }
 
-func (s *shardingDriverTestSuite) createDBsAndTables(config sharding.Config) {
+func (s *shardingDriverTestSuite) createDBsAndTables(config shardingconfig.Config) {
 	t := s.T()
 
 	// 该方法中的各种*sql.DB仅是用来创建节点机器上的数据库(mysql中的库概念)和库中的数据表
@@ -84,11 +111,11 @@ func (s *shardingDriverTestSuite) createDBsAndTables(config sharding.Config) {
 }
 
 func (s *shardingDriverTestSuite) newDSN(name string) string {
-	return fmt.Sprintf("root:root@tcp(127.0.0.1:13306)/%s?charset=utf8mb4&parseTime=True&loc=Local", name)
+	return fmt.Sprintf(testsuite.MYSQLDSNTmpl, name)
 }
 
-func (s *shardingDriverTestSuite) TestCRUDSuite() {
-	suite.Run(s.T(), &s.crudSuite)
+func (s *shardingDriverTestSuite) TestBasicSuite() {
+	suite.Run(s.T(), &s.basicSuite)
 }
 
 func (s *shardingDriverTestSuite) TestDistributeTXSuite() {

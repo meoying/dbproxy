@@ -9,7 +9,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ProtocolTestSuite struct {
+// DataTypeTestSuite 用于验证网关形态下客户端与dbproxy之间对传输不同数据类型的MySQL协议的解析的正确性
+type DataTypeTestSuite struct {
 	suite.Suite
 	// 直连dbproxy代理的db
 	proxyDB *sql.DB
@@ -17,7 +18,7 @@ type ProtocolTestSuite struct {
 	mysqlDB *sql.DB
 }
 
-func (s *ProtocolTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB, mysqlDB *sql.DB) {
+func (s *DataTypeTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB, mysqlDB *sql.DB) {
 	s.proxyDB = proxyDB
 	s.mysqlDB = mysqlDB
 }
@@ -29,7 +30,7 @@ func (s *ProtocolTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB, mysqlDB *sql.D
 // 2. 所有的字段都是最小值
 // 3. 所有的字段都是最大值
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestIntTypes() {
+func (s *DataTypeTestSuite) TestIntTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -61,7 +62,7 @@ func (s *ProtocolTestSuite) TestIntTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getIntValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getIntValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -80,7 +81,7 @@ func (s *ProtocolTestSuite) getIntValues(t *testing.T, db *sql.DB, sql string) [
 // TestFloatTypes
 // 测试 MySQL 的浮点的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestFloatTypes() {
+func (s *DataTypeTestSuite) TestFloatTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -104,7 +105,7 @@ func (s *ProtocolTestSuite) TestFloatTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getFloatValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getFloatValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -123,7 +124,7 @@ func (s *ProtocolTestSuite) getFloatValues(t *testing.T, db *sql.DB, sql string)
 // TestStringTypes
 // 测试 MySQL 的字符串的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestStringTypes() {
+func (s *DataTypeTestSuite) TestStringTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -147,7 +148,7 @@ func (s *ProtocolTestSuite) TestStringTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -166,7 +167,7 @@ func (s *ProtocolTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string
 // TestDateTypes
 // 测试 MySQL 的时间的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestDateTypes() {
+func (s *DataTypeTestSuite) TestDateTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -190,7 +191,7 @@ func (s *ProtocolTestSuite) TestDateTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getDateValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getDateValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -209,7 +210,7 @@ func (s *ProtocolTestSuite) getDateValues(t *testing.T, db *sql.DB, sql string) 
 // TestGeographyTypes
 // 测试 MySQL 的地理位置的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestGeographyTypes() {
+func (s *DataTypeTestSuite) TestGeographyTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -233,7 +234,7 @@ func (s *ProtocolTestSuite) TestGeographyTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getGeographyValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getGeographyValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -252,7 +253,7 @@ func (s *ProtocolTestSuite) getGeographyValues(t *testing.T, db *sql.DB, sql str
 // TestFilePathTypes
 // 测试 MySQL 的地理位置的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *ProtocolTestSuite) TestFilePathTypes() {
+func (s *DataTypeTestSuite) TestFilePathTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -276,7 +277,7 @@ func (s *ProtocolTestSuite) TestFilePathTypes() {
 	}
 }
 
-func (s *ProtocolTestSuite) getFilePathTypeValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getFilePathTypeValues(t *testing.T, db *sql.DB, sql string) [][]any {
 	t.Helper()
 	rows, err := db.QueryContext(context.Background(), sql)
 	require.NoError(t, err)

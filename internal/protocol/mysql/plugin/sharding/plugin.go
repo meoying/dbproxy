@@ -27,7 +27,6 @@ func (p *Plugin) Init(cfg []byte) error {
 }
 
 func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
-
 	return &Plugin{
 		ds:        ds,
 		algorithm: algorithm,
