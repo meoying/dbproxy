@@ -20,6 +20,7 @@ import (
 type Server struct {
 	addr     string
 	logger   *slog.Logger
+	mu       sync.Mutex
 	listener net.Listener
 
 	conns     syncx.Map[uint32, *connection.Conn]
@@ -53,7 +54,9 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
+	s.mu.Lock()
 	s.listener = listener
+	s.mu.Unlock()
 	var id uint32 = 1
 	for {
 		rawConn, err1 := listener.Accept()
@@ -102,9 +105,12 @@ func (s *Server) Close() error {
 	s.closeOnce.Do(func() {
 		s.closed.Store(true)
 
+		s.mu.Lock()
 		if s.listener != nil {
 			err = multierror.Append(err, s.listener.Close())
 		}
+		s.mu.Unlock()
+
 		// 目前只是关闭了 value，但是并没有删除掉对应的键值对
 		s.conns.Range(func(key uint32, value *connection.Conn) bool {
 			err = multierror.Append(err, value.Close())

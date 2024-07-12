@@ -107,8 +107,8 @@ func (s *ServerTestSuite) TestDelete() {
 func (s *ServerTestSuite) TestTransaction() {
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/mysql")
 	require.NoError(s.T(), err)
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	//defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	// defer cancel()
 	ctx := context.Background()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *ServerTestSuite) TestTransaction() {
 	}
 
 	err = tx.Commit()
-	//err = tx.Rollback()
+	// err = tx.Rollback()
 	if err != nil {
 		s.T().Fatalf("Failed to commit: %v", err)
 	}

@@ -49,3 +49,7 @@ func openDB(dsn string) (*sql.DB, error) {
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 	return p.hdl
 }
+
+func NewPlugin(hdl *Handler) *Plugin {
+	return &Plugin{hdl: hdl}
+}
