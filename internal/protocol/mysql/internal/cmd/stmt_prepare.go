@@ -66,8 +66,6 @@ func (exec *StmtPrepareExecutor) Exec(
 			return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 		}
 	}
-	// 记录prepare
-	conn.Prepares[exec.stmtId] = true
 
 	return nil
 }

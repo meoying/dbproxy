@@ -29,8 +29,6 @@ type Conn struct {
 	onCmd        OnCmd
 	cmdTimeout   time.Duration
 	InTransition bool
-	// 维护prepare语句，TODO 后面可以改用线程安全的map
-	Prepares map[int]bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32
@@ -45,7 +43,6 @@ func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
 		onCmd:        onCmd,
 		Id:           id,
 		cmdTimeout:   time.Second,
-		Prepares:     map[int]bool{},
 	}
 }
 
@@ -67,7 +64,7 @@ func (mc *Conn) Loop() error {
 		pkt, err1 := mc.readPacket()
 		if err1 != nil {
 			log.Println(err1, "xxxxxxxxxxxxxxx")
-			return fmt.Errorf("读取客户端请求失败 %w", err)
+			return fmt.Errorf("读取客户端请求失败 %w", err1)
 		}
 		//ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		ctx := context.Background()
