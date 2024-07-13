@@ -1,45 +1,45 @@
 package sharding
 
 type Config struct {
-	Algorithm  Algorithm  `yaml:"algorithm"`
-	Datasource Datasource `yaml:"datasource"`
+	Algorithm  Algorithm  `json:"algorithm" yaml:"algorithm"`
+	Datasource Datasource `json:"datasource" yaml:"datasource"`
 }
 
 type Algorithm struct {
-	Hash *Hash `yaml:"hash"`
+	Hash *Hash `json:"hash" yaml:"hash"`
 }
 
 type Datasource struct {
-	Clusters []Cluster `yaml:"clusters"`
+	Clusters []Cluster `json:"clusters" yaml:"clusters"`
 }
 
 type Hash struct {
-	ShardingKey string `yaml:"shardingKey"`
+	ShardingKey string `json:"shardingKey" yaml:"shardingKey"`
 	// 分集群
-	DSPattern Pattern `yaml:"dsPattern"`
+	DSPattern Pattern `json:"dsPattern" yaml:"dsPattern"`
 	// 分库
-	DBPattern Pattern `yaml:"dbPattern"`
+	DBPattern Pattern `json:"dbPattern" yaml:"dbPattern"`
 	// 分表
-	TBPattern Pattern `yaml:"tbPattern"`
+	TBPattern Pattern `json:"tbPattern" yaml:"tbPattern"`
 }
 
 type Pattern struct {
-	Base        int    `yaml:"base"`
-	Name        string `yaml:"name"`
-	NotSharding bool   `yaml:"notSharding"`
+	Base        int    `json:"base" yaml:"base"`
+	Name        string `json:"name" yaml:"name"`
+	NotSharding bool   `json:"notSharding" yaml:"notSharding"`
 }
 
 type Cluster struct {
-	Address string  `yaml:"address"`
-	Nodes   []Nodes `yaml:"nodes"`
+	Address string  `json:"address" yaml:"address"`
+	Nodes   []Nodes `json:"nodes" yaml:"nodes"`
 }
 
 type Nodes struct {
-	Master DSNConfig    `yaml:"master"`
-	Slaves []*DSNConfig `yaml:"slaves,omitempty"`
+	Master DSNConfig    `json:"master" yaml:"master"`
+	Slaves []*DSNConfig `json:"slaves,omitempty" yaml:"slaves,omitempty"`
 }
 
 type DSNConfig struct {
-	Name string `yaml:"name"`
-	DSN  string `yaml:"dsn"`
+	Name string `json:"name" yaml:"name"`
+	DSN  string `json:"dsn" yaml:"dsn"`
 }

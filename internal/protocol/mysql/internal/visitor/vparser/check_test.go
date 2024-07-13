@@ -38,7 +38,7 @@ func TestVisitor_Check(t *testing.T) {
 		{
 			name: "非dml语句",
 			sql:  "ALTER TABLE employees ADD COLUMN birthdate DATE;",
-			want: "",
+			want: UnKnownSQLStmt,
 		},
 	}
 	for _, tc := range testcases {

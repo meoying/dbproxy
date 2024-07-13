@@ -35,7 +35,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			name:     "插入操作_提交事务",
 			before:   func(t *testing.T) {},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'sample content', 10.0),(2, 2002, 'sample content', 20.0);"},
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (30001, 1001, 'sample content', 10.0),(30002, 2002, 'sample content', 20.0);"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				for _, sqlStmt := range sqlStmts {
@@ -47,16 +47,16 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{1, 2})
+				rows := getRowsFromTable(t, s.db, []int64{30001, 30002})
 				wantOrderList := []Order{
 					{
-						UserId:  1,
+						UserId:  30001,
 						OrderId: 1001,
 						Content: "sample content",
 						Account: 10.0,
 					},
 					{
-						UserId:  2,
+						UserId:  30002,
 						OrderId: 2002,
 						Content: "sample content",
 						Account: 20.0,
@@ -70,7 +70,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			name:     "插入操作_回滚事务",
 			before:   func(t *testing.T) {},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1, 1001, 'sample content', 10.0),(2, 2002, 'sample content', 20.0);"},
+			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (40001, 1001, 'sample content', 10.0),(40002, 2002, 'sample content', 20.0);"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				for _, sqlStmt := range sqlStmts {
@@ -82,7 +82,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{1})
+				rows := getRowsFromTable(t, s.db, []int64{40001})
 				orders := getOrdersFromRows(t, rows)
 				assert.Equal(t, 0, len(orders))
 			},
@@ -92,12 +92,12 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (50002, 1002, 'initial content', 20.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2;"},
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 50002;"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				sqlStmt := sqlStmts[0]
@@ -110,10 +110,10 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{2})
+				rows := getRowsFromTable(t, s.db, []int64{50002})
 				wantOrderList := []Order{
 					{
-						UserId:  2,
+						UserId:  50002,
 						OrderId: 1002,
 						Content: "initial content",
 						Account: 20.0,
@@ -128,12 +128,12 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (60002, 1002, 'initial content', 20.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 2"},
+			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 60002"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				sqlStmt := sqlStmts[0]
@@ -151,14 +151,14 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (12, 1102, 'initial content', 120.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (112, 1112, 'initial content', 1120.0)",
+					"INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (70002, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (700012, 1102, 'initial content', 120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (7000112, 1112, 'initial content', 1120.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` in (2,12,112)"},
+			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` in (70002,700012,7000112)"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				for _, sqlStmt := range sqlStmts {
@@ -170,22 +170,22 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{2, 12, 112})
+				rows := getRowsFromTable(t, s.db, []int64{70002, 700012, 7000112})
 				wantOrderList := []Order{
 					{
-						UserId:  2,
+						UserId:  70002,
 						OrderId: 1002,
 						Content: "updated content",
 						Account: 20.0,
 					},
 					{
-						UserId:  12,
+						UserId:  700012,
 						OrderId: 1102,
 						Content: "updated content",
 						Account: 120.0,
 					},
 					{
-						UserId:  112,
+						UserId:  7000112,
 						OrderId: 1112,
 						Content: "updated content",
 						Account: 1120.0,
@@ -200,9 +200,9 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2, 1002, 'initial content', 20.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (12, 1102, 'initial content', 120.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (112, 1112, 'initial content', 1120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (80002, 1002, 'initial content', 20.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (800012, 1102, 'initial content', 120.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (8000112, 1112, 'initial content', 1120.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -219,22 +219,22 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{2, 12, 112})
+				rows := getRowsFromTable(t, s.db, []int64{80002, 800012, 8000112})
 				wantOrderList := []Order{
 					{
-						UserId:  2,
+						UserId:  80002,
 						OrderId: 1002,
 						Content: "initial content",
 						Account: 20.0,
 					},
 					{
-						UserId:  12,
+						UserId:  800012,
 						OrderId: 1102,
 						Content: "initial content",
 						Account: 120.0,
 					},
 					{
-						UserId:  112,
+						UserId:  8000112,
 						OrderId: 1112,
 						Content: "initial content",
 						Account: 1120.0,
@@ -249,14 +249,14 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3, 1003, 'delete content', 30.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (13, 1103, 'delete content', 130.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (113, 1113, 'delete content', 1130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (90003, 1003, 'delete content', 30.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (900013, 1103, 'delete content', 130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (9000113, 1113, 'delete content', 1130.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (3,13,113)"},
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (90003,900013,9000113)"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				for _, sqlStmt := range sqlStmts {
@@ -268,7 +268,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{3, 13, 113})
+				rows := getRowsFromTable(t, s.db, []int64{90003, 900013, 9000113})
 				orders := getOrdersFromRows(t, rows)
 				assert.Equal(t, 0, len(orders))
 			},
@@ -278,14 +278,14 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (9, 1003, 'delete content', 30.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (19, 1103, 'delete content', 130.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (119, 1113, 'delete content', 1130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (100009, 1003, 'delete content', 30.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1000019, 1103, 'delete content', 130.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (10000119, 1113, 'delete content', 1130.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (9, 19, 119)"},
+			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (100009, 1000019, 10000119)"},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				for _, sqlStmt := range sqlStmts {
@@ -297,22 +297,22 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{9, 19, 119})
+				rows := getRowsFromTable(t, s.db, []int64{100009, 1000019, 10000119})
 				wantOrderList := []Order{
 					{
-						UserId:  9,
+						UserId:  100009,
 						OrderId: 1003,
 						Content: "delete content",
 						Account: 30.0,
 					},
 					{
-						UserId:  19,
+						UserId:  1000019,
 						OrderId: 1103,
 						Content: "delete content",
 						Account: 130.0,
 					},
 					{
-						UserId:  119,
+						UserId:  10000119,
 						OrderId: 1113,
 						Content: "delete content",
 						Account: 1130.0,
@@ -327,16 +327,16 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (23, 2003, 'delete content', 230.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000022, 2002, 'initial content', 220.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000023, 2003, 'delete content', 230.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			sqlStmts: []string{
-				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (24, 2004, 'insert content', 240.0);",
-				"UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = 22;",
-				"DELETE FROM `order` WHERE `user_id` = 23;",
+				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000024, 2004, 'insert content', 240.0);",
+				"UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = 2000022;",
+				"DELETE FROM `order` WHERE `user_id` = 2000023;",
 			},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
@@ -349,16 +349,16 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{22, 23, 24})
+				rows := getRowsFromTable(t, s.db, []int64{2000022, 2000023, 2000024})
 				wantOrderList := []Order{
 					{
-						UserId:  22,
+						UserId:  2000022,
 						OrderId: 2002,
 						Content: "updated content again",
 						Account: 220.0,
 					},
 					{
-						UserId:  24,
+						UserId:  2000024,
 						OrderId: 2004,
 						Content: "insert content",
 						Account: 240.0,
@@ -373,16 +373,16 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (22, 2002, 'initial content', 220.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (23, 2003, 'delete content', 230.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000022, 2002, 'initial content', 220.0)",
+					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000023, 2003, 'delete content', 230.0)",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			sqlStmts: []string{
-				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (25, 2005, 'rollback insert content', 250.0);",
-				"UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = 22;",
-				"DELETE FROM `order` WHERE `user_id` = 23;",
+				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000025, 2005, 'rollback insert content', 250.0);",
+				"UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = 3000022;",
+				"DELETE FROM `order` WHERE `user_id` = 3000023;",
 			},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
@@ -395,16 +395,16 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{22, 23})
+				rows := getRowsFromTable(t, s.db, []int64{3000022, 3000023})
 				wantOrderList := []Order{
 					{
-						UserId:  22,
+						UserId:  3000022,
 						OrderId: 2002,
 						Content: "initial content",
 						Account: 220.0,
 					},
 					{
-						UserId:  23,
+						UserId:  3000023,
 						OrderId: 2003,
 						Content: "delete content",
 						Account: 230.0,

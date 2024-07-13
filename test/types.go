@@ -11,12 +11,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getConfig(path string) ([]byte, error) {
+func getAbsPath(path string) (string, error) {
 	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(fmt.Sprintf("%s/%s", dir, path)), nil
+}
+
+func unmarshalConfigFile(path string) ([]byte, error) {
+	absPath, err := getAbsPath(path)
 	if err != nil {
 		return nil, err
 	}
-	viper.SetConfigFile(filepath.Clean(fmt.Sprintf("%s/%s", dir, path)))
+	viper.SetConfigFile(absPath)
 	err = viper.ReadInConfig()
 	if err != nil {
 		return nil, err

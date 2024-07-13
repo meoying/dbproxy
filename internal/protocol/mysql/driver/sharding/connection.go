@@ -28,10 +28,10 @@ func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *conn
 		exec:      ds,
 		algorithm: algorithm,
 		handlerMap: map[string]shardinghandler.NewHandlerFunc{
-			vparser.SelectSql: shardinghandler.NewSelectHandler,
-			vparser.InsertSql: shardinghandler.NewInsertBuilder,
-			vparser.UpdateSql: shardinghandler.NewUpdateHandler,
-			vparser.DeleteSql: shardinghandler.NewDeleteHandler,
+			vparser.SelectStmt: shardinghandler.NewSelectHandler,
+			vparser.InsertStmt: shardinghandler.NewInsertBuilder,
+			vparser.UpdateStmt: shardinghandler.NewUpdateHandler,
+			vparser.DeleteStmt: shardinghandler.NewDeleteHandler,
 		},
 	}
 }

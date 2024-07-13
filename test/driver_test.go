@@ -5,14 +5,12 @@ package test
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"testing"
 
 	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/yaml.v3"
 )
 
 // TestDriver 测试driver形态的dbproxy
@@ -62,19 +60,15 @@ func (s *shardingDriverTestSuite) SetupSuite() {
 }
 
 func (s *shardingDriverTestSuite) setupDriverDB() *sql.DB {
-	yamlData, err := os.ReadFile("testdata/config/driver/sharding.yaml")
+	path, err := getAbsPath("testdata/config/driver/sharding.yaml")
 	s.NoError(err)
 
-	var config shardingconfig.Config
-	err = yaml.Unmarshal(yamlData, &config)
+	cb := &sharding.ConnectorBuilder{}
+	err = cb.LoadConfigFile(path)
 	s.NoError(err)
 
 	// 调整e2e后,有时需要调整createDBsAndTables中创建数据库的个数及数据表个数等
-	s.createDBsAndTables(config)
-
-	cb := &sharding.ConnectorBuilder{}
-	cb.SetConfig(config)
-	s.NoError(err)
+	s.createDBsAndTables(cb.Config())
 
 	buildDB, err := cb.BuildDB()
 	s.NoError(err)

@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	MYSQLDSNTmpl = "root:root@tcp(localhost:13306)/%s?charset=utf8mb4&parseTime=True&loc=Local"
+	// MYSQLDSNTmpl 直接连接MYSQL数据库时所用的DSN, 暂不支持?charset=utf8mb4&parseTime=True&loc=Local
+	MYSQLDSNTmpl = "root:root@tcp(localhost:13306)/%s"
 )
 
 type Order struct {
