@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forward-plugin-configmap
+data:
+  config.yaml: |
+    dsn: "root:root@tcp(mysql-service:3306)/order_db?charset=utf8mb4&parseTime=True&loc=Local"
+      
+      

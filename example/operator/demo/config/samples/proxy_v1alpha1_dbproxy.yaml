@@ -1,0 +1,12 @@
+apiVersion: proxy.meoying.com/v1alpha1
+kind: Dbproxy
+metadata:
+  labels:
+    app.kubernetes.io/name: dbproxy
+    app.kubernetes.io/instance: dbproxy-sample
+    app.kubernetes.io/part-of: demo
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: demo
+  name: dbproxy-sample
+spec:
+  # TODO(user): Add fields here

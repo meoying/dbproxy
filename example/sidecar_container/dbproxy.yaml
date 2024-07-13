@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  labels:
+    app: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image:  flycash/dbproxy:testserver-v0.1
+          ## 方便测试现象
+          ports:
+            - containerPort: 8080  # 设置 myapp 容器的端口为 8080
+              hostPort: 8080    # 将容器端口映射到节点的 8080 端口
+      initContainers:
+      - name: dbproxy
+        restartPolicy: Always
+        image: flycash/dbproxy:dbproxy-v0.1
+        volumeMounts:
+          - name: config-volume
+            mountPath: /root/config
+          - name: forward-config-volume
+            mountPath: /root/plugin/forward/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: dbproxy-configmap
+            items:
+              - key: config.yaml
+                path: config.yaml
+        - name: forward-config-volume
+          configMap:
+            name: forward-plugin-configmap
+            items:
+              - key: config.yaml
+                path: config.yaml

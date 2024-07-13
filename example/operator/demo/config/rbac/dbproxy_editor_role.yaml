@@ -1,0 +1,31 @@
+# permissions for end users to edit dbproxies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: dbproxy-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: demo
+    app.kubernetes.io/part-of: demo
+    app.kubernetes.io/managed-by: kustomize
+  name: dbproxy-editor-role
+rules:
+- apiGroups:
+  - proxy.meoying.com
+  resources:
+  - dbproxies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - proxy.meoying.com
+  resources:
+  - dbproxies/status
+  verbs:
+  - get
