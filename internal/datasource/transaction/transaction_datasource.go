@@ -47,6 +47,6 @@ func (t *txDataSourceWrapper) Close() error {
 	return fmt.Errorf("%w", ErrUnSupportedOperation)
 }
 
-func (t *txDataSourceWrapper) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+func (t *txDataSourceWrapper) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
 	panic("需要的时候再实现")
 }

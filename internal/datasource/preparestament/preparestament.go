@@ -20,24 +20,24 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 )
 
-var _ datasource.Stmt = &Prep{}
+var _ datasource.Stmt = &PrepareStmt{}
 
-type Prep struct {
+type PrepareStmt struct {
 	stmt *sql.Stmt
 }
 
-func (stmt *Prep) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
+func (stmt *PrepareStmt) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
 	return stmt.stmt.QueryContext(ctx, query.Args...)
 }
 
-func (stmt *Prep) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
+func (stmt *PrepareStmt) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
 	return stmt.stmt.ExecContext(ctx, query.Args)
 }
 
-func (stmt *Prep) Close() error {
+func (stmt *PrepareStmt) Close() error {
 	return stmt.stmt.Close()
 }
 
-func NewPrep(stmt *sql.Stmt) *Prep {
-	return &Prep{stmt: stmt}
+func NewPrepareStmt(stmt *sql.Stmt) *PrepareStmt {
+	return &PrepareStmt{stmt: stmt}
 }

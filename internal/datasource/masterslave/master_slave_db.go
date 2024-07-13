@@ -19,10 +19,10 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 	"go.uber.org/multierr"
 
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 )
 
@@ -64,7 +64,7 @@ func (m *MasterSlavesDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (data
 	return transaction.NewTx(tx), nil
 }
 
-func (m *MasterSlavesDB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+func (m *MasterSlavesDB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
 	panic("replace me")
 }
 

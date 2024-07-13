@@ -30,7 +30,7 @@ type DataSource interface {
 	TxBeginner
 	Executor
 	// TODO 添加driver.Pinger接口中的ping方法
-	Prepare(ctx context.Context, query string) (Stmt, error)
+	Prepare(ctx context.Context, query Query) (Stmt, error)
 	Close() error
 }
 

@@ -74,12 +74,12 @@ func (db *DB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, 
 	return transaction.NewTx(tx), nil
 }
 
-func (db *DB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
-	stmt, err := db.db.PrepareContext(ctx, query)
+func (db *DB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	stmt, err := db.db.PrepareContext(ctx, query.SQL)
 	if err != nil {
 		return nil, err
 	}
-	return preparestament.NewPrep(stmt), nil
+	return preparestament.NewPrepareStmt(stmt), nil
 }
 
 // Wait 会等待数据库连接

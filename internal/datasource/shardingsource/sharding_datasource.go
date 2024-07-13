@@ -78,7 +78,7 @@ func (s *ShardingDataSource) BeginTx(ctx context.Context, opts *sql.TxOptions) (
 	return facade.BeginTx(ctx, opts)
 }
 
-func (s *ShardingDataSource) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+func (s *ShardingDataSource) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
 	panic("replace me")
 }
 

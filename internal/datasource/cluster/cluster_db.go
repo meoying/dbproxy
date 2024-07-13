@@ -89,7 +89,7 @@ func (c *clusterDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasourc
 	return facade.BeginTx(ctx, opts)
 }
 
-func (c *clusterDB) Prepare(ctx context.Context, query string) (datasource.Stmt, error) {
+func (c *clusterDB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
 	panic("replace me")
 }
 
