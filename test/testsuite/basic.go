@@ -256,6 +256,41 @@ func (s *BasicTestSuite) TestSelect() {
 				}, oidGroups)
 			},
 		},
+		{
+			name: "WHERE子句中多个OR带括号连接",
+			before: func(t *testing.T) {
+				sqls := []string{
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+				}
+				execSQL(t, s.db, sqls)
+			},
+			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` =2) OR (`user_id` = 3);",
+			after: func(t *testing.T, rows *sql.Rows) {
+				res := getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, []Order{
+					{
+						UserId:  2,
+						OrderId: 4,
+						Content: "content4",
+						Account: 1.3,
+					},
+					{
+						UserId:  1,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+					{
+						UserId:  3,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
+				}, res)
+			},
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -369,7 +404,7 @@ func (s *BasicTestSuite) TestUpdate() {
 		},
 		{
 			name: "更新多行",
-			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` in (1,2);",
+			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1 OR `order_id` = 4;",
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
@@ -431,14 +466,16 @@ func (s *BasicTestSuite) TestDelete() {
 		after  func(t *testing.T)
 	}{
 		{
-			name: "删除一行",
-			sql:  "DELETE FROM `order` WHERE `user_id` = 1;",
+			name: "删除多行_分片列与非分片列混合",
+			sql:  "DELETE FROM `order` WHERE `user_id` = 1 OR `user_id` = 4 OR `order_id` = 5;",
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,4,'content4',1.4);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,5,'content5',1.5);",
 				}
 				execSQL(t, s.db, sqls)
 			},
