@@ -1,0 +1,2 @@
+# 当前不支持"charset=utf8mb4&parseTime=True&loc=Local"
+dsn: "root:root@tcp(mysql8:3306)/dbproxy"

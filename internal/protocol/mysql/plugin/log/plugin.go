@@ -1,8 +1,11 @@
 package log
 
 import (
+	"encoding/json"
+	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
@@ -17,8 +20,19 @@ func (p *Plugin) Name() string {
 }
 
 func (p *Plugin) Init(cfg []byte) error {
-	// TODO: 设计log插件的config.yaml, 设置slog输出的位置
-	p.log = slog.New(slog.NewTextHandler(os.Stdout, nil))
+	var c Config
+	err := json.Unmarshal(cfg, &c)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(filepath.Dir(c.Output), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	p.log, err = initLogger(c)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -27,4 +41,33 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		p.log.Debug("处理查询：", slog.String("sql", ctx.Query))
 		return next.Handle(ctx)
 	})
+}
+
+// initLogger 根据配置初始化日志处理器
+func initLogger(config Config) (*slog.Logger, error) {
+	// var level slog.Level
+	// switch config.Level {
+	// case "debug":
+	// 	level = slog.LevelDebug
+	// case "info":
+	// 	level = slog.LevelInfo
+	// case "error":
+	// 	level = slog.LevelError
+	// default:
+	// 	level = slog.LevelInfo
+	// }
+	var output io.Writer
+	switch config.Output {
+	case "stdout":
+		output = os.Stdout
+	case "stderr":
+		output = os.Stderr
+	default:
+		file, err := os.Create(config.Output)
+		if err != nil {
+			return nil, err
+		}
+		output = file
+	}
+	return slog.New(slog.NewTextHandler(output, nil)), nil
 }
