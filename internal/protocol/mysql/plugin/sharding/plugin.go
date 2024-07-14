@@ -1,9 +1,12 @@
 package sharding
 
 import (
+	"encoding/json"
 	"log"
 
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/configbuilder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	shardinghandler "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
@@ -22,20 +25,36 @@ func (p *Plugin) Name() string {
 }
 
 func (p *Plugin) Init(cfg []byte) error {
-	// 从配置文件加载ds 和 algorithm
+	var config shardingconfig.Config
+	err := json.Unmarshal(cfg, &config)
+	if err != nil {
+		return err
+	}
+	var cfgBuilder configbuilder.ShardingConfigBuilder
+	cfgBuilder.SetConfig(config)
+
+	algorithm, err := cfgBuilder.BuildAlgorithm()
+	if err != nil {
+		return err
+	}
+	ds, err := cfgBuilder.BuildDatasource()
+	if err != nil {
+		return err
+	}
+	pp := NewPlugin(ds, algorithm)
+	*p = *pp
 	return nil
 }
 
 func NewPlugin(ds datasource.DataSource, algorithm sharding.Algorithm) *Plugin {
-
 	return &Plugin{
 		ds:        ds,
 		algorithm: algorithm,
 		handlerMap: map[string]shardinghandler.NewHandlerFunc{
-			vparser.SelectSql: shardinghandler.NewSelectHandler,
-			vparser.InsertSql: shardinghandler.NewInsertBuilder,
-			vparser.UpdateSql: shardinghandler.NewUpdateHandler,
-			vparser.DeleteSql: shardinghandler.NewDeleteHandler,
+			vparser.SelectStmt: shardinghandler.NewSelectHandler,
+			vparser.InsertStmt: shardinghandler.NewInsertBuilder,
+			vparser.UpdateStmt: shardinghandler.NewUpdateHandler,
+			vparser.DeleteStmt: shardinghandler.NewDeleteHandler,
 		},
 	}
 }
@@ -60,6 +79,7 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 		sqlName := checkVisitor.Visit(ctx.ParsedQuery.Root).(string)
 		newHandlerFunc, ok := p.handlerMap[sqlName]
 		if !ok {
+			log.Printf("YYYYYYY sqlName = %#v, handlerMap = %#v\n", sqlName, p.handlerMap)
 			return nil, shardinghandler.ErrUnKnowSql
 		}
 

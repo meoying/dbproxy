@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/meoying/dbproxy/internal/datasource/masterslave"
+	"github.com/meoying/dbproxy/internal/datasource/single"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -32,9 +32,8 @@ func (p *Plugin) Init(cfg []byte) error {
 	if err != nil {
 		return err
 	}
-	p.hdl = &Handler{
-		ds: masterslave.NewMasterSlavesDB(db),
-	}
+	// TODO 这里是否要支持主从?还是单个?也就是说确定配置具体内容
+	p.hdl = NewHandler(single.NewDB(db))
 	return nil
 }
 
@@ -52,7 +51,5 @@ func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 }
 
 func NewPlugin(hdl *Handler) *Plugin {
-	return &Plugin{
-		hdl: hdl,
-	}
+	return &Plugin{hdl: hdl}
 }

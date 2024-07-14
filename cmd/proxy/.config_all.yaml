@@ -16,10 +16,10 @@ plugins:
 #    - name: "log"
 #      location: "./plugins/log"
     - name: "forward"
-       如果配置了，则必须是一个文件
-       在没有配置的情况下，默认是 $location/$name.so => ./plugins/forward.so
-       location: "./plugin/forward"
-       configLocation: "./plugin/forward"
+#       如果配置了，则必须是一个文件
+#       在没有配置的情况下，默认是 $location/$name.so => ./plugins/forward.so
+      location: "./plugin/forward"
+      configLocation: "./plugin/forward"
 #    - name: "sharding"
 #      # so文件
 #      location: "./plugin/sharding"

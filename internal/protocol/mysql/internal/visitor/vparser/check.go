@@ -13,11 +13,12 @@ type CheckVisitor struct {
 }
 
 const (
-	SelectSql = "select"
-	UpdateSql = "update"
-	DeleteSql = "delete"
-	InsertSql = "insert"
-	UnKnowSql = ""
+	SelectStmt     = "select"
+	UpdateStmt     = "update"
+	DeleteStmt     = "delete"
+	InsertStmt     = "insert"
+	UnKnownDMLStmt = "未知的DML语句"
+	UnKnownSQLStmt = "未知的SQL语句"
 )
 
 func NewCheckVisitor() *CheckVisitor {
@@ -43,7 +44,7 @@ func (c *CheckVisitor) VisitRoot(ctx *parser.RootContext) any {
 func (c *CheckVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 	dmstmt, ok := ctx.DmlStatement().(*parser.DmlStatementContext)
 	if !ok {
-		return ""
+		return UnKnownSQLStmt
 	}
 	return c.VisitDmlStatement(dmstmt)
 }
@@ -51,14 +52,14 @@ func (c *CheckVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 func (c *CheckVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	switch {
 	case ctx.InsertStatement() != nil:
-		return InsertSql
+		return InsertStmt
 	case ctx.SelectStatement() != nil:
-		return SelectSql
+		return SelectStmt
 	case ctx.UpdateStatement() != nil:
-		return UpdateSql
+		return UpdateStmt
 	case ctx.DeleteStatement() != nil:
-		return DeleteSql
+		return DeleteStmt
 	default:
-		return UnKnowSql
+		return UnKnownDMLStmt
 	}
 }
