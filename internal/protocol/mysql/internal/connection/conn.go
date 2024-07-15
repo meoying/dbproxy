@@ -25,9 +25,9 @@ type Conn struct {
 	Id           uint32
 
 	// onCmd 处理客户端过来的命令
-	onCmd        OnCmd
-	cmdTimeout   time.Duration
-	InTransition bool
+	onCmd         OnCmd
+	cmdTimeout    time.Duration
+	InTransaction bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32

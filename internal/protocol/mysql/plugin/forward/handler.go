@@ -11,8 +11,12 @@ import (
 
 // Handler 什么也不做，就是转发请求
 // 一般用于测试环境
+// 这个实现有一个巨大的问题，即 Handler 不是线程安全的
+// TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type Handler struct {
 	ds datasource.DataSource
+	// 也就是不同的事务
+	// 这里可能要变成 map[tid]tx
 	tx datasource.Tx
 }
 
@@ -23,7 +27,6 @@ func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
 		err = f.handleTransaction(ctx, typ)
-		result.ChangeTransaction = true
 		return result, err
 	case *parser.DmlStatementContext:
 		return f.handleDml(ctx, typ)
@@ -50,7 +53,7 @@ func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementCont
 func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 	var rows *sql.Rows
 	var err error
-	if ctx.InTransition {
+	if f.tx != nil {
 		rows, err = f.tx.Query(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
@@ -71,7 +74,8 @@ func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 	var err error
 	var res sql.Result
-	if ctx.InTransition {
+	// 出于事务中
+	if f.tx != nil {
 		res, err = f.tx.Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
@@ -96,9 +100,13 @@ func (f *Handler) handleTransaction(ctx *pcontext.Context, stmt *parser.Transact
 		f.tx, err = f.ds.BeginTx(ctx, nil)
 		return err
 	case *parser.CommitWorkContext:
-		return f.tx.Commit()
+		err := f.tx.Commit()
+		f.tx = nil
+		return err
 	case *parser.RollbackWorkContext:
-		return f.tx.Rollback()
+		err := f.tx.Rollback()
+		f.tx = nil
+		return err
 	}
 	return nil
 }
