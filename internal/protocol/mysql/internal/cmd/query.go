@@ -37,7 +37,7 @@ func (exec *QueryExecutor) Exec(
 		ParsedQuery: pcontext.ParsedQuery{
 			Root: ast.Parse(que),
 		},
-		InTransition: conn.InTransition,
+		InTransition: conn.InTransaction,
 	}
 
 	// 在这里执行 que，并且写回响应
@@ -49,7 +49,7 @@ func (exec *QueryExecutor) Exec(
 		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 	if result.ChangeTransaction {
-		conn.InTransition = true
+		conn.InTransaction = true
 	}
 	if result.Rows != nil {
 		cols, err := result.Rows.ColumnTypes()
