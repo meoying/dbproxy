@@ -93,8 +93,7 @@ func (s *localForwardTestSuite) setupTestSuites() {
 	s.basicSuite.SetDB(s.newProxyClientDB())
 	// // TODO 修复Bug后需要使用下方代码
 	s.singleTxSuite.SetDB(s.newProxyClientDB())
-	// // TODO 绕过Bug使用标准driver包来验证测试用例集的有效性,修复Bug后需要关闭下方代码
-	// s.singleTxSuite.SetDB(s.newMySQLDB())
+	s.singleTxSuite.SetMySQLDB(s.newMySQLDB())
 }
 
 func (s *localForwardTestSuite) newProxyClientDB() *sql.DB {
@@ -126,7 +125,7 @@ func (s *localForwardTestSuite) TestBasicSuite() {
 
 func (s *localForwardTestSuite) TestSingleTxSuite() {
 	t := s.T()
-	t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
+	// t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
 	suite.Run(t, &s.singleTxSuite)
 }
 

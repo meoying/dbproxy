@@ -15,12 +15,6 @@ import (
 
 // TestDriver 测试driver形态的dbproxy
 func TestDriver(t *testing.T) {
-	t.Run("TestSingleSuite", func(t *testing.T) {
-		// TODO: 是否需要有一个forward driver单个连接对应单个mysql
-		t.Skip()
-		suite.Run(t, new(forwardDriverTestSuite))
-	})
-
 	t.Run("TestShardingSuite", func(t *testing.T) {
 		suite.Run(t, new(driverShardingTestSuite))
 	})

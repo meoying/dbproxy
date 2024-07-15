@@ -83,7 +83,7 @@ func (s *dockerForwardTestSuite) TestBasicSuite() {
 
 func (s *dockerForwardTestSuite) TestSingleTxSuite() {
 	t := s.T()
-	t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
+	// t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
 	suite.Run(t, &s.singleTxSuite)
 }
 

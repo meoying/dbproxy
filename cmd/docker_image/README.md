@@ -19,7 +19,7 @@ server:
 # 使用的插件的配置，我们会按照插件的顺序进行加载和初始化
 plugins:
   items:
-    - name: "log" # log插件不能放在最后
+    - name: "accessLog"
     - name: "forward"
 ```
 

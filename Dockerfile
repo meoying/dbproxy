@@ -23,14 +23,15 @@ FROM  debian:trixie-slim
 # 设置工作目录
 WORKDIR /app/dbproxy
 
+RUN mkdir log
+
 # 拷贝dbproxy二进制文件
 COPY --from=build /app/cmd/docker_image/dbproxy .
 # 拷贝dbproxy主配置文件
 COPY --from=build /app/cmd/docker_image/config/config.yaml config.yaml
 # 拷贝dbproxy插件及插件配置文件
 COPY --from=build /app/cmd/docker_image/plugins ./plugins
-RUN ls -al .
-RUN ls -al ./plugins
+
 # 运行应用程序
 CMD ["./dbproxy"]
 
