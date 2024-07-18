@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
@@ -41,7 +40,6 @@ func (exec *QueryExecutor) Exec(
 		},
 		ConnID: conn.ID(),
 	}
-	log.Printf("接收到的query = %#v, payload =%#v\n", que, string(payload))
 
 	// 在这里执行 que，并且写回响应
 	result, err := exec.hdl.Handle(pctx)

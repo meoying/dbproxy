@@ -380,7 +380,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			// 验证结果, 使用s.db验证执行tc.sqlStmt后的影响
 			tc.after(t)
 
-			// 因并发测试的存在,所以不会清理数据
+			// 因并发测试的存在,所以不会清理表中所有数据
 		})
 	}
 }

@@ -33,7 +33,7 @@ func (p *Plugin) Init(cfg []byte) error {
 		return err
 	}
 	// TODO 这里是否要支持主从?还是单个?也就是说确定配置具体内容
-	p.hdl = NewHandler(single.NewDB(db))
+	p.hdl = newHandler(single.NewDB(db))
 	return nil
 }
 
@@ -48,8 +48,4 @@ func openDB(dsn string) (*sql.DB, error) {
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 	return p.hdl
-}
-
-func NewPlugin(hdl *Handler) *Plugin {
-	return &Plugin{hdl: hdl}
 }

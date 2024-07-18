@@ -3,6 +3,7 @@ package testsuite
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
@@ -14,6 +15,12 @@ import (
 type DistributeTXTestSuite struct {
 	suite.Suite
 	db *sql.DB
+	// forwardPluginUsedOnlyClientID 用于不同客户端并发执行事务时的测试数据隔离
+	forwardPluginUsedOnlyClientID int
+}
+
+func (s *DistributeTXTestSuite) SetClientID(cid int) {
+	s.forwardPluginUsedOnlyClientID = cid
 }
 
 func (s *DistributeTXTestSuite) SetDB(db *sql.DB) {
@@ -24,39 +31,34 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 	t := s.T()
 
 	testcases := []struct {
-		name         string
-		before       func(t *testing.T)
-		ctxFunc      func() context.Context
-		sqlStmts     []string
-		execSQLStmts func(t *testing.T, sqlStmts []string, tx *sql.Tx)
-		after        func(t *testing.T)
+		name                  string
+		before                func(t *testing.T)
+		driverUsedOnlyCtxFunc func() context.Context
+		sqlStmts              []string
+		execSQLStmts          func(t *testing.T, sqlStmts []string, tx *sql.Tx)
+		after                 func(t *testing.T)
 	}{
 		{
-			name:     "插入操作_提交事务",
-			before:   func(t *testing.T) {},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (30001, 1001, 'sample content', 10.0),(30002, 2002, 'sample content', 20.0);"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Commit()
-				require.NoError(t, err)
+			name:                  "插入操作_提交事务",
+			before:                func(t *testing.T) {},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(30001)),
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(30002)),
 			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{30001, 30002})
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(30001)), int64(s.getUserID(30002))})
 				wantOrderList := []Order{
 					{
-						UserId:  30001,
+						UserId:  s.getUserID(30001),
 						OrderId: 1001,
 						Content: "sample content",
 						Account: 10.0,
 					},
 					{
-						UserId:  30002,
+						UserId:  s.getUserID(30002),
 						OrderId: 2002,
 						Content: "sample content",
 						Account: 20.0,
@@ -67,22 +69,17 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 		},
 		{
-			name:     "插入操作_回滚事务",
-			before:   func(t *testing.T) {},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (40001, 1001, 'sample content', 10.0),(40002, 2002, 'sample content', 20.0);"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Rollback()
-				require.NoError(t, err)
+			name:                  "插入操作_回滚事务",
+			before:                func(t *testing.T) {},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(40001)),
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(40002)),
 			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{40001})
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(40001))})
 				orders := getOrdersFromRows(t, rows)
 				assert.Equal(t, 0, len(orders))
 			},
@@ -92,12 +89,14 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (50002, 1002, 'initial content', 20.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(50002)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 50002;"},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d;", s.getUserID(50002)),
+			},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				sqlStmt := sqlStmts[0]
@@ -110,10 +109,10 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			},
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{50002})
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(50002))})
 				wantOrderList := []Order{
 					{
-						UserId:  50002,
+						UserId:  s.getUserID(50002),
 						OrderId: 1002,
 						Content: "initial content",
 						Account: 20.0,
@@ -128,12 +127,14 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (60002, 1002, 'initial content', 20.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(60002)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = 60002"},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d", s.getUserID(60002)),
+			},
 			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
 				t.Helper()
 				sqlStmt := sqlStmts[0]
@@ -151,41 +152,43 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (70002, 1002, 'initial content', 20.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (700012, 1102, 'initial content', 120.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (7000112, 1112, 'initial content', 1120.0)",
+					fmt.Sprintf("INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(70002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(700012)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(7000112)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` in (70002,700012,7000112)"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Commit()
-				require.NoError(t, err)
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` in (%d,%d,%d)",
+					s.getUserID(70002),
+					s.getUserID(700012),
+					s.getUserID(7000112),
+				),
 			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{70002, 700012, 7000112})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(70002)),
+					int64(s.getUserID(700012)),
+					int64(s.getUserID(7000112)),
+				})
 				wantOrderList := []Order{
 					{
-						UserId:  70002,
+						UserId:  s.getUserID(70002),
 						OrderId: 1002,
 						Content: "updated content",
 						Account: 20.0,
 					},
 					{
-						UserId:  700012,
+						UserId:  s.getUserID(700012),
 						OrderId: 1102,
 						Content: "updated content",
 						Account: 120.0,
 					},
 					{
-						UserId:  7000112,
+						UserId:  s.getUserID(7000112),
 						OrderId: 1112,
 						Content: "updated content",
 						Account: 1120.0,
@@ -200,41 +203,43 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (80002, 1002, 'initial content', 20.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (800012, 1102, 'initial content', 120.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (8000112, 1112, 'initial content', 1120.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(80002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(800012)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(8000112)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = 2) OR (`user_id` = 12);"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Rollback()
-				require.NoError(t, err)
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = %d) OR (`user_id` = %d) OR (`user_id` = %d);",
+					s.getUserID(80002),
+					s.getUserID(800012),
+					s.getUserID(8000112),
+				),
 			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{80002, 800012, 8000112})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(80002)),
+					int64(s.getUserID(800012)),
+					int64(s.getUserID(8000112)),
+				})
 				wantOrderList := []Order{
 					{
-						UserId:  80002,
+						UserId:  s.getUserID(80002),
 						OrderId: 1002,
 						Content: "initial content",
 						Account: 20.0,
 					},
 					{
-						UserId:  800012,
+						UserId:  s.getUserID(800012),
 						OrderId: 1102,
 						Content: "initial content",
 						Account: 120.0,
 					},
 					{
-						UserId:  8000112,
+						UserId:  s.getUserID(8000112),
 						OrderId: 1112,
 						Content: "initial content",
 						Account: 1120.0,
@@ -249,26 +254,28 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (90003, 1003, 'delete content', 30.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (900013, 1103, 'delete content', 130.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (9000113, 1113, 'delete content', 1130.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(90003)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(900013)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(9000113)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (90003,900013,9000113)"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Commit()
-				require.NoError(t, err)
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` in (%d, %d, %d)",
+					s.getUserID(90003),
+					s.getUserID(900013),
+					s.getUserID(9000113),
+				),
 			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{90003, 900013, 9000113})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(90003)),
+					int64(s.getUserID(900013)),
+					int64(s.getUserID(9000113)),
+				})
 				orders := getOrdersFromRows(t, rows)
 				assert.Equal(t, 0, len(orders))
 			},
@@ -278,41 +285,43 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (100009, 1003, 'delete content', 30.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (1000019, 1103, 'delete content', 130.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (10000119, 1113, 'delete content', 1130.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(100009)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(1000019)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(10000119)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc:  func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
-			sqlStmts: []string{"DELETE FROM `order` WHERE `user_id` in (100009, 1000019, 10000119)"},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Rollback()
-				require.NoError(t, err)
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			sqlStmts: []string{
+				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` in (%d, %d, %d)",
+					s.getUserID(100009),
+					s.getUserID(1000019),
+					s.getUserID(10000119),
+				),
 			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{100009, 1000019, 10000119})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(100009)),
+					int64(s.getUserID(1000019)),
+					int64(s.getUserID(10000119)),
+				})
 				wantOrderList := []Order{
 					{
-						UserId:  100009,
+						UserId:  s.getUserID(100009),
 						OrderId: 1003,
 						Content: "delete content",
 						Account: 30.0,
 					},
 					{
-						UserId:  1000019,
+						UserId:  s.getUserID(1000019),
 						OrderId: 1103,
 						Content: "delete content",
 						Account: 130.0,
 					},
 					{
-						UserId:  10000119,
+						UserId:  s.getUserID(10000119),
 						OrderId: 1113,
 						Content: "delete content",
 						Account: 1130.0,
@@ -327,38 +336,34 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000022, 2002, 'initial content', 220.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000023, 2003, 'delete content', 230.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(2000022)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(2000023)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			sqlStmts: []string{
-				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (2000024, 2004, 'insert content', 240.0);",
-				"UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = 2000022;",
-				"DELETE FROM `order` WHERE `user_id` = 2000023;",
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2004, 'insert content', 240.0);", s.getUserID(2000024)),
+				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = %d;", s.getUserID(2000022)),
+				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(2000023)),
 			},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Commit()
-				require.NoError(t, err)
-			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{2000022, 2000023, 2000024})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(2000022)),
+					int64(s.getUserID(2000023)),
+					int64(s.getUserID(2000024)),
+				})
 				wantOrderList := []Order{
 					{
-						UserId:  2000022,
+						UserId:  s.getUserID(2000022),
 						OrderId: 2002,
 						Content: "updated content again",
 						Account: 220.0,
 					},
 					{
-						UserId:  2000024,
+						UserId:  s.getUserID(2000024),
 						OrderId: 2004,
 						Content: "insert content",
 						Account: 240.0,
@@ -373,38 +378,33 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000022, 2002, 'initial content', 220.0)",
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000023, 2003, 'delete content', 230.0)",
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(3000022)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(3000023)),
 				}
 				execSQL(t, s.db, sqls)
 			},
-			ctxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			sqlStmts: []string{
-				"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (3000025, 2005, 'rollback insert content', 250.0);",
-				"UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = 3000022;",
-				"DELETE FROM `order` WHERE `user_id` = 3000023;",
+				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(3000025)),
+				fmt.Sprintf("UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = %d;", s.getUserID(3000022)),
+				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(3000023)),
 			},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
-				t.Helper()
-				for _, sqlStmt := range sqlStmts {
-					_, err := tx.Exec(sqlStmt)
-					require.NoError(t, err)
-				}
-				err := tx.Rollback()
-				require.NoError(t, err)
-			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{3000022, 3000023})
+				rows := getRowsFromTable(t, s.db, []int64{
+					int64(s.getUserID(3000022)),
+					int64(s.getUserID(3000023)),
+				})
 				wantOrderList := []Order{
 					{
-						UserId:  3000022,
+						UserId:  s.getUserID(3000022),
 						OrderId: 2002,
 						Content: "initial content",
 						Account: 220.0,
 					},
 					{
-						UserId:  3000023,
+						UserId:  s.getUserID(3000023),
 						OrderId: 2003,
 						Content: "delete content",
 						Account: 230.0,
@@ -422,7 +422,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			tc.before(t)
 
 			// 开启事务
-			tx, err := s.db.BeginTx(tc.ctxFunc(), nil)
+			tx, err := s.db.BeginTx(tc.driverUsedOnlyCtxFunc(), nil)
 			require.NoError(t, err)
 
 			// 在事务tx中执行SQL语句
@@ -431,9 +431,31 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			// 验证结果, 使用s.db验证执行tc.sqlStmt后的影响
 			tc.after(t)
 
-			// 清理数据
-			ClearTables(t, s.db)
+			// 因并发测试的存在,所以不会清理表中所有数据
 		})
 	}
 
+}
+
+func (s *DistributeTXTestSuite) getUserID(uid int) int {
+	return uid + s.forwardPluginUsedOnlyClientID
+}
+
+func (s *DistributeTXTestSuite) execSQLStmtsAndCommit(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+	t.Helper()
+	for _, sqlStmt := range sqlStmts {
+		_, err := tx.Exec(sqlStmt)
+		assert.NoError(t, err)
+	}
+	assert.NoError(t, tx.Commit())
+}
+
+func (s *DistributeTXTestSuite) execSQLStmtsAndRollback(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+	t.Helper()
+	for _, sqlStmt := range sqlStmts {
+		_, err := tx.Exec(sqlStmt)
+		require.NoError(t, err)
+	}
+	err := tx.Rollback()
+	require.NoError(t, err)
 }

@@ -21,44 +21,44 @@ type Handler struct {
 	connID2Tx syncx.Map[uint32, datasource.Tx]
 }
 
-func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
+func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	sqlStmt := ctx.ParsedQuery.SqlStatement()
 	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
-		return f.handleTransactionStmt(ctx, typ)
+		return h.handleTransactionStmt(ctx, typ)
 	case *parser.DmlStatementContext:
-		return f.handleDmlStmt(ctx, typ)
+		return h.handleDmlStmt(ctx, typ)
 	default:
 		return &plugin.Result{}, fmt.Errorf("未知SQL语句: %T", typ)
 	}
 }
 
 // handleDmlStmt 处理DML语句
-func (f *Handler) handleDmlStmt(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
+func (h *Handler) handleDmlStmt(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
 	switch stmt.GetChildren()[0].(type) {
 	case *parser.SimpleSelectContext:
-		return f.handleSelect(ctx)
+		return h.handleSelectStmt(ctx)
 	case *parser.InsertStatementContext:
-		return f.handleCUD(ctx)
+		return h.handleCUDStmt(ctx)
 	case *parser.UpdateStatementContext:
-		return f.handleCUD(ctx)
+		return h.handleCUDStmt(ctx)
 	case *parser.DeleteStatementContext:
-		return f.handleCUD(ctx)
+		return h.handleCUDStmt(ctx)
 	}
 	return &plugin.Result{}, nil
 }
 
-// handleSelect 处理Select语句
-func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
+// handleSelectStmt 处理Select语句
+func (h *Handler) handleSelectStmt(ctx *pcontext.Context) (*plugin.Result, error) {
 	var rows *sql.Rows
 	var err error
-	if tx := f.getTx(ctx.ConnID); tx != nil {
+	if tx := h.getTx(ctx.ConnID); tx != nil {
 		rows, err = tx.Query(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
 	} else {
-		rows, err = f.ds.Query(ctx, datasource.Query{
+		rows, err = h.ds.Query(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
@@ -69,25 +69,25 @@ func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 	}, err
 }
 
-func (f *Handler) getTx(connID uint32) datasource.Tx {
-	if tx, ok := f.connID2Tx.Load(connID); ok {
+func (h *Handler) getTx(connID uint32) datasource.Tx {
+	if tx, ok := h.connID2Tx.Load(connID); ok {
 		return tx
 	}
 	return nil
 }
 
-// handleCUD 操作数据
-func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
+// handleCUDStmt 操作数据
+func (h *Handler) handleCUDStmt(ctx *pcontext.Context) (*plugin.Result, error) {
 	var err error
 	var res sql.Result
-	if tx := f.getTx(ctx.ConnID); tx != nil {
+	if tx := h.getTx(ctx.ConnID); tx != nil {
 		// 事务中
 		res, err = tx.Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
 	} else {
-		res, err = f.ds.Exec(ctx, datasource.Query{
+		res, err = h.ds.Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
@@ -99,36 +99,36 @@ func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 }
 
 // handleTransactionStmt 处理事务相关语句
-func (f *Handler) handleTransactionStmt(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) (*plugin.Result, error) {
+func (h *Handler) handleTransactionStmt(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) (*plugin.Result, error) {
 	var result plugin.Result
 	var err error
 	var tx datasource.Tx
 	switch stmt.GetChildren()[0].(type) {
 	case *parser.StartTransactionContext:
-		tx, err = f.ds.BeginTx(sharding.NewSingleTxContext(ctx), nil)
+		tx, err = h.ds.BeginTx(sharding.NewSingleTxContext(ctx), nil)
 		if err == nil {
-			f.connID2Tx.Store(ctx.ConnID, tx)
+			h.connID2Tx.Store(ctx.ConnID, tx)
 			result.TxInTransaction = true
 		}
 	case *parser.CommitWorkContext:
-		tx = f.getTx(ctx.ConnID)
+		tx = h.getTx(ctx.ConnID)
 		if tx != nil {
 			err = tx.Commit()
 		}
-		f.connID2Tx.Delete(ctx.ConnID)
+		h.connID2Tx.Delete(ctx.ConnID)
 	case *parser.RollbackWorkContext:
-		tx = f.getTx(ctx.ConnID)
+		tx = h.getTx(ctx.ConnID)
 		if tx != nil {
 			err = tx.Rollback()
 		}
-		f.connID2Tx.Delete(ctx.ConnID)
+		h.connID2Tx.Delete(ctx.ConnID)
 	default:
 		err = fmt.Errorf("未知事务语句")
 	}
 	return &result, err
 }
 
-func NewHandler(ds datasource.DataSource) *Handler {
+func newHandler(ds datasource.DataSource) *Handler {
 	return &Handler{
 		ds: ds,
 	}
