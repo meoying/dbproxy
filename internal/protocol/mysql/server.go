@@ -77,7 +77,7 @@ func (s *Server) Start() error {
 		go func() {
 			// 关闭
 			defer func() {
-				s.conns.Delete(conn.Id)
+				s.conns.Delete(conn.ID())
 				_ = conn.Close()
 			}()
 			err2 := conn.Loop()

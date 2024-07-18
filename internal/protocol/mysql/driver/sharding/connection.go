@@ -62,7 +62,6 @@ func (c *connection) queryOrExec(ctx context.Context, query string, args []drive
 		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
 			return src
 		}),
-		InTransition: false,
 	}
 	handler, err := c.getShardingHandler(pctx, query, args)
 	if err != nil {

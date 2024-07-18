@@ -10,4 +10,6 @@ type Context struct {
 	ParsedQuery ParsedQuery
 	Query       string
 	Args        []any
+
+	ConnID uint32
 }
