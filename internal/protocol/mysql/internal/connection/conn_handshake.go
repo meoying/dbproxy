@@ -27,7 +27,7 @@ func (mc *Conn) startHandshake() error {
 	data = append(data, 0)
 
 	// thread Id 或者说 connection Id
-	data = binary.LittleEndian.AppendUint32(data, mc.Id)
+	data = binary.LittleEndian.AppendUint32(data, mc.ID())
 
 	// auth-plugin-data 一般来说就是 21 个字符
 	// 其中 8 个放在 auth-plugin-data-part1

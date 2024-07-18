@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,15 +36,11 @@ func TestLocalDBProxy(t *testing.T) {
 type localForwardTestSuite struct {
 	server *mysql.Server
 	suite.Suite
-	dataTypeSuite testsuite.DataTypeTestSuite
-	basicSuite    testsuite.BasicTestSuite
-	singleTxSuite testsuite.SingleTXTestSuite
 }
 
 func (s *localForwardTestSuite) SetupSuite() {
 	s.createDatabasesAndTables()
 	s.setupProxyServer()
-	s.setupTestSuites()
 }
 
 func (s *localForwardTestSuite) createDatabasesAndTables() {
@@ -88,14 +85,6 @@ func (s *localForwardTestSuite) getLogPlugin(path string) *logplugin.Plugin {
 	return p
 }
 
-func (s *localForwardTestSuite) setupTestSuites() {
-	s.dataTypeSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
-	s.basicSuite.SetDB(s.newProxyClientDB())
-	// // TODO 修复Bug后需要使用下方代码
-	s.singleTxSuite.SetDB(s.newProxyClientDB())
-	s.singleTxSuite.SetMySQLDB(s.newMySQLDB())
-}
-
 func (s *localForwardTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
@@ -116,17 +105,41 @@ func (s *localForwardTestSuite) TestPing() {
 }
 
 func (s *localForwardTestSuite) TestDataTypeSuite() {
-	suite.Run(s.T(), &s.dataTypeSuite)
+	var dataTypeSuite testsuite.DataTypeTestSuite
+	dataTypeSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
+	suite.Run(s.T(), &dataTypeSuite)
 }
 
 func (s *localForwardTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
+	var basicSuite testsuite.BasicTestSuite
+	basicSuite.SetDB(s.newProxyClientDB())
+	suite.Run(s.T(), &basicSuite)
 }
 
 func (s *localForwardTestSuite) TestSingleTxSuite() {
+	// 因为是并发测试,所以放在TestDataTypeSuite、TestBasicSuite之后
 	t := s.T()
-	// t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
-	suite.Run(t, &s.singleTxSuite)
+	var wg sync.WaitGroup
+	for id, txSuite := range []*testsuite.SingleTXTestSuite{
+		new(testsuite.SingleTXTestSuite),
+		new(testsuite.SingleTXTestSuite),
+		new(testsuite.SingleTXTestSuite),
+	} {
+		wg.Add(1)
+		id := id + 1
+		clientID := id * 10
+		txSuite := txSuite
+		txSuite.SetClientID(clientID)
+		txSuite.SetDB(s.newProxyClientDB())
+		go func() {
+			defer wg.Done()
+			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
+				t.Parallel()
+				suite.Run(t, txSuite)
+			})
+		}()
+	}
+	wg.Wait()
 }
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy

@@ -11,7 +11,8 @@ import (
 )
 
 type ShardingHandler interface {
-	// 构建分库分表的sql
+	// Build 构建分库分表的sql
+	// 这个方法是不是用不上了，我看到只在测试里面用了
 	Build(ctx context.Context) ([]sharding.Query, error)
 	QueryOrExec(ctx context.Context) (*Result, error)
 }
@@ -24,6 +25,6 @@ type Result struct {
 	Rows sqlx.Rows
 	// Result 的 error 会被传递过去客户端
 	Result sql.Result
-	// ChangeTransaction 是否改变事务的状态
-	ChangeTransaction bool
+
+	TxInTransaction bool
 }

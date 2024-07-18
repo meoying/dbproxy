@@ -22,12 +22,13 @@ type Conn struct {
 	// 写入超时时间
 	writeTimeout time.Duration
 	sequence     uint8
-	Id           uint32
+	id           uint32
 
 	// onCmd 处理客户端过来的命令
-	onCmd        OnCmd
-	cmdTimeout   time.Duration
-	InTransition bool
+	onCmd      OnCmd
+	cmdTimeout time.Duration
+	// inTransaction 当前处于事务中
+	inTransaction bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32
@@ -40,9 +41,13 @@ func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
 		// 后续要考虑做成可配置的
 		writeTimeout: time.Second * 3,
 		onCmd:        onCmd,
-		Id:           id,
+		id:           id,
 		cmdTimeout:   time.Second * 3,
 	}
+}
+
+func (mc *Conn) ID() uint32 {
+	return mc.id
 }
 
 // Loop 完成握手、鉴权，并且开始监听客户端的数据
@@ -84,4 +89,8 @@ func (mc *Conn) ClientCapabilityFlags() flags.CapabilityFlags {
 
 func (mc *Conn) CharacterSet() uint32 {
 	return mc.characterSet
+}
+
+func (mc *Conn) SetInTransaction(s bool) {
+	mc.inTransaction = s
 }

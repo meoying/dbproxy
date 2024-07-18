@@ -2,8 +2,11 @@ package forward
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
@@ -11,28 +14,27 @@ import (
 
 // Handler 什么也不做，就是转发请求
 // 一般用于测试环境
+// 这个实现有一个巨大的问题，即 Handler 不是线程安全的
+// TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type Handler struct {
-	ds datasource.DataSource
-	tx datasource.Tx
+	ds        datasource.DataSource
+	connID2Tx syncx.Map[uint32, datasource.Tx]
 }
 
 func (f *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
-	var err error
-	result := &plugin.Result{}
 	sqlStmt := ctx.ParsedQuery.SqlStatement()
 	switch typ := sqlStmt.(type) {
 	case *parser.TransactionStatementContext:
-		err = f.handleTransaction(ctx, typ)
-		result.ChangeTransaction = true
-		return result, err
+		return f.handleTransactionStmt(ctx, typ)
 	case *parser.DmlStatementContext:
-		return f.handleDml(ctx, typ)
+		return f.handleDmlStmt(ctx, typ)
+	default:
+		return &plugin.Result{}, fmt.Errorf("未知SQL语句: %T", typ)
 	}
-	return result, nil
 }
 
-// handleDml 处理DML语句
-func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
+// handleDmlStmt 处理DML语句
+func (f *Handler) handleDmlStmt(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
 	switch stmt.GetChildren()[0].(type) {
 	case *parser.SimpleSelectContext:
 		return f.handleSelect(ctx)
@@ -50,8 +52,8 @@ func (f *Handler) handleDml(ctx *pcontext.Context, stmt *parser.DmlStatementCont
 func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 	var rows *sql.Rows
 	var err error
-	if ctx.InTransition {
-		rows, err = f.tx.Query(ctx, datasource.Query{
+	if tx := f.getTx(ctx.ConnID); tx != nil {
+		rows, err = tx.Query(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
@@ -67,12 +69,20 @@ func (f *Handler) handleSelect(ctx *pcontext.Context) (*plugin.Result, error) {
 	}, err
 }
 
+func (f *Handler) getTx(connID uint32) datasource.Tx {
+	if tx, ok := f.connID2Tx.Load(connID); ok {
+		return tx
+	}
+	return nil
+}
+
 // handleCUD 操作数据
 func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 	var err error
 	var res sql.Result
-	if ctx.InTransition {
-		res, err = f.tx.Exec(ctx, datasource.Query{
+	if tx := f.getTx(ctx.ConnID); tx != nil {
+		// 事务中
+		res, err = tx.Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
 		})
@@ -88,19 +98,34 @@ func (f *Handler) handleCUD(ctx *pcontext.Context) (*plugin.Result, error) {
 	}, err
 }
 
-// handleTransaction 处理事务相关语句
-func (f *Handler) handleTransaction(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) error {
+// handleTransactionStmt 处理事务相关语句
+func (f *Handler) handleTransactionStmt(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) (*plugin.Result, error) {
+	var result plugin.Result
+	var err error
+	var tx datasource.Tx
 	switch stmt.GetChildren()[0].(type) {
 	case *parser.StartTransactionContext:
-		var err error
-		f.tx, err = f.ds.BeginTx(ctx, nil)
-		return err
+		tx, err = f.ds.BeginTx(sharding.NewSingleTxContext(ctx), nil)
+		if err == nil {
+			f.connID2Tx.Store(ctx.ConnID, tx)
+			result.TxInTransaction = true
+		}
 	case *parser.CommitWorkContext:
-		return f.tx.Commit()
+		tx = f.getTx(ctx.ConnID)
+		if tx != nil {
+			err = tx.Commit()
+		}
+		f.connID2Tx.Delete(ctx.ConnID)
 	case *parser.RollbackWorkContext:
-		return f.tx.Rollback()
+		tx = f.getTx(ctx.ConnID)
+		if tx != nil {
+			err = tx.Rollback()
+		}
+		f.connID2Tx.Delete(ctx.ConnID)
+	default:
+		err = fmt.Errorf("未知事务语句")
 	}
-	return nil
+	return &result, err
 }
 
 func NewHandler(ds datasource.DataSource) *Handler {

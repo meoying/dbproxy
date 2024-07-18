@@ -132,6 +132,7 @@ func getOrdersFromRows(t *testing.T, rows *sql.Rows) []Order {
 		require.NoError(t, err)
 		res = append(res, order)
 	}
+	require.NoError(t, rows.Close())
 	return res
 }
 
