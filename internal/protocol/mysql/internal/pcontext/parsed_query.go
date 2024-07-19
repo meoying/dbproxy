@@ -1,23 +1,36 @@
 package pcontext
 
 import (
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-)
-
-type TxType int
-
-const (
-	TxTypeNone TxType = iota
-	TxTypeSingle
-	TxTypeDelay
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 )
 
 // ParsedQuery 代表一个经过了 AST 解析的查询
 type ParsedQuery struct {
 	Root parser.IRootContext
 	// TODO: 在这里把 Hint 放好，在解析 Root 的地方就解析出来放好（这可以认为是一个统一的机制）
-	UseMaster bool
-	Tx        TxType
+	Hints []string
+}
+
+// NewParsedQuery
+// TODO: 使用NewParsedQuery重构所有ParsedQuery直接初始化的代码,并将字段设置为包内可访问+提供方法
+func NewParsedQuery(query string) *ParsedQuery {
+	astRoot := ast.Parse(query)
+	return &ParsedQuery{
+		Root:  astRoot,
+		Hints: parseHints(astRoot),
+	}
+}
+
+func parseHints(astRoot parser.IRootContext) []string {
+	var hints []string
+	visitor := vparser.NewHintVisitor()
+	v := visitor.Visit(astRoot)
+	if text, ok := v.(string); ok {
+		hints = append(hints, text)
+	}
+	return hints
 }
 
 // FirstDML 第一个 DML 语句，也就是增删改查语句。

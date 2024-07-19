@@ -27,18 +27,15 @@ func (s *HintVisitor) Visit(tree antlr.ParseTree) any {
 func (s *HintVisitor) VisitRoot(ctx *parser.RootContext) any {
 	sqlStmts := ctx.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]
-	stmtctx := sqlStmt.(*parser.SqlStatementContext)
-	return s.VisitSqlStatement(stmtctx)
+	return s.VisitSqlStatement(sqlStmt.(*parser.SqlStatementContext))
 }
 
 func (s *HintVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
-	dmstmt := ctx.DmlStatement().(*parser.DmlStatementContext)
-	return s.VisitDmlStatement(dmstmt)
+	return s.VisitDmlStatement(ctx.DmlStatement().(*parser.DmlStatementContext))
 }
 
 func (s *HintVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
-	selectStmtCtx := ctx.SelectStatement().(*parser.SimpleSelectContext)
-	return s.VisitSimpleSelect(selectStmtCtx)
+	return s.VisitSimpleSelect(ctx.SelectStatement().(*parser.SimpleSelectContext))
 }
 
 func (s *HintVisitor) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {

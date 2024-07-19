@@ -26,5 +26,4 @@ func TestHintVisitor(t *testing.T) {
 			assert.Equal(t, tc.wantVal, hint)
 		})
 	}
-
 }

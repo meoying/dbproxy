@@ -2,13 +2,14 @@ package forward
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
@@ -21,38 +22,36 @@ type Handler struct {
 	connID2Tx syncx.Map[uint32, datasource.Tx]
 }
 
-func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
-	sqlStmt := ctx.ParsedQuery.SqlStatement()
-	switch typ := sqlStmt.(type) {
-	case *parser.TransactionStatementContext:
-		return h.handleTransactionStmt(ctx, typ)
-	case *parser.DmlStatementContext:
-		return h.handleDmlStmt(ctx, typ)
-	default:
-		return &plugin.Result{}, fmt.Errorf("未知SQL语句: %T", typ)
+func newHandler(ds datasource.DataSource) *Handler {
+	return &Handler{
+		ds: ds,
 	}
 }
 
-// handleDmlStmt 处理DML语句
-func (h *Handler) handleDmlStmt(ctx *pcontext.Context, stmt *parser.DmlStatementContext) (*plugin.Result, error) {
-	switch stmt.GetChildren()[0].(type) {
-	case *parser.SimpleSelectContext:
+func (h *Handler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
+	visitor := vparser.NewCheckVisitor()
+	stmtType := visitor.Visit(ctx.ParsedQuery.Root).(string)
+	switch stmtType {
+	case vparser.SelectStmt:
 		return h.handleSelectStmt(ctx)
-	case *parser.InsertStatementContext:
+	case vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
 		return h.handleCUDStmt(ctx)
-	case *parser.UpdateStatementContext:
-		return h.handleCUDStmt(ctx)
-	case *parser.DeleteStatementContext:
-		return h.handleCUDStmt(ctx)
+	case vparser.StartTransactionStmt:
+		return h.handleStartTransactionStmt(ctx)
+	case vparser.CommitStmt:
+		return h.handleCommitStmt(ctx)
+	case vparser.RollbackStmt:
+		return h.handleRollbackStmt(ctx)
+	default:
+		return nil, fmt.Errorf("%w", errors.New(stmtType))
 	}
-	return &plugin.Result{}, nil
 }
 
 // handleSelectStmt 处理Select语句
 func (h *Handler) handleSelectStmt(ctx *pcontext.Context) (*plugin.Result, error) {
 	var rows *sql.Rows
 	var err error
-	if tx := h.getTx(ctx.ConnID); tx != nil {
+	if tx := h.getTxByConnID(ctx.ConnID); tx != nil {
 		rows, err = tx.Query(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
@@ -69,18 +68,19 @@ func (h *Handler) handleSelectStmt(ctx *pcontext.Context) (*plugin.Result, error
 	}, err
 }
 
-func (h *Handler) getTx(connID uint32) datasource.Tx {
+// getTxByConnID 根据客户端连接ID获取事务, 因为事务是与链接绑定的
+func (h *Handler) getTxByConnID(connID uint32) datasource.Tx {
 	if tx, ok := h.connID2Tx.Load(connID); ok {
 		return tx
 	}
 	return nil
 }
 
-// handleCUDStmt 操作数据
+// handleCUDStmt 处理Insert、Update、Delete操作
 func (h *Handler) handleCUDStmt(ctx *pcontext.Context) (*plugin.Result, error) {
 	var err error
 	var res sql.Result
-	if tx := h.getTx(ctx.ConnID); tx != nil {
+	if tx := h.getTxByConnID(ctx.ConnID); tx != nil {
 		// 事务中
 		res, err = tx.Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
@@ -98,38 +98,34 @@ func (h *Handler) handleCUDStmt(ctx *pcontext.Context) (*plugin.Result, error) {
 	}, err
 }
 
-// handleTransactionStmt 处理事务相关语句
-func (h *Handler) handleTransactionStmt(ctx *pcontext.Context, stmt *parser.TransactionStatementContext) (*plugin.Result, error) {
-	var result plugin.Result
-	var err error
-	var tx datasource.Tx
-	switch stmt.GetChildren()[0].(type) {
-	case *parser.StartTransactionContext:
-		tx, err = h.ds.BeginTx(sharding.NewSingleTxContext(ctx), nil)
-		if err == nil {
-			h.connID2Tx.Store(ctx.ConnID, tx)
-			result.TxInTransaction = true
-		}
-	case *parser.CommitWorkContext:
-		tx = h.getTx(ctx.ConnID)
-		if tx != nil {
-			err = tx.Commit()
-		}
-		h.connID2Tx.Delete(ctx.ConnID)
-	case *parser.RollbackWorkContext:
-		tx = h.getTx(ctx.ConnID)
-		if tx != nil {
-			err = tx.Rollback()
-		}
-		h.connID2Tx.Delete(ctx.ConnID)
-	default:
-		err = fmt.Errorf("未知事务语句")
+// handleStartTransactionStmt 处理开启事务语句
+func (h *Handler) handleStartTransactionStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	tx, err := h.ds.BeginTx(sharding.NewSingleTxContext(ctx), nil)
+	if err != nil {
+		return nil, err
 	}
-	return &result, err
+	h.connID2Tx.Store(ctx.ConnID, tx)
+	return &plugin.Result{TxInTransaction: true}, nil
 }
 
-func newHandler(ds datasource.DataSource) *Handler {
-	return &Handler{
-		ds: ds,
+// handleCommitStmt 处理提交事务语句
+func (h *Handler) handleCommitStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	var err error
+	tx := h.getTxByConnID(ctx.ConnID)
+	if tx != nil {
+		err = tx.Commit()
 	}
+	h.connID2Tx.Delete(ctx.ConnID)
+	return &plugin.Result{}, err
+}
+
+// handleRollbackStmt 处理回滚事务语句
+func (h *Handler) handleRollbackStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	var err error
+	tx := h.getTxByConnID(ctx.ConnID)
+	if tx != nil {
+		err = tx.Rollback()
+	}
+	h.connID2Tx.Delete(ctx.ConnID)
+	return &plugin.Result{}, err
 }
