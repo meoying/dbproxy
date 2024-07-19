@@ -50,14 +50,14 @@ func (exec *QueryExecutor) Exec(
 		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 
-	// 重制conn的事务状态
-	conn.SetInTransaction(result.TxInTransaction)
+	// 重置conn的事务状态
+	conn.SetInTransaction(result.InTransaction)
 
 	if result.Rows != nil {
 		return exec.handleRows(result.Rows, conn)
 	}
 
-	if result.TxInTransaction {
+	if result.InTransaction {
 		return conn.WritePacket(packet.BuildOKResp(packet.SeverStatusInTrans | packet.ServerStatusAutoCommit))
 	}
 

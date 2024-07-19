@@ -15,12 +15,12 @@ import (
 type DistributeTXTestSuite struct {
 	suite.Suite
 	db *sql.DB
-	// forwardPluginUsedOnlyClientID 用于不同客户端并发执行事务时的测试数据隔离
-	forwardPluginUsedOnlyClientID int
+	// shardingPluginUsedOnlyClientID 用于不同客户端并发执行事务时的测试数据隔离
+	shardingPluginUsedOnlyClientID int
 }
 
 func (s *DistributeTXTestSuite) SetClientID(cid int) {
-	s.forwardPluginUsedOnlyClientID = cid
+	s.shardingPluginUsedOnlyClientID = cid
 }
 
 func (s *DistributeTXTestSuite) SetDB(db *sql.DB) {
@@ -438,7 +438,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 }
 
 func (s *DistributeTXTestSuite) getUserID(uid int) int {
-	return uid + s.forwardPluginUsedOnlyClientID
+	return uid + s.shardingPluginUsedOnlyClientID
 }
 
 func (s *DistributeTXTestSuite) execSQLStmtsAndCommit(t *testing.T, sqlStmts []string, tx *sql.Tx) {

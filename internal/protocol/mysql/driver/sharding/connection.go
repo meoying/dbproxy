@@ -63,6 +63,7 @@ func (c *connection) queryOrExec(ctx context.Context, query string, args []drive
 			return src
 		}),
 	}
+	// TODO: 重构, 去掉query, args无用参数
 	handler, err := c.getShardingHandler(pctx, query, args)
 	if err != nil {
 		return nil, err

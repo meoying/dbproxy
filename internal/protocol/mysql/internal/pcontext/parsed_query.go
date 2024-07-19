@@ -11,6 +11,8 @@ type ParsedQuery struct {
 	Root parser.IRootContext
 	// TODO: 在这里把 Hint 放好，在解析 Root 的地方就解析出来放好（这可以认为是一个统一的机制）
 	Hints []string
+	// typeName 表示SQL询语句的类型名
+	typeName string
 }
 
 // NewParsedQuery
@@ -18,8 +20,9 @@ type ParsedQuery struct {
 func NewParsedQuery(query string) *ParsedQuery {
 	astRoot := ast.Parse(query)
 	return &ParsedQuery{
-		Root:  astRoot,
-		Hints: parseHints(astRoot),
+		Root:     astRoot,
+		typeName: vparser.NewCheckVisitor().Visit(astRoot).(string),
+		Hints:    parseHints(astRoot),
 	}
 }
 
@@ -50,4 +53,8 @@ func (q *ParsedQuery) FirstStatement() *parser.SqlStatementContext {
 	sqlStmts := q.Root.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]
 	return sqlStmt.(*parser.SqlStatementContext)
+}
+
+func (q *ParsedQuery) Type() string {
+	return q.typeName
 }

@@ -115,7 +115,7 @@ func (s *localForwardTestSuite) TestBasicSuite() {
 }
 
 func (s *localForwardTestSuite) TestSingleTxSuite() {
-	// 因为是并发测试,所以放在TestDataTypeSuite、TestBasicSuite之后
+	// 因为是并发测试,所以放在最后
 	t := s.T()
 	var wg sync.WaitGroup
 	for id, txSuite := range []*testsuite.SingleTXTestSuite{
@@ -246,15 +246,13 @@ func (s *localShardingTestSuite) TestBasicSuite() {
 }
 
 func (s *localShardingTestSuite) TestDistributeTxSuite() {
-	// 因为是并发测试,所以放在TestDataTypeSuite、TestBasicSuite之后
+	// 因为是并发测试,所以放在最后
 	t := s.T()
-	t.Skip("协议暂不支持开启事务、提交事务、回滚事务, 另外事务类型的选取方式应该是hint而不是ctx")
-
 	var wg sync.WaitGroup
 	for id, txSuite := range []*testsuite.DistributeTXTestSuite{
 		new(testsuite.DistributeTXTestSuite),
-		// new(testsuite.DistributeTXTestSuite),
-		// new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
 	} {
 		wg.Add(1)
 		id := id + 1
