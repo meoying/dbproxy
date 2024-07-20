@@ -28,8 +28,7 @@ func NewForwardHandler(ds datasource.DataSource) *ForwardHandler {
 }
 
 func (h *ForwardHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
-	visitor := vparser.NewCheckVisitor()
-	sqlTypeName := visitor.Visit(ctx.ParsedQuery.Root).(string)
+	sqlTypeName := ctx.ParsedQuery.Type()
 	switch sqlTypeName {
 	case vparser.SelectStmt, vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
 		return h.handleCRUDStmt(ctx, sqlTypeName)

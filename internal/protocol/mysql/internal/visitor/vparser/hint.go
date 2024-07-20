@@ -35,7 +35,11 @@ func (s *HintVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 }
 
 func (s *HintVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
-	return s.VisitSimpleSelect(ctx.SelectStatement().(*parser.SimpleSelectContext))
+	selectStmtCtx, ok := ctx.SelectStatement().(*parser.SimpleSelectContext)
+	if !ok {
+		return "当前SQL语句尚不支持Hint语法"
+	}
+	return s.VisitSimpleSelect(selectStmtCtx)
 }
 
 func (s *HintVisitor) VisitSimpleSelect(ctx *parser.SimpleSelectContext) any {

@@ -38,8 +38,7 @@ func (h *ShardingHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) 
 	// 如果是 INSERT，则是拿到 VALUE 或者 VALUES 的部分
 	// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 	// 3. 调用 p.ds.Exec 或者 p.ds.Query
-	checkVisitor := vparser.NewCheckVisitor()
-	sqlTypeName := checkVisitor.Visit(ctx.ParsedQuery.Root).(string)
+	sqlTypeName := ctx.ParsedQuery.Type()
 	switch sqlTypeName {
 	case vparser.SelectStmt, vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
 		return h.handleCRUDStmt(ctx, sqlTypeName)

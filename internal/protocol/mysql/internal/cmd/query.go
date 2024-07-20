@@ -5,7 +5,6 @@ import (
 	"database/sql"
 
 	"github.com/ecodeclub/ekit/sqlx"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
@@ -33,12 +32,10 @@ func (exec *QueryExecutor) Exec(
 	payload []byte) error {
 	que := exec.parseQuery(payload)
 	pctx := &pcontext.Context{
-		Context: ctx,
-		Query:   que,
-		ParsedQuery: pcontext.ParsedQuery{
-			Root: ast.Parse(que),
-		},
-		ConnID: conn.ID(),
+		Context:     ctx,
+		Query:       que,
+		ParsedQuery: pcontext.NewParsedQuery(que),
+		ConnID:      conn.ID(),
 	}
 
 	// 在这里执行 que，并且写回响应
