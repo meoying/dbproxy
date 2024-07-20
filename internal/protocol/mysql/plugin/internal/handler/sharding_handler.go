@@ -14,14 +14,14 @@ import (
 )
 
 type ShardingHandler struct {
-	*BaseHandler
+	*baseHandler
 	algorithm    sharding.Algorithm
 	stmtHandlers map[string]shardinghandler.NewHandlerFunc
 }
 
 func NewShardingHandler(ds datasource.DataSource, algorithm sharding.Algorithm) *ShardingHandler {
 	return &ShardingHandler{
-		BaseHandler: NewBaseHandler(ds, transaction.Delay),
+		baseHandler: newBaseHandler(ds, transaction.Delay),
 		algorithm:   algorithm,
 		stmtHandlers: map[string]shardinghandler.NewHandlerFunc{
 			vparser.SelectStmt: shardinghandler.NewSelectHandler,

@@ -18,12 +18,12 @@ import (
 // 这个实现有一个巨大的问题，即 ForwardHandler 不是线程安全的
 // TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type ForwardHandler struct {
-	*BaseHandler
+	*baseHandler
 }
 
 func NewForwardHandler(ds datasource.DataSource) *ForwardHandler {
 	return &ForwardHandler{
-		BaseHandler: NewBaseHandler(ds, transaction.Single),
+		baseHandler: newBaseHandler(ds, transaction.Single),
 	}
 }
 
