@@ -16,11 +16,11 @@ type baseHandler struct {
 	newTxCtx  func(ctx context.Context) context.Context
 }
 
-func newBaseHandler(ds datasource.DataSource, name string) *baseHandler {
+func newBaseHandler(ds datasource.DataSource, txType string) *baseHandler {
 	return &baseHandler{
 		ds: ds,
 		newTxCtx: func(ctx context.Context) context.Context {
-			return transaction.UsingTxType(ctx, name)
+			return transaction.UsingTxType(ctx, txType)
 		},
 	}
 }
