@@ -26,5 +26,5 @@ type Result struct {
 	// Result 的 error 会被传递过去客户端
 	Result sql.Result
 
-	TxInTransaction bool
+	InTransaction bool
 }

@@ -55,7 +55,7 @@ func (s *SelectHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 			opts = append(opts, visitorBuilder.WithChanged())
 		}
 		selectBuilder = visitorBuilder.NewSelect(dst.DB, dst.Table, opts...)
-		sql, err := selectBuilder.Build(s.ctx.ParsedQuery.Root)
+		sql, err := selectBuilder.Build(s.ctx.ParsedQuery.Root())
 		if err != nil {
 			return nil, err
 		}
@@ -240,11 +240,11 @@ func (s *SelectHandler) newGroupBy() ([]merger.ColumnInfo, []merger.ColumnInfo, 
 func NewSelectHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
 	selectVisitor := vparser.NewsSelectVisitor()
 	hintVisitor := vparser.NewHintVisitor()
-	hint := hintVisitor.Visit(ctx.ParsedQuery.Root)
+	hint := hintVisitor.Visit(ctx.ParsedQuery.Root())
 	if strings.Contains(hint.(string), "useMaster") {
 		ctx.Context = masterslave.UseMaster(ctx.Context)
 	}
-	resp := selectVisitor.Parse(ctx.ParsedQuery.Root)
+	resp := selectVisitor.Parse(ctx.ParsedQuery.Root())
 	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err

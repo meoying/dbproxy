@@ -14,9 +14,14 @@ func TestHintVisitor(t *testing.T) {
 		wantVal string
 	}{
 		{
-			name:    "mysql 的hint语法",
+			name:    "mysql的SELECT语句支持的hint语法",
 			sql:     "SELECT /* useMaster */   * FROM users WHERE (user_id = 1) or (user_id =2);",
 			wantVal: "/* useMaster */",
+		},
+		{
+			name:    "mysql的其他语句暂不支持hint语法",
+			sql:     "DELETE FROM users WHERE (user_id = 1) or (user_id =2);",
+			wantVal: "当前SQL语句尚不支持Hint语法",
 		},
 	}
 	for _, tc := range testcases {
@@ -26,5 +31,4 @@ func TestHintVisitor(t *testing.T) {
 			assert.Equal(t, tc.wantVal, hint)
 		})
 	}
-
 }
