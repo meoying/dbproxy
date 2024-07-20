@@ -10,12 +10,13 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/single"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/internal/handler"
 )
 
 var _ plugin.Plugin = &Plugin{}
 
 type Plugin struct {
-	hdl *Handler
+	hdl *handler.ForwardHandler
 }
 
 func (p *Plugin) Name() string {
@@ -33,7 +34,7 @@ func (p *Plugin) Init(cfg []byte) error {
 		return err
 	}
 	// TODO 这里是否要支持主从?还是单个?也就是说确定配置具体内容
-	p.hdl = newHandler(single.NewDB(db))
+	p.hdl = handler.NewForwardHandler(single.NewDB(db))
 	return nil
 }
 

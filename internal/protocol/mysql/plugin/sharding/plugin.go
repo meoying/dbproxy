@@ -6,10 +6,11 @@ import (
 	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/configbuilder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/internal/handler"
 )
 
 type Plugin struct {
-	hdl *Handler
+	hdl *handler.ShardingHandler
 }
 
 func (p *Plugin) Name() string {
@@ -33,7 +34,7 @@ func (p *Plugin) Init(cfg []byte) error {
 	if err != nil {
 		return err
 	}
-	p.hdl = newHandler(ds, algorithm)
+	p.hdl = handler.NewShardingHandler(ds, algorithm)
 	return nil
 }
 
