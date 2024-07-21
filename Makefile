@@ -43,16 +43,17 @@ IMAGE_NAME = flycash/dbproxy:dbproxy-$(IMAGE_VERSION)
 
 .PHONY: build_docker_image
 build_docker_image:
-	docker build --progress plain -t $(IMAGE_NAME) -f ./Dockerfile .
+	@docker build --progress plain -t $(IMAGE_NAME) -f ./Dockerfile .
 	@make update_compose_file
 
 .PHONY: update_compose_file
 update_compose_file:
-	sed -i.bak -e "/dbproxy-forward:/,/image:/s|image:.*|image: $(IMAGE_NAME)|" \
+	@sed -i.bak -e "/dbproxy-forward:/,/image:/s|image:.*|image: $(IMAGE_NAME)|" \
     	          -e "/dbproxy-sharding:/,/image:/s|image:.*|image: $(IMAGE_NAME)|" \
     	          ./.script/integration_test_compose.yml
-	rm ./.script/integration_test_compose.yml.bak # 删除备份文件
+	@rm ./.script/integration_test_compose.yml.bak # 删除备份文件
 
 .PHONY: push_docker_image
 push_docker_image:
-	docker push $(IMAGE_NAME)
+	@echo "上传镜像 $(IMAGE_NAME) 中.....需要先执行docker login"
+	@docker push $(IMAGE_NAME)
