@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,14 +28,10 @@ func TestDockerDBProxy(t *testing.T) {
 // dockerForwardTestSuite 用于测试启用Forward插件的docker dbproxy
 type dockerForwardTestSuite struct {
 	suite.Suite
-	dataTypeSuite testsuite.DataTypeTestSuite
-	basicSuite    testsuite.BasicTestSuite
-	singleTxSuite testsuite.SingleTXTestSuite
 }
 
 func (s *dockerForwardTestSuite) SetupSuite() {
 	s.createDatabasesAndTables()
-	s.setupTestSuites()
 }
 
 func (s *dockerForwardTestSuite) createDatabasesAndTables() {
@@ -47,15 +44,6 @@ func (s *dockerForwardTestSuite) newMySQLDB() *sql.DB {
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
 	s.NoError(err)
 	return db
-}
-
-func (s *dockerForwardTestSuite) setupTestSuites() {
-	s.dataTypeSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
-	s.basicSuite.SetDB(s.newProxyClientDB())
-	// // TODO 修复Bug后需要使用下方代码
-	s.singleTxSuite.SetDB(s.newProxyClientDB())
-	// // TODO 绕过Bug使用标准driver包来验证测试用例集的有效性,修复Bug后需要关闭下方代码
-	// s.singleTxSuite.SetDB(s.newMySQLDB())
 }
 
 func (s *dockerForwardTestSuite) newProxyClientDB() *sql.DB {
@@ -74,36 +62,57 @@ func (s *dockerForwardTestSuite) TestPing() {
 }
 
 func (s *dockerForwardTestSuite) TestDataTypeSuite() {
-	suite.Run(s.T(), &s.dataTypeSuite)
+	var dataTypeSuite testsuite.DataTypeTestSuite
+	dataTypeSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
+	suite.Run(s.T(), &dataTypeSuite)
 }
 
 func (s *dockerForwardTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
+	var basicSuite testsuite.BasicTestSuite
+	basicSuite.SetDB(s.newProxyClientDB())
+	suite.Run(s.T(), &basicSuite)
 }
 
 func (s *dockerForwardTestSuite) TestSingleTxSuite() {
+	// 因为是并发测试,所以放在最后
 	t := s.T()
-	// t.Skip("暂不支持插件形态下的事务,事务类型选择应该是hint形式,报错: Error 1398 (HY000): Internal error: sql: transaction has already been committed or rolled back")
-	suite.Run(t, &s.singleTxSuite)
+	var wg sync.WaitGroup
+	for id, txSuite := range []*testsuite.SingleTXTestSuite{
+		new(testsuite.SingleTXTestSuite),
+		new(testsuite.SingleTXTestSuite),
+		new(testsuite.SingleTXTestSuite),
+	} {
+		wg.Add(1)
+		id := id + 1
+		clientID := id * 10
+		txSuite := txSuite
+		txSuite.SetClientID(clientID)
+		txSuite.SetDB(s.newProxyClientDB())
+		go func() {
+			defer wg.Done()
+			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
+				suite.Run(t, txSuite)
+			})
+		}()
+	}
+	wg.Wait()
 }
 
 // dockerShardingTestSuite 用于测试启用Sharding插件的docker dbproxy
 type dockerShardingTestSuite struct {
 	suite.Suite
-	basicSuite        testsuite.BasicTestSuite
-	distributeTxSuite testsuite.DistributeTXTestSuite
 }
 
 func (s *dockerShardingTestSuite) SetupSuite() {
 	s.createDatabasesAndTables()
-	s.setupTestSuites()
 }
 
 func (s *dockerShardingTestSuite) createDatabasesAndTables() {
 	t := s.T()
 
 	builder := configbuilder.ShardingConfigBuilder{}
-	path, err := getAbsPath("/testdata/config/local/plugin/sharding.yaml")
+	path, err := getAbsPath("/testdata/config/docker/plugins/sharding.yaml")
+
 	s.NoError(err)
 	err = builder.LoadConfigFile(path)
 	s.NoError(err)
@@ -139,11 +148,6 @@ func (s *dockerShardingTestSuite) newDSN(name string) string {
 	return fmt.Sprintf(testsuite.MYSQLDSNTmpl, name)
 }
 
-func (s *dockerShardingTestSuite) setupTestSuites() {
-	s.basicSuite.SetDB(s.newProxyClientDB())
-	s.distributeTxSuite.SetDB(s.newProxyClientDB())
-}
-
 func (s *dockerShardingTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8308)/dbproxy")
@@ -160,11 +164,32 @@ func (s *dockerShardingTestSuite) TestPing() {
 }
 
 func (s *dockerShardingTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
+	var basicSuite testsuite.BasicTestSuite
+	basicSuite.SetDB(s.newProxyClientDB())
+	suite.Run(s.T(), &basicSuite)
 }
 
 func (s *dockerShardingTestSuite) TestDistributeTxSuite() {
+	// 因为是并发测试,所以放在最后
 	t := s.T()
-	t.Skip("协议暂不支持开启事务、提交事务、回滚事务, 另外事务类型的选取方式应该是hint而不是ctx")
-	suite.Run(t, &s.distributeTxSuite)
+	var wg sync.WaitGroup
+	for id, txSuite := range []*testsuite.DistributeTXTestSuite{
+		new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
+	} {
+		wg.Add(1)
+		id := id + 1
+		clientID := id * 100
+		txSuite := txSuite
+		txSuite.SetClientID(clientID)
+		txSuite.SetDB(s.newProxyClientDB())
+		go func() {
+			defer wg.Done()
+			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
+				suite.Run(t, txSuite)
+			})
+		}()
+	}
+	wg.Wait()
 }

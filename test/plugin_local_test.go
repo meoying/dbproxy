@@ -55,8 +55,8 @@ func (s *localForwardTestSuite) newMySQLDB() *sql.DB {
 
 func (s *localForwardTestSuite) setupProxyServer() {
 	s.server = mysql.NewServer(":8306", []plugin.Plugin{
-		s.getLogPlugin("/testdata/config/local/plugin/log.yaml"),
-		s.getForwardPlugin("/testdata/config/local/plugin/forward.yaml"),
+		s.getLogPlugin("/testdata/config/local/plugins/log.yaml"),
+		s.getForwardPlugin("/testdata/config/local/plugins/forward.yaml"),
 	})
 	go func() {
 		s.NoError(s.server.Start())
@@ -154,7 +154,7 @@ func (s *localShardingTestSuite) createDatabasesAndTables() {
 	t := s.T()
 
 	builder := configbuilder.ShardingConfigBuilder{}
-	path, err := getAbsPath("/testdata/config/local/plugin/sharding.yaml")
+	path, err := getAbsPath("/testdata/config/local/plugins/sharding.yaml")
 	s.NoError(err)
 	err = builder.LoadConfigFile(path)
 	s.NoError(err)
@@ -192,8 +192,8 @@ func (s *localShardingTestSuite) newDSN(name string) string {
 
 func (s *localShardingTestSuite) setupProxyServer() {
 	s.server = mysql.NewServer(":8307", []plugin.Plugin{
-		s.getLogPlugin("/testdata/config/local/plugin/log.yaml"),
-		s.getShardingPlugin("/testdata/config/local/plugin/sharding.yaml"),
+		s.getLogPlugin("/testdata/config/local/plugins/log.yaml"),
+		s.getShardingPlugin("/testdata/config/local/plugins/sharding.yaml"),
 	})
 	go func() {
 		s.NoError(s.server.Start())
