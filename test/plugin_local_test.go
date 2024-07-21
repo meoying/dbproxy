@@ -23,16 +23,17 @@ import (
 // TestLocalDBProxy 测试本地部署形态的dbproxy
 func TestLocalDBProxy(t *testing.T) {
 	t.Run("TestForwardPlugin", func(t *testing.T) {
-		suite.Run(t, &localForwardTestSuite{})
+		suite.Run(t, &localForwardTestSuite{serverAddress: "localhost:8306"})
 	})
 	t.Run("TestShardingPlugin", func(t *testing.T) {
-		suite.Run(t, new(localShardingTestSuite))
+		suite.Run(t, &localShardingTestSuite{serverAddress: "localhost:8307"})
 	})
 }
 
 // localForwardTestSuite 用于测试启用Forward插件的本地dbproxy
 type localForwardTestSuite struct {
-	server *mysql.Server
+	server        *mysql.Server
+	serverAddress string
 	suite.Suite
 }
 
@@ -48,14 +49,14 @@ func (s *localForwardTestSuite) createDatabasesAndTables() {
 
 func (s *localForwardTestSuite) newMySQLDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := sql.Open("mysql", fmt.Sprintf(testsuite.MYSQLDSNTmpl, "dbproxy"))
 	s.NoError(err)
 	return db
 }
 
 func (s *localForwardTestSuite) setupProxyServer() {
-	s.server = mysql.NewServer(":8306", []plugin.Plugin{
-		s.getLogPlugin("/testdata/config/local/plugins/log.yaml"),
+	s.server = mysql.NewServer(s.serverAddress, []plugin.Plugin{
+		s.getLogPlugin("/testdata/config/local/plugins/forward_log.yaml"),
 		s.getForwardPlugin("/testdata/config/local/plugins/forward.yaml"),
 	})
 	go func() {
@@ -85,7 +86,7 @@ func (s *localForwardTestSuite) getLogPlugin(path string) *logplugin.Plugin {
 
 func (s *localForwardTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8306)/dbproxy")
+	db, err := sql.Open("mysql", fmt.Sprintf("root:root@tcp(%s)/dbproxy", s.serverAddress))
 	s.NoError(err)
 	return db
 }
@@ -141,7 +142,8 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy
 type localShardingTestSuite struct {
-	server *mysql.Server
+	server        *mysql.Server
+	serverAddress string
 	suite.Suite
 }
 
@@ -191,8 +193,8 @@ func (s *localShardingTestSuite) newDSN(name string) string {
 }
 
 func (s *localShardingTestSuite) setupProxyServer() {
-	s.server = mysql.NewServer(":8307", []plugin.Plugin{
-		s.getLogPlugin("/testdata/config/local/plugins/log.yaml"),
+	s.server = mysql.NewServer(s.serverAddress, []plugin.Plugin{
+		s.getLogPlugin("/testdata/config/local/plugins/sharding_log.yaml"),
 		s.getShardingPlugin("/testdata/config/local/plugins/sharding.yaml"),
 	})
 	go func() {
@@ -222,7 +224,7 @@ func (s *localShardingTestSuite) getLogPlugin(path string) *logplugin.Plugin {
 
 func (s *localShardingTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/dbproxy")
+	db, err := sql.Open("mysql", fmt.Sprintf("root:root@tcp(%s)/local_sharding_plugin_db", s.serverAddress))
 	s.NoError(err)
 	return db
 }

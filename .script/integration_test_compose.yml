@@ -22,11 +22,19 @@ services:
       - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "13306:3306"
-  dbproxy:
-    image: flycash/dbproxy:dbproxy-v0.7
+  dbproxy-forward:
+    image: flycash/dbproxy:dbproxy-v0.3
     volumes:
-      - ../test/testdata/config/docker/dbproxy.yaml:/app/dbproxy/config.yaml
+      - ../test/testdata/config/docker/dbproxy-forward.yaml:/app/dbproxy/config.yaml
       - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
       - ../test/testdata/config/docker/plugins/forward.yaml:/app/dbproxy/plugins/forward/config.yaml
     ports:
       - "8308:8308"
+  dbproxy-sharding:
+    image: flycash/dbproxy:dbproxy-v0.3
+    volumes:
+      - ../test/testdata/config/docker/dbproxy-sharding.yaml:/app/dbproxy/config.yaml
+      - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
+      - ../test/testdata/config/docker/plugins/sharding.yaml:/app/dbproxy/plugins/sharding/config.yaml
+    ports:
+      - "8309:8309"

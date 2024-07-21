@@ -61,6 +61,7 @@ func main() {
 		if err != nil {
 			panic(fmt.Errorf("初始化插件失败 %w", err))
 		}
+		log.Printf("初始化 %s 插件成功......", ps[0].Name())
 		plugins = append(plugins, ps[0])
 	}
 	server := mysql.NewServer(cfg.Server.Addr, plugins)

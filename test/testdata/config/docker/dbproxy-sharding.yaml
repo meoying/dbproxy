@@ -1,0 +1,6 @@
+server:
+  addr: ":8309"
+plugins:
+  items:
+    - name: "log"
+    - name: "sharding"

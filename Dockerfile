@@ -23,6 +23,7 @@ FROM  debian:trixie-slim
 # 设置工作目录
 WORKDIR /app/dbproxy
 
+# 用于存放log插件输出的log文件
 RUN mkdir log
 
 # 拷贝dbproxy二进制文件

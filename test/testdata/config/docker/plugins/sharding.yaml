@@ -4,12 +4,12 @@ algorithm:
     # 分集群
     dsPattern:
       base: 0
-      name: "0.db.cluster.company.com:3306"
+      name: "1.db.cluster.company.com:3306"
       notSharding: true
     # 分库
     dbPattern:
       base: 3
-      name: "docker_plugin_db_%d"
+      name: "docker_sharding_plugin_db_%d"
       notSharding: false
     # 分表
     tbPattern:
@@ -19,15 +19,15 @@ algorithm:
 
 datasource:
   clusters:
-    - address: "0.db.cluster.company.com:3306"
+    - address: "1.db.cluster.company.com:3306"
       nodes:
         - master:
-            name: "docker_plugin_db_0"
+            name: "docker_sharding_plugin_db_0"
             # 注意: 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-            dsn: "root:root@tcp(127.0.0.1:13306)/docker_plugin_db_0"
+            dsn: "root:root@tcp(mysql8:3306)/docker_sharding_plugin_db_0"
         - master:
-            name: "docker_plugin_db_1"
-            dsn: "root:root@tcp(127.0.0.1:13306)/docker_plugin_db_1"
+            name: "docker_sharding_plugin_db_1"
+            dsn: "root:root@tcp(mysql8:3306)/docker_sharding_plugin_db_1"
         - master:
-            name: "docker_plugin_db_2"
-            dsn: "root:root@tcp(127.0.0.1:13306)/docker_plugin_db_2"
+            name: "docker_sharding_plugin_db_2"
+            dsn: "root:root@tcp(mysql8:3306)/docker_sharding_plugin_db_2"

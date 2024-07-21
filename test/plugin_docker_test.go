@@ -18,16 +18,17 @@ import (
 // TestDockerDBProxy 测试docker部署形态的dbproxy
 func TestDockerDBProxy(t *testing.T) {
 	t.Run("TestForwardPlugin", func(t *testing.T) {
-		suite.Run(t, &dockerForwardTestSuite{})
+		suite.Run(t, &dockerForwardTestSuite{serverAddress: "localhost:8308"})
 	})
 	t.Run("TestShardingPlugin", func(t *testing.T) {
-		suite.Run(t, new(dockerShardingTestSuite))
+		suite.Run(t, &dockerShardingTestSuite{serverAddress: "localhost:8309"})
 	})
 }
 
-// dockerForwardTestSuite 用于测试启用Forward插件的docker dbproxy
+// dockerForwardTestSuite 用于测试启用Forward插件的docker容器dbproxy-forward
 type dockerForwardTestSuite struct {
 	suite.Suite
+	serverAddress string
 }
 
 func (s *dockerForwardTestSuite) SetupSuite() {
@@ -41,14 +42,15 @@ func (s *dockerForwardTestSuite) createDatabasesAndTables() {
 
 func (s *dockerForwardTestSuite) newMySQLDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
+	db, err := sql.Open("mysql", fmt.Sprintf(testsuite.MYSQLDSNTmpl, "dbproxy"))
 	s.NoError(err)
 	return db
 }
 
 func (s *dockerForwardTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8308)/dbproxy")
+	// 与/testdata/config/docker/dbproxy-forward.yaml中的服务端口一致
+	db, err := sql.Open("mysql", fmt.Sprintf("root:root@tcp(%s)/dbproxy", s.serverAddress))
 	s.NoError(err)
 	return db
 }
@@ -98,9 +100,10 @@ func (s *dockerForwardTestSuite) TestSingleTxSuite() {
 	wg.Wait()
 }
 
-// dockerShardingTestSuite 用于测试启用Sharding插件的docker dbproxy
+// dockerShardingTestSuite 用于测试启用Sharding插件的docker容器dbproxy-sharding
 type dockerShardingTestSuite struct {
 	suite.Suite
+	serverAddress string
 }
 
 func (s *dockerShardingTestSuite) SetupSuite() {
@@ -150,7 +153,8 @@ func (s *dockerShardingTestSuite) newDSN(name string) string {
 
 func (s *dockerShardingTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:8308)/dbproxy")
+	// 与/testdata/config/docker/dbproxy-sharding.yaml中的服务端口一致
+	db, err := sql.Open("mysql", fmt.Sprintf("root:root@tcp(%s)/docker_sharding_plugin_db", s.serverAddress))
 	s.NoError(err)
 	return db
 }

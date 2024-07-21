@@ -1,2 +1,3 @@
 # 当前不支持"charset=utf8mb4&parseTime=True&loc=Local" 根据时区解析datetime, charset问题
 dsn: "root:root@tcp(mysql8:3306)/dbproxy"
+name: "dbproxy"
