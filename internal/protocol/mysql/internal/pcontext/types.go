@@ -10,6 +10,6 @@ type Context struct {
 	ParsedQuery ParsedQuery
 	Query       string
 	Args        []any
-
+	// 获取到当前Query语句的底层Conn的ID
 	ConnID uint32
 }

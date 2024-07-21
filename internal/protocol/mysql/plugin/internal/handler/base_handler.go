@@ -16,11 +16,11 @@ type baseHandler struct {
 	newTxCtx  func(ctx context.Context) context.Context
 }
 
-func newBaseHandler(ds datasource.DataSource, name string) *baseHandler {
+func newBaseHandler(ds datasource.DataSource, txType string) *baseHandler {
 	return &baseHandler{
 		ds: ds,
 		newTxCtx: func(ctx context.Context) context.Context {
-			return transaction.UsingTxType(ctx, name)
+			return transaction.UsingTxType(ctx, txType)
 		},
 	}
 }
@@ -55,7 +55,7 @@ func (h *baseHandler) handleStartTransactionStmt(ctx *pcontext.Context) (*plugin
 		return nil, err
 	}
 	h.connID2Tx.Store(ctx.ConnID, tx)
-	return &plugin.Result{InTransaction: true}, nil
+	return &plugin.Result{InTransactionState: true}, nil
 }
 
 // handleCommitStmt 处理提交事务语句

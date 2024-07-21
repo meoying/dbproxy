@@ -30,7 +30,6 @@ func (s *SingleTXTestSuite) SetClientID(cid int) {
 // TestLocalTransaction 测试单机(节点)本地事务
 func (s *SingleTXTestSuite) TestLocalTransaction() {
 	t := s.T()
-
 	testcases := []struct {
 		name                  string
 		before                func(t *testing.T)
@@ -406,4 +405,13 @@ func (s *SingleTXTestSuite) execSQLStmtsAndRollback(t *testing.T, sqlStmts []str
 	}
 	err := tx.Rollback()
 	require.NoError(t, err)
+}
+
+func (s *SingleTXTestSuite) TestLocalTransactionErr() {
+	t := s.T()
+	tx, err := s.db.BeginTx(sharding.NewSingleTxContext(context.Background()), nil)
+	require.NoError(t, err)
+	require.NoError(t, tx.Commit())
+	require.ErrorIs(t, tx.Rollback(), sql.ErrTxDone)
+	require.ErrorIs(t, tx.Commit(), sql.ErrTxDone)
 }

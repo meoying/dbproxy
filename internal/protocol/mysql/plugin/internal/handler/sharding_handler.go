@@ -67,6 +67,6 @@ func (h *ShardingHandler) handleCRUDStmt(ctx *pcontext.Context, sqlName string) 
 	if err != nil {
 		return nil, err
 	}
-	r.InTransaction = h.getConnTransactionState(ctx.ConnID)
+	r.InTransactionState = h.getConnTransactionState(ctx.ConnID)
 	return (*plugin.Result)(r), nil
 }

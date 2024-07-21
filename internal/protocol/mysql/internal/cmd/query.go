@@ -48,13 +48,13 @@ func (exec *QueryExecutor) Exec(
 	}
 
 	// 重置conn的事务状态
-	conn.SetInTransaction(result.InTransaction)
+	conn.SetInTransaction(result.InTransactionState)
 
 	if result.Rows != nil {
 		return exec.handleRows(result.Rows, conn)
 	}
 
-	if result.InTransaction {
+	if result.InTransactionState {
 		return conn.WritePacket(packet.BuildOKResp(packet.SeverStatusInTrans | packet.ServerStatusAutoCommit))
 	}
 

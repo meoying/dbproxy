@@ -38,19 +38,19 @@ func (s *DataTypeTestSuite) TestIntTypes() {
 	}{
 		{
 			name: "随意整数",
-			sql:  "SELECT * FROM test_int_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 1",
 		},
 		{
 			name: "最大整数",
-			sql:  "SELECT * FROM test_int_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 2",
 		},
 		{
 			name: "最小整数",
-			sql:  "SELECT * FROM test_int_type WHERE id = 3",
+			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 3",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_int_type WHERE id = 4",
+			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 4",
 		},
 	}
 	for _, tc := range testCases {
@@ -89,11 +89,11 @@ func (s *DataTypeTestSuite) TestFloatTypes() {
 	}{
 		{
 			name: "随意浮点数",
-			sql:  "SELECT * FROM test_float_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 1",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_float_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 2",
 		},
 	}
 	for _, tc := range testCases {
@@ -132,11 +132,11 @@ func (s *DataTypeTestSuite) TestStringTypes() {
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT * FROM test_string_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 1",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_string_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 2",
 		},
 	}
 	for _, tc := range testCases {
@@ -175,11 +175,11 @@ func (s *DataTypeTestSuite) TestDateTypes() {
 	}{
 		{
 			name: "随意日期",
-			sql:  "SELECT * FROM test_date_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 1",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_date_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 2",
 		},
 	}
 	for _, tc := range testCases {
@@ -218,11 +218,11 @@ func (s *DataTypeTestSuite) TestGeographyTypes() {
 	}{
 		{
 			name: "随意地理位置",
-			sql:  "SELECT * FROM test_geography_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 1",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_geography_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 2",
 		},
 	}
 	for _, tc := range testCases {
@@ -261,11 +261,11 @@ func (s *DataTypeTestSuite) TestFilePathTypes() {
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT * FROM test_file_path_type WHERE id = 1",
+			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 1",
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT * FROM test_file_path_type WHERE id = 2",
+			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 2",
 		},
 	}
 	for _, tc := range testCases {

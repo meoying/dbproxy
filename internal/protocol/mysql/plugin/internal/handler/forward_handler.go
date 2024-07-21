@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/ecodeclub/ekit/sqlx"
+	"github.com/meoying/dbproxy/config/mysql/plugin/forward"
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
@@ -19,11 +22,13 @@ import (
 // TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type ForwardHandler struct {
 	*baseHandler
+	config forward.Config
 }
 
-func NewForwardHandler(ds datasource.DataSource) *ForwardHandler {
+func NewForwardHandler(ds datasource.DataSource, config forward.Config) *ForwardHandler {
 	return &ForwardHandler{
 		baseHandler: newBaseHandler(ds, transaction.Single),
+		config:      config,
 	}
 }
 
@@ -44,24 +49,35 @@ func (h *ForwardHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 }
 
 // handleCRUDStmt 处理Select、Insert、Update、Delete操作
+// TODO: 定义好Config后需要重新审查该方法
 func (h *ForwardHandler) handleCRUDStmt(ctx *pcontext.Context, sqlTypeName string) (*plugin.Result, error) {
 	var rows sqlx.Rows
 	var res sql.Result
 	var err error
 	if sqlTypeName == vparser.SelectStmt {
-		rows, err = h.getDatasource(ctx).Query(ctx, datasource.Query{
+		for _, hint := range ctx.ParsedQuery.Hints() {
+			if strings.Contains(hint, "useMaster") {
+				ctx.Context = masterslave.UseMaster(ctx.Context)
+			}
+		}
+		rows, err = h.getDatasource(ctx).Query(ctx.Context, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
+			// TODO: 如果时多主, 多从该如何选择db
+			// TODO: DB字段和DataSource字段的区别?
+			DB: h.config.DBName,
 		})
 	} else {
 		res, err = h.getDatasource(ctx).Exec(ctx, datasource.Query{
 			SQL:  ctx.Query,
 			Args: ctx.Args,
+			// TODO: 写操作默认走主库?
+			DB: h.config.DBName,
 		})
 	}
 	return &plugin.Result{
-		Rows:          rows,
-		Result:        res,
-		InTransaction: h.getConnTransactionState(ctx.ConnID),
+		Rows:               rows,
+		Result:             res,
+		InTransactionState: h.getConnTransactionState(ctx.ConnID),
 	}, err
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	shardingconfig "github.com/meoying/dbproxy/config/mysql/sharding"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugin/sharding"
 	drviersharding "github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"
@@ -18,25 +18,6 @@ func TestDriver(t *testing.T) {
 	t.Run("TestShardingSuite", func(t *testing.T) {
 		suite.Run(t, new(driverShardingTestSuite))
 	})
-}
-
-// forwardDriverTestSuite 测试driver形体下的转发
-type forwardDriverTestSuite struct {
-	suite.Suite
-	basicSuite    testsuite.BasicTestSuite
-	singleTxSuite testsuite.SingleTXTestSuite
-}
-
-func (s *forwardDriverTestSuite) SetupSuite() {
-
-}
-
-func (s *forwardDriverTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
-}
-
-func (s *forwardDriverTestSuite) TestSingleTXSuite() {
-	suite.Run(s.T(), &s.singleTxSuite)
 }
 
 // driverShardingTestSuite 测试分driver形态下的分库分表功能
