@@ -29,7 +29,6 @@ func (s *DistributeTXTestSuite) SetDB(db *sql.DB) {
 
 func (s *DistributeTXTestSuite) TestDelayTransaction() {
 	t := s.T()
-
 	testcases := []struct {
 		name                  string
 		before                func(t *testing.T)
@@ -458,4 +457,13 @@ func (s *DistributeTXTestSuite) execSQLStmtsAndRollback(t *testing.T, sqlStmts [
 	}
 	err := tx.Rollback()
 	require.NoError(t, err)
+}
+
+func (s *DistributeTXTestSuite) TestDelayTransactionErr() {
+	t := s.T()
+	tx, err := s.db.BeginTx(sharding.NewDelayTxContext(context.Background()), nil)
+	require.NoError(t, err)
+	require.NoError(t, tx.Rollback())
+	require.ErrorIs(t, tx.Commit(), sql.ErrTxDone)
+	require.ErrorIs(t, tx.Rollback(), sql.ErrTxDone)
 }
