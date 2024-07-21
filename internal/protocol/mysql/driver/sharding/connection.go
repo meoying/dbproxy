@@ -54,7 +54,7 @@ func (c *connection) ExecContext(ctx context.Context, query string, args []drive
 func (c *connection) queryOrExec(ctx context.Context, query string, args []driver.NamedValue) (*shardinghandler.Result, error) {
 	pctx := &pcontext.Context{
 		Context:     ctx,
-		ParsedQuery: pcontext.NewParsedQuery(query),
+		ParsedQuery: pcontext.NewParsedQuery(query, vparser.NewHintVisitor()),
 		Query:       query,
 		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
 			return src

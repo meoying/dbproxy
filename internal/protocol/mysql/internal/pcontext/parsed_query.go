@@ -12,12 +12,14 @@ type ParsedQuery struct {
 	// typeName 表示SQL询语句的类型名
 	typeName string
 	// TODO: 在这里把 Hint 放好，在解析 Root 的地方就解析出来放好（这可以认为是一个统一的机制）
-	hints []string
+	hintVisitor *vparser.HintVisitor
+	hints       []string
 }
 
-func NewParsedQuery(query string) ParsedQuery {
+func NewParsedQuery(query string, hintVisitor *vparser.HintVisitor) ParsedQuery {
 	return ParsedQuery{
-		root: ast.Parse(query),
+		root:        ast.Parse(query),
+		hintVisitor: hintVisitor,
 	}
 }
 
@@ -45,8 +47,7 @@ func (q *ParsedQuery) parseHints() []string {
 		return nil
 	}
 	var hints []string
-	visitor := vparser.NewHintVisitor()
-	v := visitor.Visit(q.root)
+	v := q.hintVisitor.Visit(q.root)
 	if text, ok := v.(string); ok {
 		hints = append(hints, text)
 	}

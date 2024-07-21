@@ -32,7 +32,7 @@ func TestParsedQuery(t *testing.T) {
 	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			p := pcontext.NewParsedQuery(tc.query)
+			p := pcontext.NewParsedQuery(tc.query, vparser.NewHintVisitor())
 			require.NotNil(t, p.Root())
 			assert.Equal(t, tc.wantType, p.Type())
 			assert.Equal(t, tc.wantHints, p.Hints())
