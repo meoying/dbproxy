@@ -8,6 +8,7 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
@@ -34,7 +35,7 @@ func (exec *QueryExecutor) Exec(
 	pctx := &pcontext.Context{
 		Context:     ctx,
 		Query:       que,
-		ParsedQuery: pcontext.NewParsedQuery(que),
+		ParsedQuery: pcontext.NewParsedQuery(que, vparser.NewHintVisitor()),
 		ConnID:      conn.ID(),
 	}
 
