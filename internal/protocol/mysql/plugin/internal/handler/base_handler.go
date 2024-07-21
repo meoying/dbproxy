@@ -11,7 +11,9 @@ import (
 )
 
 type baseHandler struct {
-	ds        datasource.DataSource
+	ds datasource.DataSource
+	// connID2Tx 在复合操作中的并发安全性，依赖于 Conn 中不可能出现并发Tx.
+	// 即一个 Conn 不会也不可能同时存在两个 Tx
 	connID2Tx syncx.Map[uint32, datasource.Tx]
 	newTxCtx  func(ctx context.Context) context.Context
 }
@@ -41,8 +43,8 @@ func (h *baseHandler) getTxByConnID(connID uint32) datasource.Tx {
 	return nil
 }
 
-// getConnTransactionState 根据客户端连接ID获取链接的事务状态
-func (h *baseHandler) getConnTransactionState(connID uint32) bool {
+// isInTransaction 通过Conn ID判断其是否处于事务状态中
+func (h *baseHandler) isInTransaction(connID uint32) bool {
 	// 有connID对应的Tx即表示对应的conn处于事务状态中
 	_, ok := h.connID2Tx.Load(connID)
 	return ok

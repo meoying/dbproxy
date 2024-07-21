@@ -24,7 +24,7 @@ func (p *Plugin) Init(cfg []byte) error {
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 	return plugin.HandleFunc(func(ctx *pcontext.Context) (*plugin.Result, error) {
-		p.log.Info("处理SQL语句：", "SQL", ctx.Query)
+		p.log.Debug("处理SQL语句：", "SQL", ctx.Query)
 		return next.Handle(ctx)
 	})
 }
