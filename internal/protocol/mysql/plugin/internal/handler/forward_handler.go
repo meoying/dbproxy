@@ -76,8 +76,8 @@ func (h *ForwardHandler) handleCRUDStmt(ctx *pcontext.Context, sqlTypeName strin
 		})
 	}
 	return &plugin.Result{
-		Rows:          rows,
-		Result:        res,
-		InTransaction: h.getConnTransactionState(ctx.ConnID),
+		Rows:               rows,
+		Result:             res,
+		InTransactionState: h.getConnTransactionState(ctx.ConnID),
 	}, err
 }

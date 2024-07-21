@@ -55,7 +55,7 @@ func (h *baseHandler) handleStartTransactionStmt(ctx *pcontext.Context) (*plugin
 		return nil, err
 	}
 	h.connID2Tx.Store(ctx.ConnID, tx)
-	return &plugin.Result{InTransaction: true}, nil
+	return &plugin.Result{InTransactionState: true}, nil
 }
 
 // handleCommitStmt 处理提交事务语句
