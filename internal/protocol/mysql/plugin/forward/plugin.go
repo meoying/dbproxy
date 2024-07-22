@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/meoying/dbproxy/config/mysql/plugin/forward"
+	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"

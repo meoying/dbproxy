@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ecodeclub/ekit/sqlx"
-	"github.com/meoying/dbproxy/config/mysql/plugin/forward"
+	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"

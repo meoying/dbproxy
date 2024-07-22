@@ -1,0 +1,2 @@
+level: "debug"
+output: "./testdata/log/local/sharding/access.log"

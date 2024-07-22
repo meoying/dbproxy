@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugin/sharding"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugins/sharding"
 	drviersharding "github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"
@@ -23,14 +23,6 @@ func TestDriver(t *testing.T) {
 // driverShardingTestSuite 测试分driver形态下的分库分表功能
 type driverShardingTestSuite struct {
 	suite.Suite
-	basicSuite            testsuite.BasicTestSuite
-	distributeTXTestSuite testsuite.DistributeTXTestSuite
-}
-
-func (s *driverShardingTestSuite) SetupSuite() {
-	driverDB := s.setupDriverDB()
-	s.basicSuite.SetDB(driverDB)
-	s.distributeTXTestSuite.SetDB(driverDB)
 }
 
 func (s *driverShardingTestSuite) setupDriverDB() *sql.DB {
@@ -83,9 +75,13 @@ func (s *driverShardingTestSuite) newDSN(name string) string {
 }
 
 func (s *driverShardingTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
+	var basicSuite testsuite.BasicTestSuite
+	basicSuite.SetDB(s.setupDriverDB())
+	suite.Run(s.T(), &basicSuite)
 }
 
 func (s *driverShardingTestSuite) TestDistributeTXSuite() {
-	suite.Run(s.T(), &s.distributeTXTestSuite)
+	var distributeTXTestSuite testsuite.DistributeTXTestSuite
+	distributeTXTestSuite.SetDB(s.setupDriverDB())
+	suite.Run(s.T(), &distributeTXTestSuite)
 }

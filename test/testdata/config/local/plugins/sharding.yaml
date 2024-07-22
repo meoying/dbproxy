@@ -9,7 +9,7 @@ algorithm:
     # 分库
     dbPattern:
       base: 3
-      name: "plugin_db_%d"
+      name: "local_sharding_plugin_db_%d"
       notSharding: false
     # 分表
     tbPattern:
@@ -22,12 +22,12 @@ datasource:
     - address: "0.db.cluster.company.com:3306"
       nodes:
         - master:
-            name: "plugin_db_0"
+            name: "local_sharding_plugin_db_0"
             # 注意: 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
-            dsn: "root:root@tcp(127.0.0.1:13306)/plugin_db_0"
+            dsn: "root:root@tcp(127.0.0.1:13306)/local_sharding_plugin_db_0"
         - master:
-            name: "plugin_db_1"
-            dsn: "root:root@tcp(127.0.0.1:13306)/plugin_db_1"
+            name: "local_sharding_plugin_db_1"
+            dsn: "root:root@tcp(127.0.0.1:13306)/local_sharding_plugin_db_1"
         - master:
-            name: "plugin_db_2"
-            dsn: "root:root@tcp(127.0.0.1:13306)/plugin_db_2"
+            name: "local_sharding_plugin_db_2"
+            dsn: "root:root@tcp(127.0.0.1:13306)/local_sharding_plugin_db_2"
