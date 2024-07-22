@@ -20,7 +20,7 @@ type DeleteHandler struct {
 
 func NewDeleteHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
 	deleteVisitor := vparser.NewDeleteVisitor()
-	resp := deleteVisitor.Parse(ctx.ParsedQuery.Root)
+	resp := deleteVisitor.Parse(ctx.ParsedQuery.Root())
 	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
@@ -45,7 +45,7 @@ func (d *DeleteHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 	res := make([]sharding.Query, 0, len(shardingRes.Dsts))
 	for _, dst := range shardingRes.Dsts {
 		deleteBuilder := builder.NewDelete(dst.DB, dst.Table)
-		sql, err := deleteBuilder.Build(d.ctx.ParsedQuery.Root)
+		sql, err := deleteBuilder.Build(d.ctx.ParsedQuery.Root())
 		if err != nil {
 			return nil, err
 		}

@@ -1,8 +1,0 @@
-server:
-  addr: ":8306"
-  plugins:
-    location: "./plugins"
-    items:
-      - name: "forward"
-        location: "./plugin/forward"
-        configLocation: "./plugin/forward/config"

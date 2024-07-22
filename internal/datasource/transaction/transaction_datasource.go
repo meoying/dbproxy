@@ -10,39 +10,39 @@ import (
 )
 
 var (
-	_                       datasource.DataSource = &txDataSourceWrapper{}
+	_                       datasource.DataSource = &TxDatasource{}
 	ErrUnSupportedOperation                       = errors.New("用Tx封装的DataSource暂不支持该操作")
 )
 
-// txDataSourceWrapper 用于将datasource.Tx伪装成datasource.DataSource
-type txDataSourceWrapper struct {
+// TxDatasource 用于将datasource.Tx伪装成datasource.DataSource接口的实现
+type TxDatasource struct {
 	tx datasource.Tx
 }
 
-func NewTransactionDataSource(tx datasource.Tx) datasource.DataSource {
-	return &txDataSourceWrapper{tx: tx}
+func NewTransactionDataSource(tx datasource.Tx) *TxDatasource {
+	return &TxDatasource{tx: tx}
 }
 
-func (t *txDataSourceWrapper) Commit() error {
+func (t *TxDatasource) Commit() error {
 	return t.tx.Commit()
 }
 
-func (t *txDataSourceWrapper) Rollback() error {
+func (t *TxDatasource) Rollback() error {
 	return t.tx.Rollback()
 }
 
-func (t *txDataSourceWrapper) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, error) {
+func (t *TxDatasource) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasource.Tx, error) {
 	return nil, fmt.Errorf("%w", ErrUnSupportedOperation)
 }
 
-func (t *txDataSourceWrapper) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
+func (t *TxDatasource) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
 	return t.tx.Query(ctx, query)
 }
 
-func (t *txDataSourceWrapper) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
+func (t *TxDatasource) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
 	return t.tx.Exec(ctx, query)
 }
 
-func (t *txDataSourceWrapper) Close() error {
+func (t *TxDatasource) Close() error {
 	return fmt.Errorf("%w", ErrUnSupportedOperation)
 }

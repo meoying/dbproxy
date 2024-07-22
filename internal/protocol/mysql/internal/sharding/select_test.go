@@ -13,8 +13,8 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves/roundrobin"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"
@@ -985,11 +985,9 @@ func TestShardingSelector_Build(t *testing.T) {
 		c := tc
 		t.Run(c.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
-				Context: context.Background(),
-				Query:   tc.sql,
-				ParsedQuery: pcontext.ParsedQuery{
-					Root: ast.Parse(tc.sql),
-				},
+				Context:     context.Background(),
+				Query:       tc.sql,
+				ParsedQuery: pcontext.NewParsedQuery(tc.sql, vparser.NewHintVisitor()),
 			}
 			handler, err := NewSelectHandler(shardAlgorithm, dss, ctx)
 			require.NoError(t, err)
@@ -1074,11 +1072,9 @@ func TestShardingSelector_GetMulti(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			tc.mockOrder(mock, mock2)
 			ctx := &pcontext.Context{
-				Context: context.Background(),
-				Query:   tc.sql,
-				ParsedQuery: pcontext.ParsedQuery{
-					Root: ast.Parse(tc.sql),
-				},
+				Context:     context.Background(),
+				Query:       tc.sql,
+				ParsedQuery: pcontext.NewParsedQuery(tc.sql, vparser.NewHintVisitor()),
 			}
 			handler, err := NewSelectHandler(shardAlgorithm, dss, ctx)
 			require.NoError(t, err)

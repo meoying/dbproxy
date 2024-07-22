@@ -20,7 +20,7 @@ type UpdateHandler struct {
 
 func NewUpdateHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
 	updateVisitor := vparser.NewUpdateVisitor()
-	resp := updateVisitor.Parse(ctx.ParsedQuery.Root)
+	resp := updateVisitor.Parse(ctx.ParsedQuery.Root())
 	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
@@ -45,7 +45,7 @@ func (u *UpdateHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 	res := make([]sharding.Query, 0, len(shardingRes.Dsts))
 	for _, dst := range shardingRes.Dsts {
 		updateBuilder := builder.NewUpdate(dst.DB, dst.Table)
-		sql, err := updateBuilder.Build(u.ctx.ParsedQuery.Root)
+		sql, err := updateBuilder.Build(u.ctx.ParsedQuery.Root())
 		if err != nil {
 			return nil, err
 		}

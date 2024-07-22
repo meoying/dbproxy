@@ -3,13 +3,12 @@ package cmd
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/ecodeclub/ekit/sqlx"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
@@ -34,14 +33,11 @@ func (exec *QueryExecutor) Exec(
 	payload []byte) error {
 	que := exec.parseQuery(payload)
 	pctx := &pcontext.Context{
-		Context: ctx,
-		Query:   que,
-		ParsedQuery: pcontext.ParsedQuery{
-			Root: ast.Parse(que),
-		},
-		ConnID: conn.ID(),
+		Context:     ctx,
+		Query:       que,
+		ParsedQuery: pcontext.NewParsedQuery(que, vparser.NewHintVisitor()),
+		ConnID:      conn.ID(),
 	}
-	log.Printf("接收到的query = %#v, payload =%#v\n", que, string(payload))
 
 	// 在这里执行 que，并且写回响应
 	result, err := exec.hdl.Handle(pctx)
@@ -52,14 +48,14 @@ func (exec *QueryExecutor) Exec(
 		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
 	}
 
-	// 重制conn的事务状态
-	conn.SetInTransaction(result.TxInTransaction)
+	// 重置conn的事务状态
+	conn.SetInTransaction(result.InTransactionState)
 
 	if result.Rows != nil {
 		return exec.handleRows(result.Rows, conn)
 	}
 
-	if result.TxInTransaction {
+	if result.InTransactionState {
 		return conn.WritePacket(packet.BuildOKResp(packet.SeverStatusInTrans | packet.ServerStatusAutoCommit))
 	}
 

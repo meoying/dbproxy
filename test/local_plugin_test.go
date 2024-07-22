@@ -17,9 +17,7 @@ import (
 	logplugin "github.com/meoying/dbproxy/internal/protocol/mysql/plugin/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/sync/errgroup"
 )
 
 // TestLocalDBProxy 测试本地部署形态的dbproxy
@@ -117,7 +115,7 @@ func (s *localForwardTestSuite) TestBasicSuite() {
 }
 
 func (s *localForwardTestSuite) TestSingleTxSuite() {
-	// 因为是并发测试,所以放在TestDataTypeSuite、TestBasicSuite之后
+	// 因为是并发测试,所以放在最后
 	t := s.T()
 	var wg sync.WaitGroup
 	for id, txSuite := range []*testsuite.SingleTXTestSuite{
@@ -134,7 +132,6 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 		go func() {
 			defer wg.Done()
 			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
-				t.Parallel()
 				suite.Run(t, txSuite)
 			})
 		}()
@@ -146,14 +143,11 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 type localShardingTestSuite struct {
 	server *mysql.Server
 	suite.Suite
-	basicSuite        testsuite.BasicTestSuite
-	distributeTxSuite testsuite.DistributeTXTestSuite
 }
 
 func (s *localShardingTestSuite) SetupSuite() {
 	s.createDatabasesAndTables()
 	s.setupProxyServer()
-	s.setupTestSuites()
 }
 
 func (s *localShardingTestSuite) createDatabasesAndTables() {
@@ -226,11 +220,6 @@ func (s *localShardingTestSuite) getLogPlugin(path string) *logplugin.Plugin {
 	return p
 }
 
-func (s *localShardingTestSuite) setupTestSuites() {
-	s.basicSuite.SetDB(s.newProxyClientDB())
-	s.distributeTxSuite.SetDB(s.newProxyClientDB())
-}
-
 func (s *localShardingTestSuite) newProxyClientDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:8307)/dbproxy")
@@ -251,69 +240,32 @@ func (s *localShardingTestSuite) TestPing() {
 }
 
 func (s *localShardingTestSuite) TestBasicSuite() {
-	suite.Run(s.T(), &s.basicSuite)
+	var basicSuite testsuite.BasicTestSuite
+	basicSuite.SetDB(s.newProxyClientDB())
+	suite.Run(s.T(), &basicSuite)
 }
 
 func (s *localShardingTestSuite) TestDistributeTxSuite() {
+	// 因为是并发测试,所以放在最后
 	t := s.T()
-	t.Skip("协议暂不支持开启事务、提交事务、回滚事务, 另外事务类型的选取方式应该是hint而不是ctx")
-	suite.Run(t, &s.distributeTxSuite)
-}
-
-func TestMockForwardSingleTxProblem(t *testing.T) {
-	t.Skip("模拟测试forward-singleTx的问题")
-	// TODO 定义Sharding配置文件
-
-	db, err := sql.Open("mysql", "root:root@tcp(localhost:13306)/dbproxy")
-	require.NoError(t, err)
-
-	testsuite.CreateTables(t, db, "order")
-	defer testsuite.ClearTables(t, db)
-
-	_, err = db.Exec("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (100000, 1001, 'sample content', 10.0);")
-	require.NoError(t, err)
-
-	n := 100
-	var eg errgroup.Group
-	for i := 0; i < n; i++ {
-		i := i
-		eg.Go(func() error {
-			tx, err1 := db.BeginTx(context.Background(), nil)
-			if err1 != nil {
-				return err1
-			}
-			v := i % 3
-
-			if v == 0 {
-				// 插入
-				_, err2 := tx.ExecContext(context.Background(), fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (10001%d, 1001, 'sample content', 10.0);", i))
-				if err2 != nil {
-					return err2
-				}
-				return tx.Commit()
-			} else if v == 1 {
-				// 修改
-				_, err2 := tx.ExecContext(context.Background(), "UPDATE `order` SET `content` = 'tx content' WHERE `user_id`=100000")
-				if err2 != nil {
-					return err2
-				}
-				return tx.Commit()
-
-			} else {
-				// 删除
-				_, err2 := tx.ExecContext(context.Background(), fmt.Sprintf("DELETE FROM `order` WHERE `user_id`=10000%d", i))
-				if err2 != nil {
-					return err2
-				}
-				return tx.Rollback()
-
-			}
-		})
-		eg.Go(func() error {
-			_, err = db.Exec(fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (20000%d, 1001, 'sample content', 10.0);", i))
-			return err
-		})
+	var wg sync.WaitGroup
+	for id, txSuite := range []*testsuite.DistributeTXTestSuite{
+		new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
+		new(testsuite.DistributeTXTestSuite),
+	} {
+		wg.Add(1)
+		id := id + 1
+		clientID := id * 100
+		txSuite := txSuite
+		txSuite.SetClientID(clientID)
+		txSuite.SetDB(s.newProxyClientDB())
+		go func() {
+			defer wg.Done()
+			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
+				suite.Run(t, txSuite)
+			})
+		}()
 	}
-
-	require.NoError(t, eg.Wait())
+	wg.Wait()
 }
