@@ -14,7 +14,7 @@ var (
 	ErrUnSupportedOperation                       = errors.New("用Tx封装的DataSource暂不支持该操作")
 )
 
-// TxDatasource 用于将datasource.Tx伪装成datasource.DataSource
+// TxDatasource 用于将datasource.Tx伪装成datasource.DataSource接口的实现
 type TxDatasource struct {
 	tx datasource.Tx
 }
