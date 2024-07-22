@@ -3,7 +3,6 @@ package connection
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
@@ -23,12 +22,13 @@ type Conn struct {
 	// 写入超时时间
 	writeTimeout time.Duration
 	sequence     uint8
-	Id           uint32
+	id           uint32
 
 	// onCmd 处理客户端过来的命令
-	onCmd        OnCmd
-	cmdTimeout   time.Duration
-	InTransition bool
+	onCmd      OnCmd
+	cmdTimeout time.Duration
+	// inTransaction 当前处于事务中
+	inTransaction bool
 
 	clientFlags  flags.CapabilityFlags
 	characterSet uint32
@@ -41,9 +41,13 @@ func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
 		// 后续要考虑做成可配置的
 		writeTimeout: time.Second,
 		onCmd:        onCmd,
-		Id:           id,
-		cmdTimeout:   time.Second,
+		id:           id,
+		cmdTimeout:   time.Second * 3,
 	}
+}
+
+func (mc *Conn) ID() uint32 {
+	return mc.id
 }
 
 // Loop 完成握手、鉴权，并且开始监听客户端的数据
@@ -63,10 +67,9 @@ func (mc *Conn) Loop() error {
 		// 开始不断接收客户端的请求
 		pkt, err1 := mc.readPacket()
 		if err1 != nil {
-			log.Println(err1, "xxxxxxxxxxxxxxx")
 			return fmt.Errorf("读取客户端请求失败 %w", err1)
 		}
-		//ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
+		// ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		ctx := context.Background()
 		err1 = mc.onCmd(ctx, mc, pkt)
 		//cancel() // TODO：暂时注释，每次取消会影响事务和prepare的后续操作
@@ -86,4 +89,8 @@ func (mc *Conn) ClientCapabilityFlags() flags.CapabilityFlags {
 
 func (mc *Conn) CharacterSet() uint32 {
 	return mc.characterSet
+}
+
+func (mc *Conn) SetInTransaction(s bool) {
+	mc.inTransaction = s
 }

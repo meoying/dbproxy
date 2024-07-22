@@ -11,7 +11,8 @@ import (
 )
 
 type ShardingHandler interface {
-	// 构建分库分表的sql
+	// Build 构建分库分表的sql
+	// 这个方法是不是用不上了，我看到只在测试里面用了
 	Build(ctx context.Context) ([]sharding.Query, error)
 	QueryOrExec(ctx context.Context) (*Result, error)
 }
@@ -19,12 +20,12 @@ type ShardingHandler interface {
 type NewHandlerFunc func(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error)
 
 type Result struct {
-	// 这两个字段中只能有一个
+	// 这两个字段中只能有一个可用
 	// Rows 的 error 会被传递过去客户端
 	Rows sqlx.Rows
 	// Result 的 error 会被传递过去客户端
 	Result sql.Result
-	// ChangeTransaction 是否改变事务的状态
-	ChangeTransaction bool
-	StmtId            int
+	// 底层连接是否处于事务状态,可以与上面字段组合使用
+	InTransactionState bool
+	StmtId             int
 }

@@ -12,4 +12,6 @@ type Context struct {
 	Args         []any
 	InTransition bool
 	StmtId       int
+	// 获取到当前Query语句的底层Conn的ID
+	ConnID uint32
 }

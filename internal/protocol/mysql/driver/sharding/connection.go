@@ -8,7 +8,6 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	shardinghandler "github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
@@ -28,10 +27,10 @@ func newConnection(ds datasource.DataSource, algorithm sharding.Algorithm) *conn
 		exec:      ds,
 		algorithm: algorithm,
 		handlerMap: map[string]shardinghandler.NewHandlerFunc{
-			vparser.SelectSql: shardinghandler.NewSelectHandler,
-			vparser.InsertSql: shardinghandler.NewInsertBuilder,
-			vparser.UpdateSql: shardinghandler.NewUpdateHandler,
-			vparser.DeleteSql: shardinghandler.NewDeleteHandler,
+			vparser.SelectStmt: shardinghandler.NewSelectHandler,
+			vparser.InsertStmt: shardinghandler.NewInsertBuilder,
+			vparser.UpdateStmt: shardinghandler.NewUpdateHandler,
+			vparser.DeleteStmt: shardinghandler.NewDeleteHandler,
 		},
 	}
 }
@@ -54,27 +53,22 @@ func (c *connection) ExecContext(ctx context.Context, query string, args []drive
 
 func (c *connection) queryOrExec(ctx context.Context, query string, args []driver.NamedValue) (*shardinghandler.Result, error) {
 	pctx := &pcontext.Context{
-		Context: ctx,
-		ParsedQuery: pcontext.ParsedQuery{
-			Root: ast.Parse(query),
-		},
-		Query: query,
+		Context:     ctx,
+		ParsedQuery: pcontext.NewParsedQuery(query, vparser.NewHintVisitor()),
+		Query:       query,
 		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
 			return src
 		}),
-		InTransition: false,
 	}
-	handler, err := c.getShardingHandler(pctx, query, args)
+	handler, err := c.getShardingHandler(pctx)
 	if err != nil {
 		return nil, err
 	}
 	return handler.QueryOrExec(pctx.Context)
 }
 
-func (c *connection) getShardingHandler(pctx *pcontext.Context, query string, args []driver.NamedValue) (shardinghandler.ShardingHandler, error) {
-	checkVisitor := vparser.NewCheckVisitor()
-	sqlName := checkVisitor.Visit(pctx.ParsedQuery.Root).(string)
-	newHandlerFunc, ok := c.handlerMap[sqlName]
+func (c *connection) getShardingHandler(pctx *pcontext.Context) (shardinghandler.ShardingHandler, error) {
+	newHandlerFunc, ok := c.handlerMap[pctx.ParsedQuery.Type()]
 	if !ok {
 		return nil, shardinghandler.ErrUnKnowSql
 	}

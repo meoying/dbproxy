@@ -7,15 +7,18 @@ import (
 	"os"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
+	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/internal/handler"
 )
 
 var _ plugin.Plugin = &Plugin{}
 
 type Plugin struct {
-	hdl *Handler
+	hdl *handler.ForwardHandler
 }
 
 func (p *Plugin) Name() string {
@@ -23,7 +26,7 @@ func (p *Plugin) Name() string {
 }
 
 func (p *Plugin) Init(cfg []byte) error {
-	var config Config
+	var config forward.Config
 	err := json.Unmarshal(cfg, &config)
 	if err != nil {
 		return err
@@ -32,9 +35,10 @@ func (p *Plugin) Init(cfg []byte) error {
 	if err != nil {
 		return err
 	}
-	p.hdl = &Handler{
-		ds: masterslave.NewMasterSlavesDB(db),
-	}
+	// TODO 这里是否要支持主从?还是单个?也就是说确定配置具体内容
+	p.hdl = handler.NewForwardHandler(cluster.NewClusterDB(map[string]*masterslave.MasterSlavesDB{
+		config.DBName: masterslave.NewMasterSlavesDB(db),
+	}), config)
 	return nil
 }
 
@@ -49,10 +53,4 @@ func openDB(dsn string) (*sql.DB, error) {
 
 func (p *Plugin) Join(next plugin.Handler) plugin.Handler {
 	return p.hdl
-}
-
-func NewPlugin(hdl *Handler) *Plugin {
-	return &Plugin{
-		hdl: hdl,
-	}
 }

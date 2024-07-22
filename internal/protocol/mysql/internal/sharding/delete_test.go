@@ -12,8 +12,8 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/meoying/dbproxy/internal/sharding/hash"
 	"github.com/stretchr/testify/assert"
@@ -299,11 +299,9 @@ func TestDeleteHandler_Build(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &pcontext.Context{
-				Context: context.Background(),
-				Query:   tc.sql,
-				ParsedQuery: pcontext.ParsedQuery{
-					Root: ast.Parse(tc.sql),
-				},
+				Context:     context.Background(),
+				Query:       tc.sql,
+				ParsedQuery: pcontext.NewParsedQuery(tc.sql, vparser.NewHintVisitor()),
 			}
 			handler, err := NewDeleteHandler(shardAlgorithm, dss, ctx)
 			require.NoError(t, err)
@@ -386,11 +384,9 @@ func (d *DeleteHandlerSuite) TestDeleteHandler_Exec() {
 		d.T().Run(tc.name, func(t *testing.T) {
 			tc.mockDB()
 			ctx := &pcontext.Context{
-				Context: context.Background(),
-				Query:   tc.sql,
-				ParsedQuery: pcontext.ParsedQuery{
-					Root: ast.Parse(tc.sql),
-				},
+				Context:     context.Background(),
+				Query:       tc.sql,
+				ParsedQuery: pcontext.NewParsedQuery(tc.sql, vparser.NewHintVisitor()),
 			}
 			handler, err := NewDeleteHandler(shardAlgorithm, dss, ctx)
 			require.NoError(t, err)

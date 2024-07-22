@@ -2,9 +2,11 @@ package mysql
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/cmd"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
@@ -18,6 +20,7 @@ import (
 type Server struct {
 	addr     string
 	logger   *slog.Logger
+	mu       sync.Mutex
 	listener net.Listener
 
 	conns     syncx.Map[uint32, *connection.Conn]
@@ -25,6 +28,7 @@ type Server struct {
 
 	// 关闭
 	closeOnce sync.Once
+	closed    atomic.Bool
 }
 
 // NewServer
@@ -53,11 +57,21 @@ func (s *Server) Start() error {
 	if err != nil {
 		return err
 	}
+	s.mu.Lock()
 	s.listener = listener
+	s.mu.Unlock()
 	var id uint32 = 1
 	for {
 		rawConn, err1 := listener.Accept()
 		if err1 != nil {
+			var opErr *net.OpError
+			if errors.As(err, &opErr) && opErr.Temporary() {
+				continue
+			}
+			if s.closed.Load() {
+				// 忽略因为listener.Close()导致到err1
+				return nil
+			}
 			return err1
 		}
 		conn := connection.NewConn(id, rawConn, s.omCmd)
@@ -66,12 +80,12 @@ func (s *Server) Start() error {
 		go func() {
 			// 关闭
 			defer func() {
-				s.conns.Delete(conn.Id)
+				s.conns.Delete(conn.ID())
 				_ = conn.Close()
 			}()
 			err2 := conn.Loop()
 			if err2 != nil {
-				s.logger.Error("退出命令处理循环 %w", "error", err2)
+				s.logger.Error("退出命令处理循环出错", "错误", err2)
 			}
 		}()
 	}
@@ -90,17 +104,21 @@ func (s *Server) omCmd(ctx context.Context, conn *connection.Conn, payload []byt
 
 // Close 不需要设计成幂等的，因为调用者不存在误用的可能
 func (s *Server) Close() error {
-	var err error
+	var err *multierror.Error
 	s.closeOnce.Do(func() {
+		s.closed.Store(true)
+
+		s.mu.Lock()
 		if s.listener != nil {
 			err = multierror.Append(err, s.listener.Close())
 		}
+		s.mu.Unlock()
+
 		// 目前只是关闭了 value，但是并没有删除掉对应的键值对
 		s.conns.Range(func(key uint32, value *connection.Conn) bool {
-			err1 := value.Close()
-			err = multierror.Append(err, err1)
+			err = multierror.Append(err, value.Close())
 			return true
 		})
 	})
-	return err
+	return err.ErrorOrNil()
 }

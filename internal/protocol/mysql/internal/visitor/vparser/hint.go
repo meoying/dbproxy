@@ -27,17 +27,18 @@ func (s *HintVisitor) Visit(tree antlr.ParseTree) any {
 func (s *HintVisitor) VisitRoot(ctx *parser.RootContext) any {
 	sqlStmts := ctx.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]
-	stmtctx := sqlStmt.(*parser.SqlStatementContext)
-	return s.VisitSqlStatement(stmtctx)
+	return s.VisitSqlStatement(sqlStmt.(*parser.SqlStatementContext))
 }
 
 func (s *HintVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
-	dmstmt := ctx.DmlStatement().(*parser.DmlStatementContext)
-	return s.VisitDmlStatement(dmstmt)
+	return s.VisitDmlStatement(ctx.DmlStatement().(*parser.DmlStatementContext))
 }
 
 func (s *HintVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
-	selectStmtCtx := ctx.SelectStatement().(*parser.SimpleSelectContext)
+	selectStmtCtx, ok := ctx.SelectStatement().(*parser.SimpleSelectContext)
+	if !ok {
+		return "当前SQL语句尚不支持Hint语法"
+	}
 	return s.VisitSimpleSelect(selectStmtCtx)
 }
 

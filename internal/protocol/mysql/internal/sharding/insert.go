@@ -36,7 +36,7 @@ func (i *InsertHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 
 func NewInsertBuilder(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
 	insertVisitor := vparser.NewInsertVisitor()
-	resp := insertVisitor.Parse(ctx.ParsedQuery.Root)
+	resp := insertVisitor.Parse(ctx.ParsedQuery.Root())
 	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
 		return nil, baseVal.Err
@@ -76,7 +76,7 @@ func (i *InsertHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 	for _, dst := range dsts {
 		vals, _ := dsDBTabMap.Get(dst)
 		insertBuilder := vbuilder.NewInsert(dst.DB, dst.Table, vals)
-		sql, err := insertBuilder.Build(i.ctx.ParsedQuery.Root)
+		sql, err := insertBuilder.Build(i.ctx.ParsedQuery.Root())
 		if err != nil {
 			return nil, err
 		}

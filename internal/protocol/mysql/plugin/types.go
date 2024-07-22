@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	pcontext "github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/sharding"
 )
 

@@ -5,20 +5,22 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 )
 
-// 用于判断
+const (
+	SelectStmt           = "select"
+	UpdateStmt           = "update"
+	DeleteStmt           = "delete"
+	InsertStmt           = "insert"
+	StartTransactionStmt = "startTransaction"
+	CommitStmt           = "commit"
+	RollbackStmt         = "rollback"
+	UnKnownSQLStmt       = "未知的SQL语句"
+)
 
+// CheckVisitor 用于判断SQL语句的类型/特征
 type CheckVisitor struct {
 	SqlType string
 	parser.BaseMySqlParserVisitor
 }
-
-const (
-	SelectSql = "select"
-	UpdateSql = "update"
-	DeleteSql = "delete"
-	InsertSql = "insert"
-	UnKnowSql = ""
-)
 
 func NewCheckVisitor() *CheckVisitor {
 	return &CheckVisitor{}
@@ -36,29 +38,44 @@ func (c *CheckVisitor) Visit(tree antlr.ParseTree) any {
 func (c *CheckVisitor) VisitRoot(ctx *parser.RootContext) any {
 	sqlStmts := ctx.GetChildren()[0]
 	sqlStmt := sqlStmts.GetChildren()[0]
-	stmtctx := sqlStmt.(*parser.SqlStatementContext)
-	return c.VisitSqlStatement(stmtctx)
+	return c.VisitSqlStatement(sqlStmt.(*parser.SqlStatementContext))
 }
 
 func (c *CheckVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
-	dmstmt, ok := ctx.DmlStatement().(*parser.DmlStatementContext)
-	if !ok {
-		return ""
+	switch {
+	case ctx.DmlStatement() != nil:
+		return c.VisitDmlStatement(ctx.DmlStatement().(*parser.DmlStatementContext))
+	case ctx.TransactionStatement() != nil:
+		return c.VisitTransactionStatement(ctx.TransactionStatement().(*parser.TransactionStatementContext))
+	default:
+		return UnKnownSQLStmt
 	}
-	return c.VisitDmlStatement(dmstmt)
 }
 
 func (c *CheckVisitor) VisitDmlStatement(ctx *parser.DmlStatementContext) any {
 	switch {
 	case ctx.InsertStatement() != nil:
-		return InsertSql
+		return InsertStmt
 	case ctx.SelectStatement() != nil:
-		return SelectSql
+		return SelectStmt
 	case ctx.UpdateStatement() != nil:
-		return UpdateSql
+		return UpdateStmt
 	case ctx.DeleteStatement() != nil:
-		return DeleteSql
+		return DeleteStmt
 	default:
-		return UnKnowSql
+		return UnKnownSQLStmt
+	}
+}
+
+func (c *CheckVisitor) VisitTransactionStatement(ctx *parser.TransactionStatementContext) any {
+	switch ctx.GetChildren()[0].(type) {
+	case *parser.StartTransactionContext:
+		return StartTransactionStmt
+	case *parser.CommitWorkContext:
+		return CommitStmt
+	case *parser.RollbackWorkContext:
+		return RollbackStmt
+	default:
+		return UnKnownSQLStmt
 	}
 }
