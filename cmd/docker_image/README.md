@@ -20,8 +20,8 @@ server:
 # 使用的插件的配置，我们会按照插件的顺序进行加载和初始化
 plugins:
   items:
-    - name: "log"
-    - name: "forward"
+    - name: "log" #开启log插件
+    - name: "forward" #开启forward插件
 ```
 
 - 准备dbproxy中开启的插件配置文件`log.yaml`和`forward.yaml`

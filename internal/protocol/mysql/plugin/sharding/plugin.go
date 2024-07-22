@@ -3,7 +3,7 @@ package sharding
 import (
 	"encoding/json"
 
-	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugin/sharding"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugins/sharding"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/configbuilder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin/internal/handler"

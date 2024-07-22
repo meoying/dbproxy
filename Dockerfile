@@ -28,9 +28,8 @@ RUN mkdir log
 
 # 拷贝dbproxy二进制文件
 COPY --from=build /app/cmd/docker_image/dbproxy .
-# 拷贝dbproxy主配置文件
-COPY --from=build /app/cmd/docker_image/config/config.yaml config.yaml
-# 拷贝dbproxy插件及插件配置文件
+
+# 拷贝dbproxy插件文件
 COPY --from=build /app/cmd/docker_image/plugins ./plugins
 
 # 运行应用程序

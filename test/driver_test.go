@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugin/sharding"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugins/sharding"
 	drviersharding "github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
 	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"

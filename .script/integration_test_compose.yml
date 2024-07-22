@@ -23,7 +23,7 @@ services:
     ports:
       - "13306:3306"
   dbproxy-forward:
-    image: flycash/dbproxy:dbproxy-v0.3
+    image: flycash/dbproxy:dbproxy-v0.4
     volumes:
       - ../test/testdata/config/docker/dbproxy-forward.yaml:/app/dbproxy/config.yaml
       - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
@@ -31,7 +31,7 @@ services:
     ports:
       - "8308:8308"
   dbproxy-sharding:
-    image: flycash/dbproxy:dbproxy-v0.3
+    image: flycash/dbproxy:dbproxy-v0.4
     volumes:
       - ../test/testdata/config/docker/dbproxy-sharding.yaml:/app/dbproxy/config.yaml
       - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml

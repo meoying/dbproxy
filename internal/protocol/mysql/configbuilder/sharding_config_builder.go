@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-sql-driver/mysql"
-	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugin/sharding"
+	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugins/sharding"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"

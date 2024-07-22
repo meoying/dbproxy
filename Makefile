@@ -38,7 +38,7 @@ e2e_down:
 	docker compose -p dbproxy -f .script/integration_test_compose.yml down -v
 
 # 定义镜像变量
-IMAGE_VERSION ?= v0.3
+IMAGE_VERSION ?= v0.4
 IMAGE_NAME = flycash/dbproxy:dbproxy-$(IMAGE_VERSION)
 
 .PHONY: build_docker_image
