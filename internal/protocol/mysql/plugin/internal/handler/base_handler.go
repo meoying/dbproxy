@@ -14,7 +14,7 @@ type baseHandler struct {
 	ds datasource.DataSource
 	// connID2Tx 在复合操作中的并发安全性，依赖于 Conn 中不可能出现并发Tx.
 	// 即一个 Conn 不会也不可能同时存在两个 Tx
-	connID2Tx syncx.Map[uint32, datasource.Tx]
+	connID2Tx syncx.Map[uint32, *transaction.TxDatasource]
 	newTxCtx  func(ctx context.Context) context.Context
 }
 
@@ -30,13 +30,13 @@ func newBaseHandler(ds datasource.DataSource, txType string) *baseHandler {
 // getDatasource 获取本次执行需要使用的数据源
 func (h *baseHandler) getDatasource(ctx *pcontext.Context) datasource.DataSource {
 	if tx := h.getTxByConnID(ctx.ConnID); tx != nil {
-		return transaction.NewTransactionDataSource(tx)
+		return tx
 	}
 	return h.ds
 }
 
 // getTxByConnID 根据客户端连接ID获取事务对象, 因为事务是与链接绑定的
-func (h *baseHandler) getTxByConnID(connID uint32) datasource.Tx {
+func (h *baseHandler) getTxByConnID(connID uint32) *transaction.TxDatasource {
 	if tx, ok := h.connID2Tx.Load(connID); ok {
 		return tx
 	}
@@ -56,7 +56,7 @@ func (h *baseHandler) handleStartTransactionStmt(ctx *pcontext.Context) (*plugin
 	if err != nil {
 		return nil, err
 	}
-	h.connID2Tx.Store(ctx.ConnID, tx)
+	h.connID2Tx.Store(ctx.ConnID, transaction.NewTransactionDataSource(tx))
 	return &plugin.Result{InTransactionState: true}, nil
 }
 
