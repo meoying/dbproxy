@@ -24,6 +24,10 @@ import (
 	"go.uber.org/multierr"
 )
 
+var (
+	_ datasource.Tx = &DelayTx{}
+)
+
 type DelayTxFactory struct{}
 
 func (DelayTxFactory) TxOf(ctx Context, finder datasource.Finder) (datasource.Tx, error) {
@@ -81,6 +85,14 @@ func (t *DelayTx) Exec(ctx context.Context, query datasource.Query) (sql.Result,
 		return nil, err
 	}
 	return tx.Exec(ctx, query)
+}
+
+func (t *DelayTx) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	tx, err := t.findOrBeginTx(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return tx.Prepare(ctx, query)
 }
 
 func (t *DelayTx) Commit() error {

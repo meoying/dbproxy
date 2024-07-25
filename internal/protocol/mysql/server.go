@@ -43,8 +43,11 @@ func NewServer(addr string, plugins []plugin.Plugin) *Server {
 		logger: slog.Default(),
 		addr:   addr,
 		executors: map[byte]cmd.Executor{
-			cmd.CmdPing.Byte():  &cmd.PingExecutor{},
-			cmd.CmdQuery.Byte(): cmd.NewQueryExecutor(hdl),
+			cmd.CmdPing.Byte():        &cmd.PingExecutor{},
+			cmd.CmdQuery.Byte():       cmd.NewQueryExecutor(hdl),
+			cmd.CmdStmtPrepare.Byte(): cmd.NewStmtPrepareExecutor(hdl),
+			cmd.CmdStmtExecute.Byte(): cmd.NewStmtExecuteExecutor(hdl),
+			cmd.CmdStmtClose.Byte():   cmd.NewStmtCloseExecutor(hdl),
 		},
 	}
 }

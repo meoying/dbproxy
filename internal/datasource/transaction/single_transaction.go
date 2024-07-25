@@ -24,6 +24,10 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 )
 
+var (
+	_ datasource.Tx = &SingleTx{}
+)
+
 type SingleTxFactory struct{}
 
 func (SingleTxFactory) TxOf(ctx Context, finder datasource.Finder) (datasource.Tx, error) {
@@ -89,6 +93,14 @@ func (t *SingleTx) Exec(ctx context.Context, query datasource.Query) (sql.Result
 		return nil, err
 	}
 	return tx.Exec(ctx, query)
+}
+
+func (t *SingleTx) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	tx, err := t.findOrBeginTx(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return tx.Prepare(ctx, query)
 }
 
 func (t *SingleTx) Commit() error {

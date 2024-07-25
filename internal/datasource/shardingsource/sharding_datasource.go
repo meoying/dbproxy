@@ -26,9 +26,12 @@ import (
 	"go.uber.org/multierr"
 )
 
-var _ datasource.TxBeginner = &ShardingDataSource{}
-var _ datasource.DataSource = &ShardingDataSource{}
-var _ datasource.Finder = &ShardingDataSource{}
+var (
+	_ datasource.TxBeginner   = &ShardingDataSource{}
+	_ datasource.DataSource   = &ShardingDataSource{}
+	_ datasource.Finder       = &ShardingDataSource{}
+	_ datasource.StmtPreparer = &ShardingDataSource{}
+)
 
 type ShardingDataSource struct {
 	sources map[string]datasource.DataSource
@@ -48,6 +51,14 @@ func (s *ShardingDataSource) Exec(ctx context.Context, query datasource.Query) (
 		return nil, err
 	}
 	return ds.Exec(ctx, query)
+}
+
+func (s *ShardingDataSource) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	ds, err := s.getTgt(query)
+	if err != nil {
+		return nil, err
+	}
+	return ds.Prepare(ctx, query)
 }
 
 func (s *ShardingDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.TxBeginner, error) {

@@ -27,14 +27,21 @@ import (
 	"go.uber.org/multierr"
 )
 
-var _ datasource.TxBeginner = &clusterDB{}
-var _ datasource.DataSource = &clusterDB{}
-var _ datasource.Finder = &clusterDB{}
+var (
+	_ datasource.TxBeginner   = &clusterDB{}
+	_ datasource.DataSource   = &clusterDB{}
+	_ datasource.Finder       = &clusterDB{}
+	_ datasource.StmtPreparer = &clusterDB{}
+)
 
 // clusterDB 以 DB 名称作为索引目标数据库
 type clusterDB struct {
 	// DataSource  应实现为 *masterSlavesDB
 	masterSlavesDBs map[string]*masterslave.MasterSlavesDB
+}
+
+func NewClusterDB(ms map[string]*masterslave.MasterSlavesDB) datasource.DataSource {
+	return &clusterDB{masterSlavesDBs: ms}
 }
 
 func (c *clusterDB) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
@@ -46,11 +53,19 @@ func (c *clusterDB) Query(ctx context.Context, query datasource.Query) (*sql.Row
 }
 
 func (c *clusterDB) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
-	ms, ok := c.masterSlavesDBs[query.DB]
-	if !ok {
-		return nil, errs.NewErrNotFoundTargetDB(query.DB)
+	ms, err := c.getTgt(query)
+	if err != nil {
+		return nil, err
 	}
 	return ms.Exec(ctx, query)
+}
+
+func (c *clusterDB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	ms, err := c.getTgt(query)
+	if err != nil {
+		return nil, err
+	}
+	return ms.Prepare(ctx, query)
 }
 
 func (c *clusterDB) Close() error {
@@ -87,8 +102,4 @@ func (c *clusterDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (datasourc
 	}
 
 	return facade.BeginTx(ctx, opts)
-}
-
-func NewClusterDB(ms map[string]*masterslave.MasterSlavesDB) datasource.DataSource {
-	return &clusterDB{masterSlavesDBs: ms}
 }

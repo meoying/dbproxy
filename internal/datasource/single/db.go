@@ -23,12 +23,16 @@ import (
 	"time"
 
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
 
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 )
 
-var _ datasource.TxBeginner = &DB{}
-var _ datasource.DataSource = &DB{}
+var (
+	_ datasource.TxBeginner   = &DB{}
+	_ datasource.DataSource   = &DB{}
+	_ datasource.StmtPreparer = &DB{}
+)
 
 // DB represents a database
 type DB struct {
@@ -42,6 +46,11 @@ func (db *DB) Query(ctx context.Context, query datasource.Query) (*sql.Rows, err
 
 func (db *DB) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {
 	return db.db.ExecContext(ctx, query.SQL, query.Args...)
+}
+
+func (db *DB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	stmt, err := db.db.PrepareContext(ctx, query.SQL)
+	return statement.NewPreparedStatement(stmt), err
 }
 
 func OpenDB(driver string, dsn string, opts ...Option) (*DB, error) {
