@@ -35,7 +35,7 @@ func (e *BaseExecutor) buildTextResultsetRespPackets(cols []packet.ColumnType, r
 	return e.buildResultSetRespPackets(cols, rows, charset, status, packet.BuildTextResultsetRowRespPacket)
 }
 
-type buildResultsetRowRespPacket func(values ...any) []byte
+type buildResultsetRowRespPacket func(values []any, cols []packet.ColumnType) []byte
 
 func (e *BaseExecutor) buildResultSetRespPackets(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus, buildFunc buildResultsetRowRespPacket) ([][]byte, error) {
 	// resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
@@ -53,7 +53,7 @@ func (e *BaseExecutor) buildResultSetRespPackets(cols []packet.ColumnType, rows 
 
 	// 写入真实每行数据
 	for _, row := range rows {
-		packets = append(packets, buildFunc(row...))
+		packets = append(packets, buildFunc(row, cols))
 	}
 	packets = append(packets, packet.BuildEOFPacket(status))
 
@@ -71,7 +71,7 @@ func (e *BaseExecutor) buildBinaryResultsetRespPackets(cols []packet.ColumnType,
 
 func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.SeverStatus) error {
 	// TODO 如果是插入、更新、删除行为应该把影响行数和最后插入ID给传进去
-	return conn.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	return conn.WritePacket(packet.BuildOKResp(status))
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -91,14 +91,14 @@ func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) erro
 type buildResultSetRespPackets func(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus) ([][]byte, error)
 
 func (e *BaseExecutor) handleTextRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, packet.ServerStatusAutoCommit, e.buildTextResultsetRespPackets, true)
+	return e.handleRows(rows, conn, status, e.buildTextResultsetRespPackets, false)
 }
 
 func (e *BaseExecutor) handleBinaryRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, packet.ServerStatusAutoCommit, e.buildBinaryResultsetRespPackets, false)
+	return e.handleRows(rows, conn, status, e.buildBinaryResultsetRespPackets, true)
 }
 
-func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc buildResultSetRespPackets, isText bool) error {
+func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc buildResultSetRespPackets, isBinaryProtocol bool) error {
 	if conn.InTransaction() {
 		status |= packet.SeverStatusInTrans
 	}
@@ -109,24 +109,17 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 	var data [][]any
 	for rows.Next() {
 		row := make([]any, len(cols))
-		// vals := make([]reflect.Value, len(cols))
 		// 这里需要用到指针给Scan，不然会报错
 		for i := range row {
 			var v []byte
 			row[i] = &v
-			// vals[i] = e.getReflectValue(cols[i])
-			// row[i] = vals[i].Interface()
 		}
 		err = rows.Scan(row...)
 		if err != nil {
 			return e.writeErrRespPacket(conn, err)
 		}
 
-		// for i := range row {
-		// 	row[i] = vals[i].Elem().Interface()
-		// }
-
-		if !isText {
+		if isBinaryProtocol {
 			row, err = e.convert(row, cols)
 			if err != nil {
 				return e.writeErrRespPacket(conn, err)

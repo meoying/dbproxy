@@ -136,7 +136,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := BuildBinaryResultsetRowRespPacket(tc.values...)
+			actual := BuildBinaryResultsetRowRespPacket(tc.values, nil)
 			assert.Equal(t, tc.expected, actual[4:])
 		})
 	}

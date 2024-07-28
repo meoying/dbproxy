@@ -107,7 +107,7 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 
 // BuildTextResultsetRowRespPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildTextResultsetRowRespPacket(values ...any) []byte {
+func BuildTextResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	// 减少切片扩容
 	// return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
@@ -147,7 +147,7 @@ func BuildTextResultsetRowRespPacket(values ...any) []byte {
 
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
-func BuildBinaryResultsetRowRespPacket(values ...any) []byte {
+func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", values)
 	// Calculate the length of the NULL bitmap
 	nullBitmapLen := (len(values) + 7 + 2) / 8
@@ -194,16 +194,7 @@ func writeBinaryValue(buf *bytes.Buffer, value any) error {
 	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
 
 	switch v := value.(type) {
-	case int8:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
-	case int16:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
-	case int32:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
-	case int64:
+	case int8, int16, int32, int64, float32, float64:
 		log.Printf("write %T, %#v\n", v, v)
 		return binary.Write(buf, binary.LittleEndian, v)
 	case sql.NullInt64:
@@ -211,9 +202,6 @@ func writeBinaryValue(buf *bytes.Buffer, value any) error {
 			return writeBinaryValue(buf, v.Int64)
 		}
 		return nil
-	case float64:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
 	case bool:
 		var boolValue byte
 		if v {
@@ -572,19 +560,44 @@ func ConvertToBinaryProtocolValue(val any, col *sql.ColumnType) (any, error) {
 		return int32(v), nil
 	case "BIGINT":
 		// 将 []byte 转换为 int64 类型
-		v, err := strconv.ParseInt(string(bytesVal), 10, 64)
+		return strconv.ParseInt(string(bytesVal), 10, 64)
+	case "FLOAT":
+		f, err := strconv.ParseFloat(string(bytesVal), 32)
 		if err != nil {
 			return nil, err
 		}
-		return v, nil
-	case "FLOAT":
-		// string<4>
-		return strconv.ParseFloat()
+		return float32(f), nil
 	case "DOUBLE":
-		return uint16(MySQLTypeDouble)
-	case "DECIMAL":
-		return uint16(MySQLTypeNewDecimal)
+		return strconv.ParseFloat(string(bytesVal), 64)
+	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
+		return string(bytesVal), nil
+	case "DATE", "DATETIME", "TIMESTAMP":
+		return nil, nil
+	case "TIME":
+		return nil, nil
 	default:
 		return nil, errors.New("unsupported database type")
 	}
 }
+
+// func ParseTime(data []byte) (time.Time, error) {
+// 	layouts := []string{
+// 		"2006-01-02",
+// 		"2006-01-02 15:04",
+// 		"2006-01-02 15:04:05",
+// 		"15:04:05",
+// 	}
+//
+// 	dateStr := string(bytes.TrimSpace(data))
+// 	var parsedTime time.Time
+// 	var err error
+//
+// 	for _, layout := range layouts {
+// 		parsedTime, err = time.Parse(layout, dateStr)
+// 		if err == nil {
+// 			return parsedTime, nil
+// 		}
+// 	}
+//
+// 	return time.Time{}, fmt.Errorf("cannot parse date: %s", dateStr)
+// }

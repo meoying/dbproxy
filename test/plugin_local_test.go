@@ -152,8 +152,8 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 	wg.Wait()
 }
 
-func (s *localForwardTestSuite) TestPrepareStatementDataTypeSuite() {
-	var prepareStatementDataTypeTestSuite testsuite.PrepareStatementDataTypeTestSuite
+func (s *localForwardTestSuite) TestPrepareStmtDataTypeSuite() {
+	var prepareStatementDataTypeTestSuite testsuite.PrepareStmtDataTypeTestSuite
 	prepareStatementDataTypeTestSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
 	suite.Run(s.T(), &prepareStatementDataTypeTestSuite)
 }

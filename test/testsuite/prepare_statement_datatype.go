@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// PrepareStatementDataTypeTestSuite 用于验证网关形态下客户端与dbproxy之间对传输不同数据类型的MySQL协议的解析的正确性
-type PrepareStatementDataTypeTestSuite struct {
+// PrepareStmtDataTypeTestSuite 用于验证网关形态下客户端与dbproxy之间对传输不同数据类型的MySQL协议的解析的正确性
+type PrepareStmtDataTypeTestSuite struct {
 	suite.Suite
 	// 直连dbproxy代理的db
 	proxyDB *sql.DB
@@ -20,7 +20,7 @@ type PrepareStatementDataTypeTestSuite struct {
 	mysqlDB *sql.DB
 }
 
-func (s *PrepareStatementDataTypeTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB, mysqlDB *sql.DB) {
+func (s *PrepareStmtDataTypeTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB, mysqlDB *sql.DB) {
 	s.proxyDB = proxyDB
 	s.mysqlDB = mysqlDB
 }
@@ -32,7 +32,7 @@ func (s *PrepareStatementDataTypeTestSuite) SetProxyDBAndMySQLDB(proxyDB *sql.DB
 // 2. 所有的字段都是最小值
 // 3. 所有的字段都是最大值
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestIntTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestIntTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -71,13 +71,13 @@ func (s *PrepareStatementDataTypeTestSuite) TestIntTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getIntTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getIntTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE `id` = ?"
 }
 
 type scanValuesFunc func(t *testing.T, rows *sql.Rows) [][]any
 
-func (s *PrepareStatementDataTypeTestSuite) getValues(t *testing.T, db *sql.DB, sql string, args []any, scanValues scanValuesFunc) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) getValues(t *testing.T, db *sql.DB, sql string, args []any, scanValues scanValuesFunc) [][]any {
 	t.Helper()
 	stmt, err := db.PrepareContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ func (s *PrepareStatementDataTypeTestSuite) getValues(t *testing.T, db *sql.DB, 
 	return values
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanIntValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanIntValues(t *testing.T, rows *sql.Rows) [][]any {
 	t.Helper()
 	var values [][]any
 	for rows.Next() {
@@ -119,7 +119,7 @@ func (s *PrepareStatementDataTypeTestSuite) scanIntValues(t *testing.T, rows *sq
 // TestFloatTypes
 // 测试 MySQL 的浮点的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestFloatTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestFloatTypes() {
 	t := s.T()
 
 	testCases := []struct {
@@ -147,11 +147,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestFloatTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getFloatTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getFloatTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal any
@@ -167,7 +167,7 @@ func (s *PrepareStatementDataTypeTestSuite) scanFloatValues(t *testing.T, rows *
 // TestStringTypes
 // 测试 MySQL 的字符串的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestStringTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestStringTypes() {
 	t := s.T()
 
 	testCases := []struct {
@@ -195,11 +195,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestStringTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getStringTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getStringTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanStringValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanStringValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit any
@@ -215,7 +215,7 @@ func (s *PrepareStatementDataTypeTestSuite) scanStringValues(t *testing.T, rows 
 // TestDateTypes
 // 测试 MySQL 的时间的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestDateTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestDateTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -242,11 +242,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestDateTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getDateTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getDateTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanDateValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanDateValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeDate, typeDatetime, typeTimestamp, typeTime, typeYear any
@@ -262,7 +262,7 @@ func (s *PrepareStatementDataTypeTestSuite) scanDateValues(t *testing.T, rows *s
 // TestGeographyTypes
 // 测试 MySQL 的地理位置的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestGeographyTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestGeographyTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -289,11 +289,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestGeographyTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getGeographyTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getGeographyTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanGeographyValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanGeographyValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeGeometry, typeGeometrycollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon any
@@ -309,7 +309,7 @@ func (s *PrepareStatementDataTypeTestSuite) scanGeographyValues(t *testing.T, ro
 // TestFilePathTypes
 // 测试 MySQL 的地理位置的类型
 // 确保客户端收到的和服务端传递的是一样的。
-func (s *PrepareStatementDataTypeTestSuite) TestFilePathTypes() {
+func (s *PrepareStmtDataTypeTestSuite) TestFilePathTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
@@ -336,11 +336,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestFilePathTypes() {
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getFilepathTypeQuery() string {
+func (s *PrepareStmtDataTypeTestSuite) getFilepathTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) scanFilepathValues(t *testing.T, rows *sql.Rows) [][]any {
+func (s *PrepareStmtDataTypeTestSuite) scanFilepathValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
