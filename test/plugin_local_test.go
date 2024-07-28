@@ -152,11 +152,11 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 	wg.Wait()
 }
 
-// func (s *localForwardTestSuite) TestPrepareStatementDataTypeSuite() {
-// 	var prepareStatementDataTypeTestSuite testsuite.PrepareStatementDataTypeTestSuite
-// 	prepareStatementDataTypeTestSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
-// 	suite.Run(s.T(), &prepareStatementDataTypeTestSuite)
-// }
+func (s *localForwardTestSuite) TestPrepareStatementDataTypeSuite() {
+	var prepareStatementDataTypeTestSuite testsuite.PrepareStatementDataTypeTestSuite
+	prepareStatementDataTypeTestSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
+	suite.Run(s.T(), &prepareStatementDataTypeTestSuite)
+}
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy
 type localShardingTestSuite struct {

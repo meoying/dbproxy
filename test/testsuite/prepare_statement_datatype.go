@@ -39,21 +39,21 @@ func (s *PrepareStatementDataTypeTestSuite) TestIntTypes() {
 		sql  string
 		args []any
 	}{
-		// {
-		// 	name: "随意整数",
-		// 	sql:  s.getIntTypeQuery(),
-		// 	args: []any{1},
-		// },
-		// {
-		// 	name: "最大整数",
-		// 	sql:  s.getIntTypeQuery(),
-		// 	args: []any{2},
-		// },
-		// {
-		// 	name: "最小整数",
-		// 	sql:  s.getIntTypeQuery(),
-		// 	args: []any{3},
-		// },
+		{
+			name: "随意整数",
+			sql:  s.getIntTypeQuery(),
+			args: []any{1},
+		},
+		{
+			name: "最大整数",
+			sql:  s.getIntTypeQuery(),
+			args: []any{2},
+		},
+		{
+			name: "最小整数",
+			sql:  s.getIntTypeQuery(),
+			args: []any{3},
+		},
 		{
 			name: "NULL值",
 			sql:  s.getIntTypeQuery(),
@@ -62,11 +62,11 @@ func (s *PrepareStatementDataTypeTestSuite) TestIntTypes() {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// expected := s.getIntValues(t, s.mysqlDB, tc.sql, tc.args)
-			// log.Printf("expected = %#v\n", expected)
-			actual := s.getIntValues(t, s.proxyDB, tc.sql, tc.args)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanIntValues)
+			log.Printf("expected = %#v\n", expected)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanIntValues)
 			log.Printf("actual = %#v\n", actual)
-			// assert.Equal(t, expected, actual)
+			assert.Equal(t, expected, actual)
 		})
 	}
 }
@@ -75,7 +75,9 @@ func (s *PrepareStatementDataTypeTestSuite) getIntTypeQuery() string {
 	return "SELECT /*useMaster*/ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE `id` = ?"
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getIntValues(t *testing.T, db *sql.DB, sql string, args []any) [][]any {
+type scanValuesFunc func(t *testing.T, rows *sql.Rows) [][]any
+
+func (s *PrepareStatementDataTypeTestSuite) getValues(t *testing.T, db *sql.DB, sql string, args []any, scanValues scanValuesFunc) [][]any {
 	t.Helper()
 	stmt, err := db.PrepareContext(context.Background(), sql)
 	require.NoError(t, err)
@@ -89,16 +91,8 @@ func (s *PrepareStatementDataTypeTestSuite) getIntValues(t *testing.T, db *sql.D
 	for _, columnType := range columnTypes {
 		log.Printf("column Name = %s, ScanType = %s, DatabaseType = %s\n", columnType.Name(), columnType.ScanType().String(), columnType.DatabaseTypeName())
 	}
-	var values [][]any
-	for rows.Next() {
-		var id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint any
-		err = rows.Scan(&id, &typeTinyint, &typeSmallint, &typeMediumint, &typeInt, &typeInteger, &typeBigint)
-		require.NoError(t, err)
 
-		t.Log(id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint)
-		res := []any{id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint}
-		values = append(values, res)
-	}
+	values := scanValues(t, rows)
 
 	assert.NoError(t, rows.Close())
 	assert.NoError(t, rows.Err())
@@ -107,42 +101,61 @@ func (s *PrepareStatementDataTypeTestSuite) getIntValues(t *testing.T, db *sql.D
 	return values
 }
 
+func (s *PrepareStatementDataTypeTestSuite) scanIntValues(t *testing.T, rows *sql.Rows) [][]any {
+	t.Helper()
+	var values [][]any
+	for rows.Next() {
+		var id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint any
+		err := rows.Scan(&id, &typeTinyint, &typeSmallint, &typeMediumint, &typeInt, &typeInteger, &typeBigint)
+		require.NoError(t, err)
+
+		t.Log(id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint)
+		res := []any{id, typeTinyint, typeSmallint, typeMediumint, typeInt, typeInteger, typeBigint}
+		values = append(values, res)
+	}
+	return values
+}
+
 // TestFloatTypes
 // 测试 MySQL 的浮点的类型
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareStatementDataTypeTestSuite) TestFloatTypes() {
 	t := s.T()
-	t.Skip()
+
 	testCases := []struct {
 		name string
 		sql  string
+		args []any
 	}{
 		{
 			name: "随意浮点数",
-			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 1",
+			sql:  s.getFloatTypeQuery(),
+			args: []any{1},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 2",
+			sql:  s.getFloatTypeQuery(),
+			args: []any{2},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getFloatValues(t, s.mysqlDB, tc.sql)
-			actual := s.getFloatValues(t, s.proxyDB, tc.sql)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanFloatValues)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanFloatValues)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getFloatValues(t *testing.T, db *sql.DB, sql string) [][]any {
-	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
-	require.NoError(t, err)
+func (s *PrepareStatementDataTypeTestSuite) getFloatTypeQuery() string {
+	return "SELECT /*useMaster*/ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE `id` = ?"
+}
+
+func (s *PrepareStatementDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal any
-		err = rows.Scan(&id, &typeFloat, &typeDouble, &typeDecimal, &typeNumeric, &typeReal)
+		err := rows.Scan(&id, &typeFloat, &typeDouble, &typeDecimal, &typeNumeric, &typeReal)
 		require.NoError(t, err)
 		t.Log(id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal)
 		res := []any{id, typeFloat, typeDouble, typeDecimal, typeNumeric, typeReal}
@@ -156,37 +169,41 @@ func (s *PrepareStatementDataTypeTestSuite) getFloatValues(t *testing.T, db *sql
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareStatementDataTypeTestSuite) TestStringTypes() {
 	t := s.T()
-	t.Skip()
+
 	testCases := []struct {
 		name string
 		sql  string
+		args []any
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 1",
+			sql:  s.getStringTypeQuery(),
+			args: []any{1},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 2",
+			sql:  s.getStringTypeQuery(),
+			args: []any{2},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getStringValues(t, s.mysqlDB, tc.sql)
-			actual := s.getStringValues(t, s.proxyDB, tc.sql)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanStringValues)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanStringValues)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string) [][]any {
-	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
-	require.NoError(t, err)
+func (s *PrepareStatementDataTypeTestSuite) getStringTypeQuery() string {
+	return "SELECT /*useMaster*/ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE `id` = ?"
+}
+
+func (s *PrepareStatementDataTypeTestSuite) scanStringValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit any
-		err = rows.Scan(&id, &typeChar, &typeVarchar, &typeTinytext, &typeText, &typeMediumtext, &typeLongtext, &typeEnum, &typeSet, &typeBinary, &typeVarbinary, &typeJson, &typeBit)
+		err := rows.Scan(&id, &typeChar, &typeVarchar, &typeTinytext, &typeText, &typeMediumtext, &typeLongtext, &typeEnum, &typeSet, &typeBinary, &typeVarbinary, &typeJson, &typeBit)
 		require.NoError(t, err)
 		t.Log(id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit)
 		res := []any{id, typeChar, typeVarchar, typeTinytext, typeText, typeMediumtext, typeLongtext, typeEnum, typeSet, typeBinary, typeVarbinary, typeJson, typeBit}
@@ -200,37 +217,40 @@ func (s *PrepareStatementDataTypeTestSuite) getStringValues(t *testing.T, db *sq
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareStatementDataTypeTestSuite) TestDateTypes() {
 	t := s.T()
-	t.Skip()
 	testCases := []struct {
 		name string
 		sql  string
+		args []any
 	}{
 		{
 			name: "随意日期",
-			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 1",
+			sql:  s.getDateTypeQuery(),
+			args: []any{1},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 2",
+			sql:  s.getDateTypeQuery(),
+			args: []any{2},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getDateValues(t, s.mysqlDB, tc.sql)
-			actual := s.getDateValues(t, s.proxyDB, tc.sql)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanDateValues)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanDateValues)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getDateValues(t *testing.T, db *sql.DB, sql string) [][]any {
-	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
-	require.NoError(t, err)
+func (s *PrepareStatementDataTypeTestSuite) getDateTypeQuery() string {
+	return "SELECT /*useMaster*/ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE `id` = ?"
+}
+
+func (s *PrepareStatementDataTypeTestSuite) scanDateValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeDate, typeDatetime, typeTimestamp, typeTime, typeYear any
-		err = rows.Scan(&id, &typeDate, &typeDatetime, &typeTimestamp, &typeTime, &typeYear)
+		err := rows.Scan(&id, &typeDate, &typeDatetime, &typeTimestamp, &typeTime, &typeYear)
 		require.NoError(t, err)
 		t.Log(id, typeDate, typeDatetime, typeTimestamp, typeTime, typeYear)
 		res := []any{id, typeDate, typeDatetime, typeTimestamp, typeTime, typeYear}
@@ -244,37 +264,40 @@ func (s *PrepareStatementDataTypeTestSuite) getDateValues(t *testing.T, db *sql.
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareStatementDataTypeTestSuite) TestGeographyTypes() {
 	t := s.T()
-	t.Skip()
 	testCases := []struct {
 		name string
 		sql  string
+		args []any
 	}{
 		{
 			name: "随意地理位置",
-			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 1",
+			sql:  s.getGeographyTypeQuery(),
+			args: []any{1},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 2",
+			sql:  s.getGeographyTypeQuery(),
+			args: []any{2},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getGeographyValues(t, s.mysqlDB, tc.sql)
-			actual := s.getGeographyValues(t, s.proxyDB, tc.sql)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanGeographyValues)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanGeographyValues)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getGeographyValues(t *testing.T, db *sql.DB, sql string) [][]any {
-	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
-	require.NoError(t, err)
+func (s *PrepareStatementDataTypeTestSuite) getGeographyTypeQuery() string {
+	return "SELECT /*useMaster*/ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE `id` = ?"
+}
+
+func (s *PrepareStatementDataTypeTestSuite) scanGeographyValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeGeometry, typeGeometrycollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon any
-		err = rows.Scan(&id, &typeGeometry, &typeGeometrycollection, &typeLinestring, &typeMultilinestring, &typePoint, &typeMultipoint, &typePolygon, &typeMultipolygon)
+		err := rows.Scan(&id, &typeGeometry, &typeGeometrycollection, &typeLinestring, &typeMultilinestring, &typePoint, &typeMultipoint, &typePolygon, &typeMultipolygon)
 		require.NoError(t, err)
 		t.Log(id, typeGeometry, typeGeometrycollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon)
 		res := []any{id, typeGeometry, typeGeometrycollection, typeLinestring, typeMultilinestring, typePoint, typeMultipoint, typePolygon, typeMultipolygon}
@@ -288,37 +311,40 @@ func (s *PrepareStatementDataTypeTestSuite) getGeographyValues(t *testing.T, db 
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareStatementDataTypeTestSuite) TestFilePathTypes() {
 	t := s.T()
-	t.Skip()
 	testCases := []struct {
 		name string
 		sql  string
+		args []any
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 1",
+			sql:  s.getFilepathTypeQuery(),
+			args: []any{1},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 2",
+			sql:  s.getFilepathTypeQuery(),
+			args: []any{2},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getFilePathTypeValues(t, s.mysqlDB, tc.sql)
-			actual := s.getFilePathTypeValues(t, s.proxyDB, tc.sql)
+			expected := s.getValues(t, s.mysqlDB, tc.sql, tc.args, s.scanFilepathValues)
+			actual := s.getValues(t, s.proxyDB, tc.sql, tc.args, s.scanFilepathValues)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *PrepareStatementDataTypeTestSuite) getFilePathTypeValues(t *testing.T, db *sql.DB, sql string) [][]any {
-	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
-	require.NoError(t, err)
+func (s *PrepareStatementDataTypeTestSuite) getFilepathTypeQuery() string {
+	return "SELECT /*useMaster*/ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE `id` = ?"
+}
+
+func (s *PrepareStatementDataTypeTestSuite) scanFilepathValues(t *testing.T, rows *sql.Rows) [][]any {
 	var values [][]any
 	for rows.Next() {
 		var id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob any
-		err = rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)
+		err := rows.Scan(&id, &typeTinyblob, &typeMediumblob, &typeBlob, &typeLongblob)
 		require.NoError(t, err)
 		t.Log(id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob)
 		res := []any{id, typeTinyblob, typeMediumblob, typeBlob, typeLongblob}

@@ -520,51 +520,70 @@ func EncodeBinaryProtocolResultsetRow(rows *sql.Rows) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// ConvertToMySQLBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 二进制协议值
-func ConvertToMySQLBinaryProtocolValue(val any, col *sql.ColumnType) (any, error) {
-	log.Printf("ConvertToMySQLBinaryProtocolValue, val = %T, %#v\n", val, val)
+// ConvertToBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 mysql二进制协议值
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row_value
+func ConvertToBinaryProtocolValue(val any, col *sql.ColumnType) (any, error) {
+	log.Printf("ConvertToBinaryProtocolValue, name = %s, type = %T, val = %#v\n", col.Name(), val, val)
+
 	if val == nil {
 		return nil, nil
 	}
 
 	// 确保 val 是 *[]byte 类型
-	bytePtr, ok := val.(*[]byte)
+	bytesPtr, ok := val.(*[]byte)
 	if !ok {
-		return nil, errors.New("value is not of type *[]byte")
+		return nil, fmt.Errorf("val类型非法: %T", val)
+	}
+
+	if bytesPtr == nil {
+		return nil, nil
 	}
 
 	// 解引用 *[]byte 得到 []byte
-	byteVals := *bytePtr
+	bytesVal := *bytesPtr
+
+	if bytesVal == nil {
+		return nil, nil
+	}
 
 	switch col.DatabaseTypeName() {
 	case "TINYINT":
 		// 将 []byte 转换为 int8 类型
-		v, err := strconv.ParseInt(string(byteVals), 10, 8)
+		v, err := strconv.ParseInt(string(bytesVal), 10, 8)
 		if err != nil {
 			return nil, err
 		}
 		return int8(v), nil
 	case "SMALLINT", "YEAR":
 		// 将 []byte 转换为 int16 类型
-		v, err := strconv.ParseInt(string(byteVals), 10, 16)
+		v, err := strconv.ParseInt(string(bytesVal), 10, 16)
 		if err != nil {
 			return nil, err
 		}
 		return int16(v), nil
 	case "INT", "MEDIUMINT":
 		// 将 []byte 转换为 int32 类型
-		v, err := strconv.ParseInt(string(byteVals), 10, 32)
+		s := string(bytesVal)
+		log.Printf("INT, MEDIUMINT = %s\n", s)
+		v, err := strconv.ParseInt(s, 10, 32)
 		if err != nil {
 			return nil, err
 		}
 		return int32(v), nil
 	case "BIGINT":
 		// 将 []byte 转换为 int64 类型
-		v, err := strconv.ParseInt(string(byteVals), 10, 64)
+		v, err := strconv.ParseInt(string(bytesVal), 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		return v, nil
+	case "FLOAT":
+		// string<4>
+		return strconv.ParseFloat()
+	case "DOUBLE":
+		return uint16(MySQLTypeDouble)
+	case "DECIMAL":
+		return uint16(MySQLTypeNewDecimal)
 	default:
 		return nil, errors.New("unsupported database type")
 	}

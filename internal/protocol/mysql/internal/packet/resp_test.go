@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuildStmtPrepareRespPacket(t *testing.T) {
@@ -233,6 +235,115 @@ func TestWriteBinaryValue(t *testing.T) {
 			err := writeBinaryValue(&buf, tc.valueFunc(t))
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected(t), buf.Bytes())
+		})
+	}
+}
+
+func TestConvertToMySQLBinaryProtocolValue(t *testing.T) {
+	var nilBytes []byte
+	tests := []struct {
+		name       string
+		getColumns func(t *testing.T) []*sqlmock.Column
+		values     []any
+		wantValues []any
+	}{
+		{
+			name: "dbproxy.test_int_type_NULL值",
+			getColumns: func(t *testing.T) []*sqlmock.Column {
+				t.Helper()
+				return []*sqlmock.Column{
+					sqlmock.NewColumn("id").OfType("INT", ""),
+					sqlmock.NewColumn("type_tinyint").OfType("TINYINT", ""),
+					sqlmock.NewColumn("type_smallint").OfType("SMALLINT", ""),
+					sqlmock.NewColumn("type_mediumint").OfType("MEDIUMINT", ""),
+					sqlmock.NewColumn("type_int").OfType("INT", ""),
+					sqlmock.NewColumn("type_int").OfType("INT", ""),
+					sqlmock.NewColumn("type_bigint").OfType("BIGINT", ""),
+				}
+			},
+			values: []any{
+				&[]byte{0x34}, // '4'
+				&nilBytes,
+				&nilBytes,
+				&nilBytes,
+				&nilBytes,
+				(*[]byte)(nil),
+				nil,
+			},
+			wantValues: []any{
+				int32(4),
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			},
+		},
+		// {
+		// 	name: "dbproxy.test_string_type",
+		// 	getColumns: func(t *testing.T) []*sqlmock.Column {
+		// 		t.Helper()
+		// 		return []*sqlmock.Column{
+		// 			sqlmock.NewColumn("id").OfType("INT", ""),
+		// 			sqlmock.NewColumn("type_tinyint").OfType("TINYINT", ""),
+		// 			sqlmock.NewColumn("type_smallint").OfType("SMALLINT", ""),
+		// 			sqlmock.NewColumn("type_mediumint").OfType("MEDIUMINT", ""),
+		// 			sqlmock.NewColumn("type_int").OfType("INT", ""),
+		// 			sqlmock.NewColumn("type_int").OfType("INT", ""),
+		// 			sqlmock.NewColumn("type_bigint").OfType("BIGINT", ""),
+		// 		}
+		// 	},
+		// 	values: []any{
+		// 		&[]byte{0x34}, // '4'
+		// 		&nilBytes,
+		// 		&nilBytes,
+		// 		&nilBytes,
+		// 		&nilBytes,
+		// 		(*[]byte)(nil),
+		// 		nil,
+		// 	},
+		// 	wantValues: []any{
+		// 		int32(4),
+		// 		nil,
+		// 		nil,
+		// 		nil,
+		// 		nil,
+		// 		nil,
+		// 		nil,
+		// 	},
+		// },
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+
+			db, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+
+			mockRows := sqlmock.NewRowsWithColumnDefinition(tc.getColumns(t)...)
+
+			expectedSQL := "SELECT *"
+			mock.ExpectQuery(expectedSQL).WillReturnRows(mockRows)
+
+			rows, err := db.Query(expectedSQL)
+			require.NoError(t, err)
+
+			cols, err := rows.ColumnTypes()
+			require.NoError(t, err)
+			require.NoError(t, rows.Close())
+
+			require.Equal(t, len(tc.values), len(cols))
+
+			gotValues := make([]any, len(tc.values))
+			for i, val := range tc.values {
+				gotValues[i], err = ConvertToBinaryProtocolValue(val, cols[i])
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tc.wantValues, gotValues)
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

@@ -127,12 +127,10 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 		// }
 
 		if !isText {
-			log.Printf("******handleRows row old = %#v ******** \n", row)
 			row, err = e.convert(row, cols)
 			if err != nil {
 				return e.writeErrRespPacket(conn, err)
 			}
-			log.Printf("******handleRows row new = %#v ******** \n", row)
 		}
 
 		data = append(data, row)
@@ -156,10 +154,12 @@ func (e *BaseExecutor) convert(row []any, cols []*sql.ColumnType) ([]any, error)
 	var err error
 	vals := make([]any, len(row))
 	for i := range row {
-		vals[i], err = packet.ConvertToMySQLBinaryProtocolValue(row[i], cols[i])
+		log.Printf("****** convert field before name = %s, type = %T, val = %#v ******** \n", cols[i].Name(), row[i], row[i])
+		vals[i], err = packet.ConvertToBinaryProtocolValue(row[i], cols[i])
 		if err != nil {
 			return nil, err
 		}
+		log.Printf("****** convert field after name = %s, type = %T, val = %#v ******** \n", cols[i].Name(), vals[i], vals[i])
 	}
 	return vals, nil
 }
