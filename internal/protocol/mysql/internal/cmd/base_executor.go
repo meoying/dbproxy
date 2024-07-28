@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"database/sql"
-	"log"
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/ecodeclub/ekit/sqlx"
@@ -119,12 +118,12 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 			return e.writeErrRespPacket(conn, err)
 		}
 
-		if isBinaryProtocol {
-			row, err = e.convert(row, cols)
-			if err != nil {
-				return e.writeErrRespPacket(conn, err)
-			}
-		}
+		// if isBinaryProtocol {
+		// 	row, err = e.convert(row, cols)
+		// 	if err != nil {
+		// 		return e.writeErrRespPacket(conn, err)
+		// 	}
+		// }
 
 		data = append(data, row)
 	}
@@ -142,40 +141,3 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 	}
 	return rows.Close()
 }
-
-func (e *BaseExecutor) convert(row []any, cols []*sql.ColumnType) ([]any, error) {
-	var err error
-	vals := make([]any, len(row))
-	for i := range row {
-		log.Printf("****** convert field before name = %s, type = %T, val = %#v ******** \n", cols[i].Name(), row[i], row[i])
-		vals[i], err = packet.ConvertToBinaryProtocolValue(row[i], cols[i])
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("****** convert field after name = %s, type = %T, val = %#v ******** \n", cols[i].Name(), vals[i], vals[i])
-	}
-	return vals, nil
-}
-
-// getReflectValue
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row_value
-// func (e *BaseExecutor) getReflectValue(col *sql.ColumnType) reflect.Value {
-//
-// 	// TODO: 时间处理问题
-// 	switch col.DatabaseTypeName() {
-// 	case "TINYINT":
-// 		return reflect.New(reflect.TypeOf(int8(0)))
-// 	case "SMALLINT", "YEAR":
-// 		return reflect.New(reflect.TypeOf(int16(0)))
-// 	case "INT", "MEDIUMINT":
-// 		return reflect.New(reflect.TypeOf(int32(0)))
-// 	case "BIGINT":
-// 		return reflect.New(reflect.TypeOf(int64(0)))
-// 	case "DATE", "DATETIME", "TIMESTAMP":
-// 		return reflect.ValueOf([]byte{})
-// 	case "TIME":
-// 		return reflect.ValueOf([]byte{})
-// 	default:
-// 		return reflect.New(col.ScanType())
-// 	}
-// }

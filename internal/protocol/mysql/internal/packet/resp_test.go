@@ -347,3 +347,68 @@ func TestConvertToMySQLBinaryProtocolValue(t *testing.T) {
 		})
 	}
 }
+
+func TestParseTime(t *testing.T) {
+	tests := []struct {
+		name               string
+		input              []byte
+		columnDatabaseType string
+		expected           string
+		expectError        bool
+	}{
+		{
+			name:               "Date Only",
+			input:              []byte("2024-05-25"),
+			columnDatabaseType: "DATE",
+			expected:           "2024-05-25",
+			expectError:        false,
+		},
+		{
+			name:               "Date and Time without Seconds",
+			input:              []byte("2024-05-25 23:51"),
+			columnDatabaseType: "DATETIME",
+			expected:           "2024-05-25 23:51",
+			expectError:        false,
+		},
+		{
+			name:               "Date and Time with Seconds",
+			input:              []byte("2024-05-25 23:51:05"),
+			columnDatabaseType: "TIMESTAMP",
+			expected:           "2024-05-25 23:51:05",
+			expectError:        false,
+		},
+		{
+			name:               "Time Only",
+			input:              []byte("23:51:08"),
+			columnDatabaseType: "TIME",
+			expected:           "23:51:08",
+			expectError:        false,
+		},
+		{
+			name:               "Invalid Date",
+			input:              []byte("invalid-date"),
+			columnDatabaseType: "DATE",
+			expected:           "",
+			expectError:        true,
+		},
+		{
+			name:               "Unsupported Column Type",
+			input:              []byte("2024-05-25"),
+			columnDatabaseType: "UNSUPPORTED",
+			expected:           "",
+			expectError:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, layout, err := parseTime(tt.input, tt.columnDatabaseType)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, actual.Format(layout))
+			}
+		})
+	}
+}
