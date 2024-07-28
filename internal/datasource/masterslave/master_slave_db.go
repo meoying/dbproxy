@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
@@ -58,6 +59,7 @@ func (m *MasterSlavesDB) Query(ctx context.Context, query datasource.Query) (*sq
 
 func (m *MasterSlavesDB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
 	stmt, err := m.master.PrepareContext(ctx, query.SQL)
+	log.Printf("Prepare query.SQL: %#v, err = %#v\n", query.SQL, err)
 	return statement.NewPreparedStatement(stmt), err
 }
 

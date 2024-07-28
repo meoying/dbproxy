@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -13,13 +12,13 @@ var _ Executor = &StmtCloseExecutor{}
 
 type StmtCloseExecutor struct {
 	hdl plugin.Handler
-	*baseExecutor
+	*BaseStmtExecutor
 }
 
-func NewStmtCloseExecutor(hdl plugin.Handler) *StmtCloseExecutor {
+func NewStmtCloseExecutor(hdl plugin.Handler, executor *BaseStmtExecutor) *StmtCloseExecutor {
 	return &StmtCloseExecutor{
-		hdl:          hdl,
-		baseExecutor: &baseExecutor{},
+		hdl:              hdl,
+		BaseStmtExecutor: executor,
 	}
 }
 
@@ -27,25 +26,29 @@ func (e *StmtCloseExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	stmtId := e.parsePrepareStmtID(payload)
-	parseQue := e.getCloseStmtQuery(stmtId)
+
+	stmtId := e.parseStmtID(payload)
+	deallocatePrepareStmtSQL := e.generateDeallocatePrepareStmtSQL(stmtId)
 	pctx := &pcontext.Context{
 		Context:     ctx,
-		Query:       parseQue,
-		ParsedQuery: pcontext.NewParsedQuery(parseQue, nil),
+		Query:       deallocatePrepareStmtSQL,
+		ParsedQuery: pcontext.NewParsedQuery(deallocatePrepareStmtSQL, nil),
 		ConnID:      conn.ID(),
 		StmtID:      stmtId,
 	}
 
 	// 在这里执行 que，并且写回响应
-	_, err := e.hdl.Handle(pctx)
+	result, err := e.hdl.Handle(pctx)
 	if err != nil {
 		// 回写错误响应
 		// 先返回系统错误
-		errResp := packet.BuildErInternalError(err.Error())
-		return conn.WritePacket(packet.BuildErrRespPacket(errResp))
+		return e.writeErrRespPacket(conn, err)
 	}
 
-	// TODO 如果是插入、更新、删除行为应该把影响行数和最后插入ID给传进去
-	return conn.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	// 重置conn的事务状态
+	conn.SetInTransaction(result.InTransactionState)
+
+	// 无需返回任何响应包给客户端
+	// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_close.html
+	return nil
 }

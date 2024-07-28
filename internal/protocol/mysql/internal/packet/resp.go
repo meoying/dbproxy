@@ -1,7 +1,15 @@
 package packet
 
 import (
+	"bytes"
+	"database/sql"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"log"
+	"reflect"
+	"strconv"
+	"time"
 )
 
 // 构造返回给客户端响应的 packet
@@ -42,15 +50,15 @@ func BuildOKResp(status SeverStatus) []byte {
 
 // BuildEOFPacket 生成一个结束符包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_eof_packet.html
-func BuildEOFPacket() []byte {
+func BuildEOFPacket(status SeverStatus) []byte {
 	// 头部的四个字节保留，不需要填充
 	res := make([]byte, 4, 9)
 	// 代表eof包
 	res = append(res, 0xfe)
 	// 00 00代表没有警告
 	res = append(res, []byte{0x00, 0x00}...)
-	// 22 00 代表服务状态
-	res = append(res, []byte{0x22, 0x00}...)
+	// 服务器状态
+	res = binary.LittleEndian.AppendUint16(res, status.AsUint16())
 	return res
 }
 
@@ -107,6 +115,7 @@ func BuildTextResultsetRowRespPacket(values ...any) []byte {
 	for _, v := range values {
 		// 字段值为null 默认返回0xFB
 		data := *(v.(*[]byte))
+		// data := convertToBytes(v)
 		if data == nil {
 			p = append(p, 0xFB)
 		} else {
@@ -118,28 +127,211 @@ func BuildTextResultsetRowRespPacket(values ...any) []byte {
 	return p
 }
 
+// p := make([]byte, 4, 20)
+//
+// // header
+// p = append(p, 0)
+//
+// // null_bitmap TODO 暂定不会有null的情况，后续再优化NULL bitmap, length= (column_count + 7 + 2) / 8
+// p = append(p, 0)
+//
+// // TODO 暂定先判断类型，后续要根据每个字段的类型去返回不同长度的包数据
+// for key, val := range values {
+// 	data := *(val.(*[]byte))
+// 	if key == 0 {
+// 		p = append(p, []byte{0x01, 0x00, 0x00, 0x00}...)
+// 	} else {
+// 		p = append(p, EncodeStringLenenc(string(data))...)
+// 	}
+// }
+
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
 func BuildBinaryResultsetRowRespPacket(values ...any) []byte {
-	p := make([]byte, 4, 20)
+	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", values)
+	// Calculate the length of the NULL bitmap
+	nullBitmapLen := (len(values) + 7 + 2) / 8
 
-	// header
-	p = append(p, 0)
+	// Initialize the NULL bitmap
+	nullBitmap := make([]byte, nullBitmapLen)
 
-	// null_bitmap TODO 暂定不会有null的情况，后续再优化NULL bitmap, length= (column_count + 7 + 2) / 8
-	p = append(p, 0)
-
-	// TODO 暂定先判断类型，后续要根据每个字段的类型去返回不同长度的包数据
-	for key, val := range values {
-		data := *(val.(*[]byte))
-		if key == 0 {
-			p = append(p, []byte{0x01, 0x00, 0x00, 0x00}...)
+	// Build the row values
+	var buf bytes.Buffer
+	for i, val := range values {
+		//
+		if val == nil {
+			// Set the NULL bit in the bitmap
+			bytePos := (i + 2) / 8
+			bitPos := (i + 2) % 8
+			nullBitmap[bytePos] |= 1 << bitPos
 		} else {
-			p = append(p, EncodeStringLenenc(string(data))...)
+			// Append the value to the row bytes
+			err := writeBinaryValue(&buf, val)
+			if err != nil {
+				// handle error or panic
+				log.Printf(">>>>>>>>>>>> ERROR ERROR >>>>>>>> %#v\n", err)
+			}
 		}
 	}
+	row := buf.Bytes()
+	p := make([]byte, 4, 4+1+len(nullBitmap)+len(row))
+	log.Printf("packet  len=%#v, cap=%#v\n", len(p), cap(p))
+	// header
+	p = append(p, 0x00)
+	log.Printf("write Header p = %#v\n", p[4:])
 
+	// null_bitmap
+	p = append(p, nullBitmap...)
+	log.Printf("write null bitmap p = %#v\n", p[4:])
+	// values
+	p = append(p, row...)
+	log.Printf("write rows p = %#v\n", p[4:])
 	return p
+}
+
+func writeBinaryValue(buf *bytes.Buffer, value any) error {
+
+	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
+
+	switch v := value.(type) {
+	case int8:
+		log.Printf("write %T, %#v\n", v, v)
+		return binary.Write(buf, binary.LittleEndian, v)
+	case int16:
+		log.Printf("write %T, %#v\n", v, v)
+		return binary.Write(buf, binary.LittleEndian, v)
+	case int32:
+		log.Printf("write %T, %#v\n", v, v)
+		return binary.Write(buf, binary.LittleEndian, v)
+	case int64:
+		log.Printf("write %T, %#v\n", v, v)
+		return binary.Write(buf, binary.LittleEndian, v)
+	case sql.NullInt64:
+		if v.Valid {
+			return writeBinaryValue(buf, v.Int64)
+		}
+		return nil
+	case float64:
+		log.Printf("write %T, %#v\n", v, v)
+		return binary.Write(buf, binary.LittleEndian, v)
+	case bool:
+		var boolValue byte
+		if v {
+			boolValue = 1
+		}
+		log.Printf("write %T, %#v\n", v, v)
+		return buf.WriteByte(boolValue)
+	case []byte:
+		log.Printf("write %T, %#v\n", v, v)
+		_, err := buf.Write(EncodeStringLenenc(string(v)))
+		return err
+	case string:
+		log.Printf("write %T, %#v\n", v, v)
+		_, err := buf.Write(EncodeStringLenenc(v))
+		return err
+	default:
+		return fmt.Errorf("未支持的列类型 %T", v)
+	}
+}
+
+// convertToBytes 将任意类型的值转换为字符串
+func convertToBytes(value any) []byte {
+	log.Printf("ConsertValue = %#v, %T\n", value, value)
+	if value == nil {
+		return nil
+	}
+	v := reflect.ValueOf(value)
+	kind := v.Kind()
+
+	switch kind {
+	case reflect.String:
+		return []byte(v.String())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return []byte(fmt.Sprintf("%d", v.Int()))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return []byte(fmt.Sprintf("%d", v.Uint()))
+	case reflect.Float32, reflect.Float64:
+		return []byte(fmt.Sprintf("%f", v.Float()))
+	case reflect.Bool:
+		return []byte(fmt.Sprint(v.Bool()))
+	case reflect.Slice, reflect.Array:
+		if kind == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
+			// Special case for []byte
+			return v.Bytes()
+		}
+		return []byte(fmt.Sprint(v.Interface()))
+	case reflect.Map, reflect.Struct:
+		switch v.Type().String() {
+		case "sql.NullString":
+			ns := value.(sql.NullString)
+			if ns.Valid {
+				return convertToBytes(ns.String)
+			}
+			return nil
+		case "sql.NullByte":
+			nb := value.(sql.NullByte)
+			if nb.Valid {
+				return convertToBytes(nb.Byte)
+			}
+			return nil
+		case "sql.NullInt16":
+			ni := value.(sql.NullInt16)
+			if ni.Valid {
+				return convertToBytes(ni.Int16)
+			}
+			return nil
+		case "sql.NullInt32":
+			ni := value.(sql.NullInt32)
+			if ni.Valid {
+				return convertToBytes(ni.Int32)
+			}
+			return nil
+		case "sql.NullInt64":
+			ni := value.(sql.NullInt64)
+			if ni.Valid {
+				return convertToBytes(ni.Int64)
+			}
+			return nil
+		case "sql.NullFloat64":
+			nf := value.(sql.NullFloat64)
+			if nf.Valid {
+				return convertToBytes(nf.Float64)
+			}
+			return nil
+		case "sql.NullBool":
+			nb := value.(sql.NullBool)
+			if nb.Valid {
+				return convertToBytes(nb.Bool)
+			}
+			return nil
+		case "sql.NullTime":
+			nt := value.(sql.NullTime)
+			if nt.Valid {
+				return convertToBytes(nt.Time)
+			}
+			return nil
+		case "time.Time":
+			// TODO: 时间转化问题
+			// return []byte(v.Interface().(time.Time).UTC().Format(time.RFC3339))
+			return []byte(v.Interface().(time.Time).Format(time.RFC3339))
+			// return []byte(fmt.Sprint(v.Interface()))
+		}
+		return []byte(fmt.Sprint(v.Interface()))
+	case reflect.Ptr:
+		if v.IsNil() {
+			return nil
+		}
+		return convertToBytes(v.Elem().Interface())
+	case reflect.Interface:
+		if v.IsNil() {
+			return nil
+		}
+		return convertToBytes(v.Interface())
+	case reflect.Complex64, reflect.Complex128:
+		return []byte(fmt.Sprintf("%g", v.Complex()))
+	default:
+		return []byte(fmt.Sprint(v.Interface()))
+	}
 }
 
 // getMysqlTypeMaxLength 获取字段类型最大长度
@@ -215,7 +407,7 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 
 // BuildStmtPrepareRespPacket 构建预处理响应包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-func BuildStmtPrepareRespPacket(stmtId int, countCol int, countParam int) []byte {
+func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	res := make([]byte, 4, 20)
 
 	// status int<1>
@@ -225,10 +417,10 @@ func BuildStmtPrepareRespPacket(stmtId int, countCol int, countParam int) []byte
 	res = append(res, UintLengthEncode(uint32(stmtId), 4)...)
 
 	// num_columns int<2>
-	res = append(res, UintLengthEncode(uint32(countCol), 2)...)
+	res = append(res, UintLengthEncode(uint32(numColumns), 2)...)
 
 	// num_params int<2>
-	res = append(res, UintLengthEncode(uint32(countParam), 2)...)
+	res = append(res, UintLengthEncode(uint32(numParams), 2)...)
 
 	// reserved_1 int<1>
 	res = append(res, 0)
@@ -237,4 +429,143 @@ func BuildStmtPrepareRespPacket(stmtId int, countCol int, countParam int) []byte
 	res = append(res, 0, 0)
 
 	return res
+}
+
+// BuildStmtExecuteRespPacket 构建执行预处理响应包
+// 主要用于查询语句, 插入、修改、删除语句用BuildOKResp, 错误用BuildErrRespPacket
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute_response.html
+func BuildStmtExecuteRespPacket(stmtId, numColumns, numParams int) []byte {
+	return nil
+}
+
+func EncodeBinaryProtocolResultsetRow(rows *sql.Rows) ([]byte, error) {
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+
+	// 写入 packet_header
+	if err := buf.WriteByte(0x00); err != nil {
+		return nil, err
+	}
+
+	numFields := len(columns)
+	nullBitmapLen := (numFields + 7 + 2) / 8
+	nullBitmap := make([]byte, nullBitmapLen)
+	values := make([]any, numFields)
+	valuePtrs := make([]any, numFields)
+
+	for rows.Next() {
+		for i := range columns {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return nil, err
+		}
+
+		// 重置 nullBitmap
+		for i := range nullBitmap {
+			nullBitmap[i] = 0
+		}
+
+		for fieldPos, col := range values {
+			if col == nil {
+				bytePos := (fieldPos + 2) / 8
+				bitPos := (fieldPos + 2) % 8
+				nullBitmap[bytePos] |= 1 << bitPos
+			}
+		}
+
+		if _, err := buf.Write(nullBitmap); err != nil {
+			return nil, err
+		}
+
+		for _, col := range values {
+			if col != nil {
+				switch v := col.(type) {
+				case int64:
+					if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
+						return nil, err
+					}
+				case float64:
+					if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
+						return nil, err
+					}
+				// case bool:
+				// 	if err := buf.WriteByte(v); err != nil {
+				// 		return nil, err
+				// 	}
+				case []byte:
+					if _, err := buf.Write(v); err != nil {
+						return nil, err
+					}
+				case string:
+					if _, err := buf.Write([]byte(v)); err != nil {
+						return nil, err
+					}
+				default:
+					return nil, fmt.Errorf("unsupported column type %T", v)
+				}
+			}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// ConvertToMySQLBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 二进制协议值
+func ConvertToMySQLBinaryProtocolValue(val any, col *sql.ColumnType) (any, error) {
+	log.Printf("ConvertToMySQLBinaryProtocolValue, val = %T, %#v\n", val, val)
+	if val == nil {
+		return nil, nil
+	}
+
+	// 确保 val 是 *[]byte 类型
+	bytePtr, ok := val.(*[]byte)
+	if !ok {
+		return nil, errors.New("value is not of type *[]byte")
+	}
+
+	// 解引用 *[]byte 得到 []byte
+	byteVals := *bytePtr
+
+	switch col.DatabaseTypeName() {
+	case "TINYINT":
+		// 将 []byte 转换为 int8 类型
+		v, err := strconv.ParseInt(string(byteVals), 10, 8)
+		if err != nil {
+			return nil, err
+		}
+		return int8(v), nil
+	case "SMALLINT", "YEAR":
+		// 将 []byte 转换为 int16 类型
+		v, err := strconv.ParseInt(string(byteVals), 10, 16)
+		if err != nil {
+			return nil, err
+		}
+		return int16(v), nil
+	case "INT", "MEDIUMINT":
+		// 将 []byte 转换为 int32 类型
+		v, err := strconv.ParseInt(string(byteVals), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		return int32(v), nil
+	case "BIGINT":
+		// 将 []byte 转换为 int64 类型
+		v, err := strconv.ParseInt(string(byteVals), 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	default:
+		return nil, errors.New("unsupported database type")
+	}
 }

@@ -94,3 +94,7 @@ func (mc *Conn) CharacterSet() uint32 {
 func (mc *Conn) SetInTransaction(s bool) {
 	mc.inTransaction = s
 }
+
+func (mc *Conn) InTransaction() bool {
+	return mc.inTransaction
+}

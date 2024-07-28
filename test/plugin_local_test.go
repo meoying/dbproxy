@@ -51,6 +51,14 @@ func (s *localForwardTestSuite) newMySQLDB() *sql.DB {
 	// TODO 暂不支持 ?charset=utf8mb4&parseTime=True&loc=Local
 	db, err := sql.Open("mysql", fmt.Sprintf(testsuite.MYSQLDSNTmpl, "dbproxy"))
 	s.NoError(err)
+
+	// 下方为调试时使用
+	// customLogger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	// connector, err := driverlog.NewConnector(&mysqldriver.MySQLDriver{},
+	// 	fmt.Sprintf(testsuite.MYSQLDSNTmpl, "dbproxy"),
+	// 	driverlog.WithLogger(customLogger))
+	// s.NoError(err)
+	// db := sql.OpenDB(connector)
 	return db
 }
 
@@ -62,6 +70,10 @@ func (s *localForwardTestSuite) setupProxyServer() {
 	go func() {
 		s.NoError(s.server.Start())
 	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = s.newProxyClientDB().PingContext(ctx)
 }
 
 func (s *localForwardTestSuite) getForwardPlugin(path string) *forward.Plugin {
@@ -139,6 +151,12 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 	}
 	wg.Wait()
 }
+
+// func (s *localForwardTestSuite) TestPrepareStatementDataTypeSuite() {
+// 	var prepareStatementDataTypeTestSuite testsuite.PrepareStatementDataTypeTestSuite
+// 	prepareStatementDataTypeTestSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
+// 	suite.Run(s.T(), &prepareStatementDataTypeTestSuite)
+// }
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy
 type localShardingTestSuite struct {

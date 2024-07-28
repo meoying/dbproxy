@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/ecodeclub/ekit/slice"
-	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
@@ -17,13 +14,13 @@ var _ Executor = &QueryExecutor{}
 
 type QueryExecutor struct {
 	hdl plugin.Handler
-	*baseExecutor
+	*BaseExecutor
 }
 
-func NewQueryExecutor(hdl plugin.Handler) *QueryExecutor {
+func NewQueryExecutor(hdl plugin.Handler, executor *BaseExecutor) *QueryExecutor {
 	return &QueryExecutor{
 		hdl:          hdl,
-		baseExecutor: &baseExecutor{},
+		BaseExecutor: executor,
 	}
 }
 
@@ -54,49 +51,12 @@ func (e *QueryExecutor) Exec(
 	conn.SetInTransaction(result.InTransactionState)
 
 	if result.Rows != nil {
-		return e.handleRows(result.Rows, conn)
+		return e.handleTextRows(result.Rows, conn, packet.ServerStatusAutoCommit)
 	}
 
 	if result.InTransactionState {
-		return conn.WritePacket(packet.BuildOKResp(packet.SeverStatusInTrans | packet.ServerStatusAutoCommit))
+		return e.writeOKRespPacket(conn, packet.SeverStatusInTrans|packet.ServerStatusAutoCommit)
 	}
 
-	return e.writeOKRespPacket(conn)
-}
-
-func (e *QueryExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn) error {
-	cols, err := rows.ColumnTypes()
-	if err != nil {
-		return e.writeErrRespPacket(conn, err)
-	}
-	var data [][]any
-	for rows.Next() {
-		row := make([]any, len(cols))
-		// 这里需要用到指针给Scan，不然会报错
-		for i := range row {
-			var v []byte
-			row[i] = &v
-		}
-		err = rows.Scan(row...)
-		if err != nil {
-			return e.writeErrRespPacket(conn, err)
-		}
-		data = append(data, row)
-	}
-
-	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) packet.ColumnType {
-		return src
-	})
-	respPackets, err := e.buildTextResultSetRespPackets(columnTypes, data, conn.CharacterSet())
-	if err != nil {
-		return e.writeErrRespPacket(conn, err)
-	}
-
-	for _, pkt := range respPackets {
-		err = conn.WritePacket(pkt)
-		if err != nil {
-			return e.writeErrRespPacket(conn, err)
-		}
-	}
-	return rows.Close()
+	return e.writeOKRespPacket(conn, packet.ServerStatusAutoCommit)
 }

@@ -39,15 +39,19 @@ func NewServer(addr string, plugins []plugin.Plugin) *Server {
 	for i := len(plugins) - 1; i >= 0; i-- {
 		hdl = plugins[i].Join(hdl)
 	}
+
+	baseExecutor := &cmd.BaseExecutor{}
+	baseStmtExecutor := cmd.NewBaseStmtExecutor(baseExecutor)
+
 	return &Server{
 		logger: slog.Default(),
 		addr:   addr,
 		executors: map[byte]cmd.Executor{
 			cmd.CmdPing.Byte():        &cmd.PingExecutor{},
-			cmd.CmdQuery.Byte():       cmd.NewQueryExecutor(hdl),
-			cmd.CmdStmtPrepare.Byte(): cmd.NewStmtPrepareExecutor(hdl),
-			cmd.CmdStmtExecute.Byte(): cmd.NewStmtExecuteExecutor(hdl),
-			cmd.CmdStmtClose.Byte():   cmd.NewStmtCloseExecutor(hdl),
+			cmd.CmdQuery.Byte():       cmd.NewQueryExecutor(hdl, baseExecutor),
+			cmd.CmdStmtPrepare.Byte(): cmd.NewStmtPrepareExecutor(hdl, baseStmtExecutor),
+			cmd.CmdStmtExecute.Byte(): cmd.NewStmtExecuteExecutor(hdl, baseStmtExecutor),
+			cmd.CmdStmtClose.Byte():   cmd.NewStmtCloseExecutor(hdl, baseStmtExecutor),
 		},
 	}
 }

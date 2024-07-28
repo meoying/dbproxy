@@ -6,14 +6,17 @@ import (
 )
 
 const (
-	SelectStmt           = "select"
-	UpdateStmt           = "update"
-	DeleteStmt           = "delete"
-	InsertStmt           = "insert"
-	StartTransactionStmt = "startTransaction"
-	CommitStmt           = "commit"
-	RollbackStmt         = "rollback"
-	UnKnownSQLStmt       = "未知的SQL语句"
+	SelectStmt            = "select"
+	UpdateStmt            = "update"
+	DeleteStmt            = "delete"
+	InsertStmt            = "insert"
+	StartTransactionStmt  = "startTransaction"
+	CommitStmt            = "commit"
+	RollbackStmt          = "rollback"
+	PrepareStmt           = "prepareStmt"
+	ExecutePrepareStmt    = "executePrepareStmt"
+	DeallocatePrepareStmt = "deallocatePrepareStmt"
+	UnKnownSQLStmt        = "未知的SQL语句"
 )
 
 // CheckVisitor 用于判断SQL语句的类型/特征
@@ -47,6 +50,8 @@ func (c *CheckVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
 		return c.VisitDmlStatement(ctx.DmlStatement().(*parser.DmlStatementContext))
 	case ctx.TransactionStatement() != nil:
 		return c.VisitTransactionStatement(ctx.TransactionStatement().(*parser.TransactionStatementContext))
+	case ctx.PreparedStatement() != nil:
+		return c.VisitPreparedStatement(ctx.PreparedStatement().(*parser.PreparedStatementContext))
 	default:
 		return UnKnownSQLStmt
 	}
@@ -75,6 +80,19 @@ func (c *CheckVisitor) VisitTransactionStatement(ctx *parser.TransactionStatemen
 		return CommitStmt
 	case *parser.RollbackWorkContext:
 		return RollbackStmt
+	default:
+		return UnKnownSQLStmt
+	}
+}
+
+func (c *CheckVisitor) VisitPreparedStatement(ctx *parser.PreparedStatementContext) any {
+	switch ctx.GetChildren()[0].(type) {
+	case *parser.PrepareStatementContext:
+		return PrepareStmt
+	case *parser.ExecuteStatementContext:
+		return ExecutePrepareStmt
+	case *parser.DeallocatePrepareContext:
+		return DeallocatePrepareStmt
 	default:
 		return UnKnownSQLStmt
 	}

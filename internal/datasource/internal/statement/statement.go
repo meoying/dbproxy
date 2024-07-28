@@ -3,6 +3,7 @@ package statement
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/meoying/dbproxy/internal/datasource"
 )
@@ -22,7 +23,9 @@ func NewPreparedStatement(stmt *sql.Stmt) *PreparedStatement {
 }
 
 func (p *PreparedStatement) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
-	return p.stmt.QueryContext(ctx, query.Args...)
+	rows, err := p.stmt.QueryContext(ctx, query.Args...)
+	log.Printf("Prepere 执行 QueryContext query = %#v, rows = %#v, err = %#v, \n", query, rows, err)
+	return rows, err
 }
 
 func (p *PreparedStatement) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {

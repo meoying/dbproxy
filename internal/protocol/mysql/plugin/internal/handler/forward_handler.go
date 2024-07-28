@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/ecodeclub/ekit/sqlx"
+	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
@@ -22,7 +24,9 @@ import (
 // TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type ForwardHandler struct {
 	*baseHandler
-	config forward.Config
+	stmtID2Stmt       syncx.Map[uint32, datasource.Stmt]
+	stmtID2PrepareCtx syncx.Map[uint32, *pcontext.Context]
+	config            forward.Config
 }
 
 func NewForwardHandler(ds datasource.DataSource, config forward.Config) *ForwardHandler {
@@ -37,6 +41,12 @@ func (h *ForwardHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) {
 	switch sqlTypeName {
 	case vparser.SelectStmt, vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
 		return h.handleCRUDStmt(ctx, sqlTypeName)
+	case vparser.PrepareStmt:
+		return h.handlePrepareStmt(ctx)
+	case vparser.ExecutePrepareStmt:
+		return h.handleExecutePrepareStmt(ctx)
+	case vparser.DeallocatePrepareStmt:
+		return h.handleDeallocatePrepareStmt(ctx)
 	case vparser.StartTransactionStmt:
 		return h.handleStartTransactionStmt(ctx)
 	case vparser.CommitStmt:
@@ -78,6 +88,91 @@ func (h *ForwardHandler) handleCRUDStmt(ctx *pcontext.Context, sqlTypeName strin
 	return &plugin.Result{
 		Rows:               rows,
 		Result:             res,
+		InTransactionState: h.isInTransaction(ctx.ConnID),
+	}, err
+}
+
+func (h *ForwardHandler) handlePrepareStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	stmt, err := h.getStmtPreparer(ctx).Prepare(ctx, datasource.Query{
+		SQL: ctx.Query,
+		DB:  h.config.DBName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	h.stmtID2Stmt.Store(ctx.StmtID, stmt)
+	h.stmtID2PrepareCtx.Store(ctx.StmtID, &pcontext.Context{
+		Context: ctx.Context,
+		// SELECT * FROM order where `user_id` = ?;
+		// SELECT * FROM order where `user_id` = '?';
+		ParsedQuery: pcontext.NewParsedQuery(h.convertQuery(ctx.Query), nil),
+		Query:       ctx.Query,
+		ConnID:      ctx.ConnID,
+		StmtID:      ctx.StmtID,
+	})
+	return &plugin.Result{
+		InTransactionState: h.isInTransaction(ctx.ConnID),
+		StmtID:             ctx.StmtID,
+	}, nil
+}
+
+func (h *ForwardHandler) getStmtByStmtID(stmtID uint32) (datasource.Stmt, error) {
+	if stmt, ok := h.stmtID2Stmt.Load(stmtID); ok {
+		return stmt, nil
+	}
+	return nil, fmt.Errorf("未找到id为%d的stmt", stmtID)
+}
+
+func (h *ForwardHandler) getPrepareContextByStmtID(stmtID uint32) (*pcontext.Context, error) {
+	if ctx, ok := h.stmtID2PrepareCtx.Load(stmtID); ok {
+		return ctx, nil
+	}
+	return nil, fmt.Errorf("未找到id为%d的pcontext.Context", stmtID)
+}
+
+func (h *ForwardHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	// ctx.Args应该是传递过来的参数列表
+	stmt, err := h.getStmtByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	c, err := h.getPrepareContextByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("ExecutePrepare: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
+	var result sql.Result
+	var rows *sql.Rows
+	switch c.ParsedQuery.Type() {
+	case vparser.SelectStmt:
+		rows, err = stmt.Query(ctx.Context, datasource.Query{
+			SQL:  c.Query,
+			Args: ctx.Args,
+			DB:   h.config.DBName,
+		})
+	case vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
+		result, err = stmt.Exec(ctx.Context, datasource.Query{
+			SQL:  c.Query,
+			Args: ctx.Args,
+			DB:   h.config.DBName,
+		})
+	}
+	return &plugin.Result{
+		Result:             result,
+		Rows:               rows,
+		InTransactionState: h.isInTransaction(ctx.ConnID),
+	}, err
+}
+
+func (h *ForwardHandler) handleDeallocatePrepareStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	stmt, err := h.getStmtByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.Close()
+	h.stmtID2Stmt.Delete(ctx.StmtID)
+	h.stmtID2PrepareCtx.Delete(ctx.StmtID)
+	return &plugin.Result{
 		InTransactionState: h.isInTransaction(ctx.ConnID),
 	}, err
 }

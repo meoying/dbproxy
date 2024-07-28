@@ -50,6 +50,21 @@ func TestVisitor_Check(t *testing.T) {
 			wantName: RollbackStmt,
 		},
 		{
+			name:     "创建Prepare语句",
+			sql:      "PREPARE stmt1 FROM 'SELECT * FROM order;';",
+			wantName: PrepareStmt,
+		},
+		{
+			name:     "执行Prepare语句",
+			sql:      "EXECUTE stmt1;",
+			wantName: ExecutePrepareStmt,
+		},
+		{
+			name:     "关闭Prepare语句",
+			sql:      "DEALLOCATE PREPARE stmt1;",
+			wantName: DeallocatePrepareStmt,
+		},
+		{
 			name:     "未知支持的SQL语句",
 			sql:      "ALTER TABLE employees ADD COLUMN birthdate DATE;",
 			wantName: UnKnownSQLStmt,
