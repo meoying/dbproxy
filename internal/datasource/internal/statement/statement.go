@@ -23,8 +23,9 @@ func NewPreparedStatement(stmt *sql.Stmt) *PreparedStatement {
 }
 
 func (p *PreparedStatement) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
+	log.Printf("PreparedStatement ds: QueryContext 执行前query = %#v\n", query)
 	rows, err := p.stmt.QueryContext(ctx, query.Args...)
-	log.Printf("Prepere 执行 QueryContext query = %#v, rows = %#v, err = %#v, \n", query, rows, err)
+	log.Printf("PreparedStatement ds: QueryContext 执行后 QueryContext query = %#v, rows = %#v, err = %#v, \n", query, rows, err)
 	return rows, err
 }
 

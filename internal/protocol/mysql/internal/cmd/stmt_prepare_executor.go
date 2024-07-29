@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
@@ -19,14 +18,14 @@ var (
 
 // Column 直接传入数据，伪装成了一个 [packet.ColumnType] 非线程安全实现
 type Column struct {
-	name     string
-	dataType string
+	name         string
+	databaseType string
 }
 
-func NewColumn(name string, dataType string) Column {
+func NewColumn(name string, databaseType string) Column {
 	return Column{
-		name:     name,
-		dataType: dataType,
+		name:         name,
+		databaseType: databaseType,
 	}
 }
 
@@ -35,7 +34,7 @@ func (c Column) Name() string {
 }
 
 func (c Column) DatabaseTypeName() string {
-	return c.dataType
+	return c.databaseType
 }
 
 type StmtPrepareExecutor struct {
@@ -65,7 +64,7 @@ func (e *StmtPrepareExecutor) Exec(
 
 	query := e.parseQuery(payload)
 	stmtID := e.generateStmtID()
-	e.storeNumParams(stmtID, query)
+	numParams := e.storeNumParams(stmtID, query)
 
 	prepareStmtSQL := e.generatePrepareStmtSQL(stmtID, query)
 
@@ -90,7 +89,7 @@ func (e *StmtPrepareExecutor) Exec(
 
 	conn.SetInTransaction(result.InTransactionState)
 
-	packets, err := e.buildStmtPrepareOKRespPacket(result.StmtID, query, conn.CharacterSet(), e.getServerStatus(conn))
+	packets, err := e.buildStmtPrepareOKRespPacket(result.StmtID, numParams, conn.CharacterSet(), e.getServerStatus(conn))
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)
 	}
@@ -101,17 +100,19 @@ func (e *StmtPrepareExecutor) Exec(
 // buildStmtPrepareOKRespPacket 根据执行结果返回转换成对应的格式并返回
 // response 的 COM_STMT_PREPARE_OK
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, query string, charset uint32, status packet.SeverStatus) ([][]byte, error) {
+func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, numParams uint64, charset uint32, status packet.SeverStatus) ([][]byte, error) {
 	var packets [][]byte
 
-	params := e.buildParameterDefinitionBlock(query, charset)
-	fields := e.buildColumnDefinitionBlock(query, charset)
+	params := e.buildParameterDefinitionBlock(numParams, charset)
+	fields := e.buildColumnDefinitionBlock(numParams, charset)
 
 	// 写入预处理信息包
 	packets = append(packets, packet.BuildStmtPrepareRespPacket(int(stmtId), len(fields), len(params)))
 	// 写入参数描述包
 	packets = append(packets, params...)
-	packets = append(packets, packet.BuildEOFPacket(status))
+	if len(packets) > 0 {
+		packets = append(packets, packet.BuildEOFPacket(status))
+	}
 	// 写入字段描述包
 	packets = append(packets, fields...)
 	packets = append(packets, packet.BuildEOFPacket(status))
@@ -119,10 +120,9 @@ func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, query 
 }
 
 // buildParameterDefinitionBlock 构建参数定义块
-func (e *StmtPrepareExecutor) buildParameterDefinitionBlock(query string, charset uint32) [][]byte {
-	n := strings.Count(query, "?")
+func (e *StmtPrepareExecutor) buildParameterDefinitionBlock(n uint64, charset uint32) [][]byte {
 	params := make([]Column, 0, n)
-	for i := 0; i < n; i++ {
+	for i := uint64(0); i < n; i++ {
 		params = append(params, NewColumn("?", "BIGINT"))
 	}
 	var packets [][]byte
@@ -133,16 +133,15 @@ func (e *StmtPrepareExecutor) buildParameterDefinitionBlock(query string, charse
 }
 
 // buildColumnDefinitionBlock 构建列定义块
-func (e *StmtPrepareExecutor) buildColumnDefinitionBlock(query string, charset uint32) [][]byte {
-	n := strings.Count(query, "?")
+func (e *StmtPrepareExecutor) buildColumnDefinitionBlock(n uint64, charset uint32) [][]byte {
 	// TODO 这里的字段可能要获取Prepare中展示的字段信息，不过也可以试试能不能瞎编数据
 	// fields := []Column{
 	// 	NewColumn("id", "INT"),
 	// 	NewColumn("name", "STRING"),
 	// }
-	fields := make([]Column, 0, n)
-	for i := 0; i < n; i++ {
-		fields = append(fields, NewColumn(fmt.Sprintf("f%d", i), "INT"))
+	fields := make([]Column, 0, n+1)
+	for i := uint64(0); i < n; i++ {
+		fields = append(fields, NewColumn(fmt.Sprintf("fake_field_%d", i), "INT"))
 	}
 	var packets [][]byte
 	for _, f := range fields {

@@ -49,6 +49,7 @@ func (e *BaseStmtExecutor) parseArgs(stmtID uint32, payload []byte) ([]any, erro
 		return nil, err
 	}
 	return slice.Map(req.Parameters, func(idx int, src packet.ExecuteStmtRequestParameter) any {
+		log.Printf("get execute params[%d] = %#v\n", idx, src)
 		return src.Value
 	}), nil
 }
@@ -72,9 +73,11 @@ func (e *BaseStmtExecutor) generateStmtID() uint32 {
 	return e.stmtIDGenerator.Add(1)
 }
 
-func (e *BaseStmtExecutor) storeNumParams(stmtID uint32, query string) {
+func (e *BaseStmtExecutor) storeNumParams(stmtID uint32, query string) uint64 {
 	// TODO: query中只根据?来判定参数个数有点弱, 因为用户可以传递 `col_name` = '?' | '__?'
-	e.stmtID2NumParams.Store(stmtID, uint64(strings.Count(query, "?")))
+	numParams := uint64(strings.Count(query, "?"))
+	e.stmtID2NumParams.Store(stmtID, numParams)
+	return numParams
 }
 
 func (e *BaseStmtExecutor) loadNumParams(stmtID uint32) (uint64, bool) {

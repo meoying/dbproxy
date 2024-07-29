@@ -35,38 +35,32 @@ func ReadEncodedLength(b []byte) (uint64, int) {
 	return uint64(b[0]), 1
 }
 
-// EncodeStringLenenc 对字符串进行 string<lenenc> 编码
-func EncodeStringLenenc(str string) []byte {
-	// 计算字符串的长度
-	strLen := uint64(len(str))
-
-	// 编码长度字段
-	lenencBytes := EncodeIntLenenc(strLen)
-
-	// 将字符串内容转换为字节切片
-	strBytes := []byte(str)
-
-	// 将长度字段和字符串内容拼接为最终编码结果
-	encoded := append(lenencBytes, strBytes...)
-
-	return encoded
+// LengthEncodeString 对字符串进行 string<lenenc> 编码
+func LengthEncodeString(str string) []byte {
+	// 将字符串的长度以 int<lenenc> 编码形式作为前缀与字符串内容拼接
+	return append(LengthEncodeInteger(uint64(len(str))), []byte(str)...)
 }
 
-// EncodeIntLenenc 对字符串进行 int<lenenc> 编码
-func EncodeIntLenenc(value uint64) []byte {
+// LengthEncodeInteger 对数字进行 int<lenenc> 编码
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_le
+func LengthEncodeInteger(value uint64) []byte {
 	// 减少切片扩容按4+8容量去声明
 	encodedValue := make([]byte, 0, 12)
 
 	switch {
 	case value < 0xFB:
+		// [0, 251)	编码方式 1-byte integer
 		encodedValue = append(encodedValue, byte(value))
 	case value <= 0xFFFF:
+		// [251, 2^16) 编码方式 0xFC + 2-byte integer
 		encodedValue = append(encodedValue, 0xFC)
 		encodedValue = append(encodedValue, uint16ToBytes(uint16(value))...)
 	case value <= 0xFFFFFF:
+		// [2^16, 2^24) 编码方式	0xFD + 3-byte integer
 		encodedValue = append(encodedValue, 0xFD)
 		encodedValue = append(encodedValue, uint24ToBytes(uint32(value))...)
 	default:
+		// [2^24, 2^64)	编码方式 0xFE + 8-byte integer
 		encodedValue = append(encodedValue, 0xFE)
 		encodedValue = append(encodedValue, uint64ToBytes(value)...)
 	}

@@ -54,7 +54,7 @@ func (req *ExecuteStmtRequest) Parse(numParams uint64, payload []byte) error {
 	log.Printf("pay = %#v\n", payload)
 	buf := bytes.NewBuffer(payload)
 
-	// 读取 Command
+	// 解析 Command
 	if err := binary.Read(buf, binary.LittleEndian, &req.Command); err != nil {
 		return fmt.Errorf("error reading Command: %v", err)
 	}
@@ -64,17 +64,17 @@ func (req *ExecuteStmtRequest) Parse(numParams uint64, payload []byte) error {
 		return fmt.Errorf("invalid Command: %x", req.Command)
 	}
 
-	// 读取 StatementID
+	// 解析 StatementID
 	if err := binary.Read(buf, binary.LittleEndian, &req.StatementID); err != nil {
 		return fmt.Errorf("error reading StatementID: %v", err)
 	}
 
-	// 读取 Flags
+	// 解析 Flags
 	if err := binary.Read(buf, binary.LittleEndian, &req.Flags); err != nil {
 		return fmt.Errorf("error reading Flags: %v", err)
 	}
 
-	// 读取 IterationCount
+	// 解析 IterationCount
 	if err := binary.Read(buf, binary.LittleEndian, &req.IterationCount); err != nil {
 		return fmt.Errorf("error reading IterationCount: %v", err)
 	}
@@ -82,11 +82,9 @@ func (req *ExecuteStmtRequest) Parse(numParams uint64, payload []byte) error {
 	// 判断并解析参数数量
 	var err error
 
-	isClientQueryAttributesFlagOn := (CapabilityFlag(req.Flags) & ClientQueryAttributes) != 0
+	if numParams > 0 || (req.isClientQueryAttributesFlagOn() && (CursorType(req.Flags)&ParameterCountAvailable) != 0) {
 
-	if numParams > 0 || (isClientQueryAttributesFlagOn && (CursorType(req.Flags)&ParameterCountAvailable) != 0) {
-
-		if isClientQueryAttributesFlagOn {
+		if req.isClientQueryAttributesFlagOn() {
 			req.ParameterCount, err = readLengthEncodedInteger(buf)
 			if err != nil {
 				return fmt.Errorf("error reading ParameterCount: %v", err)
@@ -111,35 +109,77 @@ func (req *ExecuteStmtRequest) Parse(numParams uint64, payload []byte) error {
 
 			log.Printf("NewParamsBindFlag = %#v\n", req.NewParamsBindFlag)
 
-			isNewParamsBindFlagOn := req.NewParamsBindFlag != 0
-			req.Parameters = make([]ExecuteStmtRequestParameter, req.ParameterCount)
-
-			for i := uint64(0); i < req.ParameterCount; i++ {
-
-				if isNewParamsBindFlagOn {
-
-					if err := binary.Read(buf, binary.LittleEndian, &req.Parameters[i].Type); err != nil {
-						return fmt.Errorf("error reading ParameterType for param %d: %v", i, err)
-					}
-
-					if isClientQueryAttributesFlagOn {
-
-						req.Parameters[i].Name, err = readLengthEncodedString(buf)
-						if err != nil {
-							return fmt.Errorf("error reading ParameterName for param %d: %v", i, err)
-						}
-					}
-				}
-
-				value, err := readParameterValue(buf, req.Parameters[i].Type)
-				if err != nil {
-					return fmt.Errorf("error reading ParameterValue for param %d: %v", i, err)
-				}
-				req.Parameters[i].Value = value
+			err1 := req.parseParameters(buf)
+			if err1 != nil {
+				return err1
 			}
 		}
 	}
 
+	return nil
+}
+
+func (req *ExecuteStmtRequest) isClientQueryAttributesFlagOn() bool {
+	return (CapabilityFlag(req.Flags) & ClientQueryAttributes) != 0
+}
+
+func (req *ExecuteStmtRequest) isNewParamsBindFlagOn() bool {
+	return req.NewParamsBindFlag != 0
+}
+
+func (req *ExecuteStmtRequest) parseParameters(buf *bytes.Buffer) error {
+
+	req.Parameters = make([]ExecuteStmtRequestParameter, req.ParameterCount)
+
+	err2 := req.parseParametersType(buf)
+	if err2 != nil {
+		return err2
+	}
+
+	err3 := req.parseParametersName(buf)
+	if err3 != nil {
+		return err3
+	}
+
+	err4 := req.parseParametersValue(buf)
+	if err4 != nil {
+		return err4
+	}
+	return nil
+}
+
+func (req *ExecuteStmtRequest) parseParametersType(buf *bytes.Buffer) error {
+	for i := uint64(0); i < req.ParameterCount; i++ {
+		if req.isNewParamsBindFlagOn() {
+			if err := binary.Read(buf, binary.LittleEndian, &req.Parameters[i].Type); err != nil {
+				return fmt.Errorf("解析参数[%d]的类型失败: %v", i, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (req *ExecuteStmtRequest) parseParametersName(buf *bytes.Buffer) error {
+	for i := uint64(0); i < req.ParameterCount; i++ {
+		if req.isNewParamsBindFlagOn() && req.isClientQueryAttributesFlagOn() {
+			name, err := readLengthEncodedString(buf)
+			if err != nil {
+				return fmt.Errorf("解析参数[%d]的名称失败: %v", i, err)
+			}
+			req.Parameters[i].Name = name
+		}
+	}
+	return nil
+}
+
+func (req *ExecuteStmtRequest) parseParametersValue(buf *bytes.Buffer) error {
+	for i := uint64(0); i < req.ParameterCount; i++ {
+		value, err := readParameterValue(buf, req.Parameters[i].Type)
+		if err != nil {
+			return fmt.Errorf("解析参数[%d]的数值失败: %v", i, err)
+		}
+		req.Parameters[i].Value = value
+	}
 	return nil
 }
 
@@ -182,10 +222,10 @@ func readParameterValue(buf *bytes.Buffer, fieldType MySQLType) (any, error) {
 			return nil, fmt.Errorf("error reading DOUBLE value: %v", err)
 		}
 		return value, nil
-	case MySQLTypeString, MySQLTypeVarchar, MySQLTypeVarString:
+	case MySQLTypeString, MySQLTypeVarchar, MySQLTypeVarString, MySQLTypeDecimal:
 		return readLengthEncodedString(buf)
 	default:
-		return nil, fmt.Errorf("unsupported parameter type %d", fieldType)
+		return nil, fmt.Errorf("支持的的参数类型: %d", fieldType)
 	}
 }
 

@@ -109,6 +109,7 @@ func (s *localForwardTestSuite) TearDownSuite() {
 
 // TestPing
 // TODO: 当driver形态支持PingContext后将此测试移动到[testsuite.BasicTestSuite]
+
 func (s *localForwardTestSuite) TestPing() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -151,11 +152,17 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 	}
 	wg.Wait()
 }
-
-func (s *localForwardTestSuite) TestPrepareStmtDataTypeSuite() {
-	var prepareStatementDataTypeTestSuite testsuite.PrepareStmtDataTypeTestSuite
+func (s *localForwardTestSuite) TestPrepareDataTypeSuite() {
+	var prepareStatementDataTypeTestSuite testsuite.PrepareDataTypeTestSuite
 	prepareStatementDataTypeTestSuite.SetProxyDBAndMySQLDB(s.newProxyClientDB(), s.newMySQLDB())
 	suite.Run(s.T(), &prepareStatementDataTypeTestSuite)
+}
+
+func (s *localForwardTestSuite) TestPrepareBasicSuite() {
+	var prepareBasicTestSuite testsuite.PrepareBasicTestSuite
+	prepareBasicTestSuite.SetDB(s.newProxyClientDB())
+	// prepareBasicTestSuite.SetDB(s.newMySQLDB())
+	suite.Run(s.T(), &prepareBasicTestSuite)
 }
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy

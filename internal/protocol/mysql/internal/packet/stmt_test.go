@@ -184,10 +184,11 @@ func TestParseExecuteStmtRequest(t *testing.T) {
 			},
 			numParams: 1,
 			expected: ExecuteStmtRequest{
-				Command:           0x17,
-				StatementID:       1,
-				Flags:             0x00,
-				IterationCount:    1,
+				Command:        0x17,
+				StatementID:    1,
+				Flags:          0x00,
+				IterationCount: 1,
+				// 内部会用numParams覆盖
 				ParameterCount:    uint64(1),
 				NullBitmap:        []byte{0x00},
 				NewParamsBindFlag: 0x01,
@@ -195,6 +196,53 @@ func TestParseExecuteStmtRequest(t *testing.T) {
 					{
 						Type:  0x08,
 						Value: uint64(1002),
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name: "2两个参数",
+			payload: []byte{
+				// status
+				0x17,
+				// statement_id
+				0x01, 0x00, 0x00, 0x00,
+				// flags
+				0x00,
+				// iteration_count
+				0x01, 0x00, 0x00, 0x00,
+				// null_bitmap
+				0x00,
+				// new_params_bind_flag
+				0x01,
+				// params[0].Type 第一个字节表示:FIELD_TYPE_LONGLONG (8), 第二个字节表示 unsigned Unsigned: 0
+				0x08, 0x00,
+				// params[1].Type
+				0x08, 0x00,
+				// params[0].Value
+				0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				// params[1].Value
+				0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			},
+			numParams: 2,
+			expected: ExecuteStmtRequest{
+				Command:        0x17,
+				StatementID:    1,
+				Flags:          0x00,
+				IterationCount: 1,
+				// 内部会用numParams覆盖
+				ParameterCount:    uint64(2),
+				NullBitmap:        []byte{0x00},
+				NewParamsBindFlag: 0x01,
+				Parameters: []ExecuteStmtRequestParameter{
+					{
+						Type:  0x08,
+						Value: uint64(21),
+					},
+					{
+						Type:  0x08,
+						Value: uint64(22),
 					},
 				},
 			},

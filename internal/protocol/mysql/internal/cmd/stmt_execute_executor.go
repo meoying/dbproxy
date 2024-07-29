@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -51,16 +50,5 @@ func (e *StmtExecuteExecutor) Exec(
 		return e.writeErrRespPacket(conn, err)
 	}
 
-	// 重置conn的事务状态
-	conn.SetInTransaction(result.InTransactionState)
-
-	if result.Rows != nil {
-		return e.handleBinaryRows(result.Rows, conn, packet.ServerStatusAutoCommit)
-	}
-
-	if result.InTransactionState {
-		return e.writeOKRespPacket(conn, packet.SeverStatusInTrans|packet.ServerStatusAutoCommit)
-	}
-
-	return e.writeOKRespPacket(conn, packet.ServerStatusAutoCommit)
+	return e.handlePluginResult(result, conn, e.handlePrepareRows)
 }

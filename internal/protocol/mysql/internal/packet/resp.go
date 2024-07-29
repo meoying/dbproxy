@@ -16,37 +16,53 @@ import (
 // 构造返回给客户端响应的 packet
 
 // BuildErrRespPacket 构造一个错误响应给客户端
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_err_packet.html
 func BuildErrRespPacket(err ErrorResp) []byte {
 	// 头部四个字节保留
 	res := make([]byte, 4, 13+len(err.msg))
-	// 固定 0xFF 代表错误
+
+	// int<1> header 固定 0xFF 代表错误
 	res = append(res, 0xFF)
-	// 错误码
+
+	// int<2>	error_code	错误码
 	res = binary.LittleEndian.AppendUint16(res, err.code)
+
 	// 我们是必然支持 CLIENT_PROTOCOL_41，所以要加 state 相关字段
-	// 固定的 # 作为分隔符
+	// string[1] sql_state_marker	固定的 # 作为分隔符
 	res = append(res, '#')
+
+	// string[5]  sql_state	SQL state
 	res = append(res, err.state...)
 
-	// 最后是人可读的错误信息
+	// string<EOF>	error_message 人可读的错误信息
 	res = append(res, err.msg...)
+
 	return res
 }
 
-func BuildOKResp(status SeverStatus) []byte {
+// BuildOKRespPacket
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
+func BuildOKRespPacket(status SeverStatus, affectedRows, lastInsertID uint64) []byte {
 	// 头部的四个字节保留，不需要填充
-	res := make([]byte, 4, 11)
-	// 0 代表OK响应
-	res = append(res, 0)
-	// 0 影响行数
-	res = append(res, 0)
-	// 0 last_insert_id
-	res = append(res, 0)
-	// 服务器状态
-	res = binary.LittleEndian.AppendUint16(res, status.AsUint16())
-	// warning number 0 0
-	res = append(res, 0, 0)
-	return res
+	p := make([]byte, 4, 11)
+
+	// int<1>  header 0x00 表示OK,0xFE 表示EOF
+	p = append(p, 0x00)
+
+	// int<lenenc>	affected_rows 受影响的行数
+	p = append(p, LengthEncodeInteger(affectedRows)...)
+
+	// int<lenenc>	last_insert_id 最后插入的ID
+	p = append(p, LengthEncodeInteger(lastInsertID)...)
+
+	// capabilities & CLIENT_PROTOCOL_41
+	// int<2>	status_flags	SERVER_STATUS_flags_enum 服务器状态
+	p = binary.LittleEndian.AppendUint16(p, status.AsUint16())
+
+	// int<2>	warnings 警告数 暂时填充 0x00,0x00 表示没有警告
+	p = append(p, 0x00, 0x00)
+
+	return p
 }
 
 // BuildEOFPacket 生成一个结束符包
@@ -54,12 +70,16 @@ func BuildOKResp(status SeverStatus) []byte {
 func BuildEOFPacket(status SeverStatus) []byte {
 	// 头部的四个字节保留，不需要填充
 	res := make([]byte, 4, 9)
-	// 代表eof包
+
+	// int<1>	header	0xFE EOF packet header
 	res = append(res, 0xfe)
-	// 00 00代表没有警告
-	res = append(res, []byte{0x00, 0x00}...)
-	// 服务器状态
+
+	// int<2>	warnings 警告数 暂时填充 0x00,0x00 表示没有警告
+	res = append(res, 0x00, 0x00)
+
+	// int<2>	status_flags	SERVER_STATUS_flags_enum 服务器状态
 	res = binary.LittleEndian.AppendUint16(res, status.AsUint16())
+
 	return res
 }
 
@@ -75,18 +95,18 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 	p := make([]byte, 4, 32)
 
 	// catalog string<lenenc> 目录
-	p = append(p, EncodeStringLenenc("def")...)
+	p = append(p, LengthEncodeString("def")...)
 	// 这部分暂时用不到，所以全部写死
 	// schema string<lenenc> 数据库
-	p = append(p, EncodeStringLenenc("unsupported")...)
+	p = append(p, LengthEncodeString("unsupported")...)
 	// table string<lenenc> 虚拟数据表名
-	p = append(p, EncodeStringLenenc("unsupported")...)
+	p = append(p, LengthEncodeString("unsupported")...)
 	// orgTable string<lenenc> 物理数据表名
-	p = append(p, EncodeStringLenenc("unsupported")...)
+	p = append(p, LengthEncodeString("unsupported")...)
 	// name string<lenenc> 虚拟字段名
-	p = append(p, EncodeStringLenenc(col.Name())...)
+	p = append(p, LengthEncodeString(col.Name())...)
 	// orgName string<lenenc> 物理字段名
-	p = append(p, EncodeStringLenenc(col.Name())...)
+	p = append(p, LengthEncodeString(col.Name())...)
 	// 固定长度
 	p = append(p, 0x0c)
 	// character_set int<2> 编码
@@ -121,7 +141,7 @@ func BuildTextResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 			p = append(p, 0xFB)
 		} else {
 			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
-			p = append(p, EncodeStringLenenc(string(data))...)
+			p = append(p, LengthEncodeString(string(data))...)
 		}
 	}
 
@@ -142,7 +162,7 @@ func BuildTextResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 // 	if key == 0 {
 // 		p = append(p, []byte{0x01, 0x00, 0x00, 0x00}...)
 // 	} else {
-// 		p = append(p, EncodeStringLenenc(string(data))...)
+// 		p = append(p, LengthEncodeString(string(data))...)
 // 	}
 // }
 
@@ -300,7 +320,7 @@ func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, erro
 		return true, nil
 	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
 		// val = string(bytesVal)
-		_, err := buf.Write(EncodeStringLenenc(string(bytesVal)))
+		_, err := buf.Write(LengthEncodeString(string(bytesVal)))
 		if err != nil {
 			return false, err
 		}
@@ -405,14 +425,14 @@ func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, erro
 	// 	return true, nil
 	// case []byte:
 	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	_, err := buf.Write(EncodeStringLenenc(string(vv)))
+	// 	_, err := buf.Write(LengthEncodeString(string(vv)))
 	// 	if err != nil {
 	// 		return false, err
 	// 	}
 	// 	return true, nil
 	// case string:
 	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	_, err := buf.Write(EncodeStringLenenc(vv))
+	// 	_, err := buf.Write(LengthEncodeString(vv))
 	// 	if err != nil {
 	// 		return false, err
 	// 	}
@@ -601,11 +621,11 @@ func writeBinaryValue(buf *bytes.Buffer, value any) error {
 		return buf.WriteByte(boolValue)
 	case []byte:
 		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(EncodeStringLenenc(string(v)))
+		_, err := buf.Write(LengthEncodeString(string(v)))
 		return err
 	case string:
 		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(EncodeStringLenenc(v))
+		_, err := buf.Write(LengthEncodeString(v))
 		return err
 	default:
 		return fmt.Errorf("未支持的列类型 %T", v)
@@ -805,7 +825,9 @@ func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	res = append(res, 0)
 
 	// warning_count int<2>
-	res = append(res, 0, 0)
+	if len(res) > 12 {
+		res = append(res, 0, 0)
+	}
 
 	return res
 }

@@ -19,5 +19,5 @@ func (e *PingExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	return conn.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	return conn.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
 }
