@@ -3,9 +3,7 @@ package packet
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -140,71 +138,6 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actual := BuildBinaryResultsetRowRespPacket(tc.values, nil)
 			assert.Equal(t, tc.expected, actual[4:])
-		})
-	}
-}
-
-func TestConvertToBytes(t *testing.T) {
-	t.Skip()
-	const c3 = 3
-	tests := []struct {
-		name     string
-		input    any
-		expected []byte
-	}{
-		{
-			input:    123,
-			expected: []byte("123"),
-		},
-		{input: int8(12), expected: []byte("12")},
-		{input: int16(1234), expected: []byte("1234")},
-		{input: int32(12345), expected: []byte("12345")},
-		{input: int64(123456), expected: []byte("123456")},
-		{input: uint(123), expected: []byte("123")},
-		{input: uint8(12), expected: []byte("12")},
-		{input: uint16(1234), expected: []byte("1234")},
-		{input: uint32(12345), expected: []byte("12345")},
-		{input: uint64(123456), expected: []byte("123456")},
-		{input: uintptr(123456), expected: []byte("123456")},
-		{input: 45.67, expected: []byte("45.670000")},
-		{input: float32(50.6), expected: []byte("50.599998")},
-		{input: "hello world", expected: []byte("hello world")},
-		{input: true, expected: []byte("true")},
-		{input: false, expected: []byte("false")},
-		{input: []byte{1, 2, 3}, expected: []byte{1, 2, 3}},
-		{input: []int{1, 2, 3}, expected: []byte("[1 2 3]")},
-		{input: [c3]int{1, 2, 3}, expected: []byte("[1 2 3]")},
-		{input: map[string]int{"one": 1, "two": 2}, expected: []byte("map[one:1 two:2]")},
-		{input: sql.NullInt64{Int64: 42, Valid: true}, expected: []byte("42")},
-		{input: sql.NullInt64{Valid: false}, expected: nil},
-		{input: sql.NullString{String: "hello", Valid: true}, expected: []byte("hello")},
-		{input: sql.NullString{Valid: false}, expected: nil},
-		{input: sql.NullFloat64{Float64: 45.67, Valid: true}, expected: []byte("45.670000")},
-		{input: sql.NullFloat64{Valid: false}, expected: nil},
-		{input: sql.NullBool{Bool: true, Valid: true}, expected: []byte("true")},
-		{input: sql.NullBool{Valid: false}, expected: nil},
-		{input: sql.NullTime{Time: time.Date(2022, time.January, 1, 12, 0, 0, 0, time.UTC), Valid: true}, expected: []byte("2022-01-01 12:00:00 +0000 UTC")},
-		{input: sql.NullTime{Valid: false}, expected: nil},
-		{input: time.Date(2022, time.January, 1, 12, 0, 0, 0, time.UTC), expected: []byte("2022-01-01 12:00:00 +0000 UTC")},
-		// {input: time.Date(2022, time.January, 1, 12, 0, 0, 0, time.UTC), expected: []byte("2022-01-01 12:00:00 +0000 UTC")},
-		{input: sql.NullByte{Byte: 1, Valid: true}, expected: []byte("1")},
-		{input: sql.NullByte{Valid: false}, expected: nil},
-		{input: sql.NullInt16{Int16: 1234, Valid: true}, expected: []byte("1234")},
-		{input: sql.NullInt16{Valid: false}, expected: nil},
-		{input: sql.NullInt32{Int32: 12345, Valid: true}, expected: []byte("12345")},
-		{input: sql.NullInt32{Valid: false}, expected: nil},
-		{input: complex64(1 + 2i), expected: []byte("(1+2i)")},
-		{input: 2 + 3i, expected: []byte("(2+3i)")},
-		{input: any(1), expected: []byte("1")},
-		{input: nil, expected: nil},
-		{input: any((*int64)(nil)), expected: nil},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(fmt.Sprintf("Converting %v", tc.input), func(t *testing.T) {
-			output := convertToBytes(tc.input)
-			assert.Equal(t, tc.expected, output)
 		})
 	}
 }

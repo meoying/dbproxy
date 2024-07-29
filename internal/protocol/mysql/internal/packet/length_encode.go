@@ -89,9 +89,9 @@ func uint64ToBytes(value uint64) []byte {
 	return bytes
 }
 
-// UintLengthEncode 用于编码无符号整数的长度和内容
-func UintLengthEncode(value uint32, length int) []byte {
+// FixedLengthInteger 用于编码指定长度的整数
+func FixedLengthInteger(value uint32, byteSize int) []byte {
 	encodedValue := make([]byte, 4)
 	binary.LittleEndian.PutUint32(encodedValue, value)
-	return encodedValue[:length]
+	return encodedValue[:byteSize]
 }

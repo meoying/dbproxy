@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -110,13 +109,13 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 	// 固定长度
 	p = append(p, 0x0c)
 	// character_set int<2> 编码
-	p = append(p, UintLengthEncode(charset, 2)...)
+	p = append(p, FixedLengthInteger(charset, 2)...)
 	// column_length int<4> 字段类型最大长度
-	p = append(p, UintLengthEncode(getMysqlTypeMaxLength(col.DatabaseTypeName()), 4)...)
+	p = append(p, FixedLengthInteger(getMysqlTypeMaxLength(col.DatabaseTypeName()), 4)...)
 	// type int<1> 字段类型
 	p = append(p, uint16ToBytes(mapMySQLTypeToEnum(col.DatabaseTypeName()))...)
 	// flags int<2> 标志
-	p = append(p, UintLengthEncode(0, 2)...)
+	p = append(p, FixedLengthInteger(0, 2)...)
 	// decimals int<1> 小数点
 	p = append(p, 0)
 
@@ -128,16 +127,15 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 
 // BuildTextResultsetRowRespPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildTextResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
+func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) []byte {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	// 减少切片扩容
 	// return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
 	p := make([]byte, 4, 20)
 	for _, v := range values {
-		// 字段值为null 默认返回0xFB
 		data := *(v.(*[]byte))
-		// data := convertToBytes(v)
 		if data == nil {
+			// 字段值为null 默认返回0xFB
 			p = append(p, 0xFB)
 		} else {
 			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
@@ -147,24 +145,6 @@ func BuildTextResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 
 	return p
 }
-
-// p := make([]byte, 4, 20)
-//
-// // header
-// p = append(p, 0)
-//
-// // null_bitmap TODO 暂定不会有null的情况，后续再优化NULL bitmap, length= (column_count + 7 + 2) / 8
-// p = append(p, 0)
-//
-// // TODO 暂定先判断类型，后续要根据每个字段的类型去返回不同长度的包数据
-// for key, val := range values {
-// 	data := *(val.(*[]byte))
-// 	if key == 0 {
-// 		p = append(p, []byte{0x01, 0x00, 0x00, 0x00}...)
-// 	} else {
-// 		p = append(p, LengthEncodeString(string(data))...)
-// 	}
-// }
 
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
@@ -632,107 +612,6 @@ func writeBinaryValue(buf *bytes.Buffer, value any) error {
 	}
 }
 
-// convertToBytes 将任意类型的值转换为字符串
-// TODO: 未使用 去掉
-func convertToBytes(value any) []byte {
-	log.Printf("ConsertValue = %#v, %T\n", value, value)
-	if value == nil {
-		return nil
-	}
-	v := reflect.ValueOf(value)
-	kind := v.Kind()
-
-	switch kind {
-	case reflect.String:
-		return []byte(v.String())
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return []byte(fmt.Sprintf("%d", v.Int()))
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return []byte(fmt.Sprintf("%d", v.Uint()))
-	case reflect.Float32, reflect.Float64:
-		return []byte(fmt.Sprintf("%f", v.Float()))
-	case reflect.Bool:
-		return []byte(fmt.Sprint(v.Bool()))
-	case reflect.Slice, reflect.Array:
-		if kind == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
-			// Special case for []byte
-			return v.Bytes()
-		}
-		return []byte(fmt.Sprint(v.Interface()))
-	case reflect.Map, reflect.Struct:
-		switch v.Type().String() {
-		case "sql.NullString":
-			ns := value.(sql.NullString)
-			if ns.Valid {
-				return convertToBytes(ns.String)
-			}
-			return nil
-		case "sql.NullByte":
-			nb := value.(sql.NullByte)
-			if nb.Valid {
-				return convertToBytes(nb.Byte)
-			}
-			return nil
-		case "sql.NullInt16":
-			ni := value.(sql.NullInt16)
-			if ni.Valid {
-				return convertToBytes(ni.Int16)
-			}
-			return nil
-		case "sql.NullInt32":
-			ni := value.(sql.NullInt32)
-			if ni.Valid {
-				return convertToBytes(ni.Int32)
-			}
-			return nil
-		case "sql.NullInt64":
-			ni := value.(sql.NullInt64)
-			if ni.Valid {
-				return convertToBytes(ni.Int64)
-			}
-			return nil
-		case "sql.NullFloat64":
-			nf := value.(sql.NullFloat64)
-			if nf.Valid {
-				return convertToBytes(nf.Float64)
-			}
-			return nil
-		case "sql.NullBool":
-			nb := value.(sql.NullBool)
-			if nb.Valid {
-				return convertToBytes(nb.Bool)
-			}
-			return nil
-		case "sql.NullTime":
-			nt := value.(sql.NullTime)
-			if nt.Valid {
-				return convertToBytes(nt.Time)
-			}
-			return nil
-		case "time.Time":
-			// TODO: 时间转化问题
-			// return []byte(v.Interface().(time.Time).UTC().Format(time.RFC3339))
-			return []byte(v.Interface().(time.Time).Format(time.RFC3339))
-			// return []byte(fmt.Sprint(v.Interface()))
-		}
-		return []byte(fmt.Sprint(v.Interface()))
-	case reflect.Ptr:
-		if v.IsNil() {
-			return nil
-		}
-		return convertToBytes(v.Elem().Interface())
-	case reflect.Interface:
-		if v.IsNil() {
-			return nil
-		}
-		return convertToBytes(v.Interface())
-	case reflect.Complex64, reflect.Complex128:
-		return []byte(fmt.Sprintf("%g", v.Complex()))
-	default:
-		return []byte(fmt.Sprint(v.Interface()))
-	}
-}
-
 // getMysqlTypeMaxLength 获取字段类型最大长度
 func getMysqlTypeMaxLength(dataType string) uint32 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
@@ -813,13 +692,13 @@ func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	res = append(res, 0)
 
 	// statement_id int<4>
-	res = append(res, UintLengthEncode(uint32(stmtId), 4)...)
+	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
 
 	// num_columns int<2>
-	res = append(res, UintLengthEncode(uint32(numColumns), 2)...)
+	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
 
 	// num_params int<2>
-	res = append(res, UintLengthEncode(uint32(numParams), 2)...)
+	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
 
 	// reserved_1 int<1>
 	res = append(res, 0)
@@ -831,114 +710,3 @@ func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 
 	return res
 }
-
-// BuildStmtExecuteRespPacket 构建执行预处理响应包
-// 主要用于查询语句, 插入、修改、删除语句用BuildOKResp, 错误用BuildErrRespPacket
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute_response.html
-func BuildStmtExecuteRespPacket(stmtId, numColumns, numParams int) []byte {
-	return nil
-}
-
-func EncodeBinaryProtocolResultsetRow(rows *sql.Rows) ([]byte, error) {
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-
-	// 写入 packet_header
-	if err := buf.WriteByte(0x00); err != nil {
-		return nil, err
-	}
-
-	numFields := len(columns)
-	nullBitmapLen := (numFields + 7 + 2) / 8
-	nullBitmap := make([]byte, nullBitmapLen)
-	values := make([]any, numFields)
-	valuePtrs := make([]any, numFields)
-
-	for rows.Next() {
-		for i := range columns {
-			valuePtrs[i] = &values[i]
-		}
-
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return nil, err
-		}
-
-		// 重置 nullBitmap
-		for i := range nullBitmap {
-			nullBitmap[i] = 0
-		}
-
-		for fieldPos, col := range values {
-			if col == nil {
-				bytePos := (fieldPos + 2) / 8
-				bitPos := (fieldPos + 2) % 8
-				nullBitmap[bytePos] |= 1 << bitPos
-			}
-		}
-
-		if _, err := buf.Write(nullBitmap); err != nil {
-			return nil, err
-		}
-
-		for _, col := range values {
-			if col != nil {
-				switch v := col.(type) {
-				case int64:
-					if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
-						return nil, err
-					}
-				case float64:
-					if err := binary.Write(&buf, binary.LittleEndian, v); err != nil {
-						return nil, err
-					}
-				// case bool:
-				// 	if err := buf.WriteByte(v); err != nil {
-				// 		return nil, err
-				// 	}
-				case []byte:
-					if _, err := buf.Write(v); err != nil {
-						return nil, err
-					}
-				case string:
-					if _, err := buf.Write([]byte(v)); err != nil {
-						return nil, err
-					}
-				default:
-					return nil, fmt.Errorf("unsupported column type %T", v)
-				}
-			}
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-// func parseTime(data []byte) (time.Time, error) {
-// 	layouts := []string{
-// 		"2006-01-02",
-// 		"2006-01-02 15:04",
-// 		"2006-01-02 15:04:05",
-// 		"15:04:05",
-// 	}
-//
-// 	dateStr := string(bytes.TrimSpace(data))
-// 	var parsedTime time.Time
-// 	var err error
-//
-// 	for _, layout := range layouts {
-// 		parsedTime, err = time.Parse(layout, dateStr)
-// 		if err == nil {
-// 			return parsedTime, nil
-// 		}
-// 	}
-//
-// 	return time.Time{}, fmt.Errorf("cannot parse date: %s", dateStr)
-// }
