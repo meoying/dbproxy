@@ -169,6 +169,7 @@ func (s *DataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *DataTypeTestSuite) TestDateTypes() {
 	t := s.T()
+	// t.Skip("TODO: dbproxy需要支持客户端传递parseTime=true参数,然后在convertToBytes中完成转换")
 	testCases := []struct {
 		name string
 		sql  string

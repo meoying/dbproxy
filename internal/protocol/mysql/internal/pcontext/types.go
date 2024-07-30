@@ -12,4 +12,6 @@ type Context struct {
 	Args        []any
 	// 获取到当前Query语句的底层Conn的ID
 	ConnID uint32
+	// 当前Query语句需要在该Stmt上执行
+	StmtID uint32
 }

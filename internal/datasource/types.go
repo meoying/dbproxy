@@ -12,6 +12,15 @@ type Executor interface {
 	Exec(ctx context.Context, query Query) (sql.Result, error)
 }
 
+type Stmt interface {
+	Executor
+	Close() error
+}
+
+type StmtPreparer interface {
+	Prepare(ctx context.Context, query Query) (Stmt, error)
+}
+
 type TxBeginner interface {
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (Tx, error)
 }
@@ -21,6 +30,7 @@ type Finder interface {
 }
 
 type Tx interface {
+	StmtPreparer
 	Executor
 	Commit() error
 	Rollback() error
@@ -28,6 +38,7 @@ type Tx interface {
 
 type DataSource interface {
 	TxBeginner
+	StmtPreparer
 	Executor
 	// TODO 添加driver.Pinger接口中的ping方法
 	Close() error

@@ -3,47 +3,65 @@ package sharding
 import (
 	"context"
 	"database/sql/driver"
+
+	"github.com/ecodeclub/ekit/slice"
+	"github.com/meoying/dbproxy/internal/datasource"
 )
 
 type stmt struct {
-}
-
-func (s *stmt) Close() error {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (s *stmt) NumInput() int {
-	// TODO implement me
-	panic("implement me")
+	conn  *connection
+	stmt  datasource.Stmt
+	query string
 }
 
 func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
-	// TODO implement me
-	panic("implement me")
+	return s.ExecContext(context.Background(), slice.Map(args, func(idx int, src driver.Value) driver.NamedValue {
+		return driver.NamedValue{Value: src}
+	}))
 }
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
-	// TODO implement me
-	panic("implement me")
+	return s.QueryContext(context.Background(), slice.Map(args, func(idx int, src driver.Value) driver.NamedValue {
+		return driver.NamedValue{Value: src}
+	}))
 }
 
 func (s *stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
-	// TODO implement me
-	panic("implement me")
+	return s.stmt.Exec(ctx, datasource.Query{
+		SQL: s.query,
+		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
+			return src
+		}),
+		DB:         "stmt.ExecContext中DB",
+		Datasource: "stmt.ExecContext中Datasource",
+	})
 }
 
 func (s *stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
-	// TODO implement me
-	panic("implement me")
+	r, err := s.stmt.Query(ctx, datasource.Query{
+		SQL: s.query,
+		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
+			return src
+		}),
+		DB:         "stmt.QueryContext中DB",
+		Datasource: "stmt.QueryContext中Datasource",
+	})
+	return &rows{sqlxRows: r}, err
+}
+
+func (s *stmt) NumInput() int {
+	return -1
 }
 
 func (s *stmt) CheckNamedValue(value *driver.NamedValue) error {
-	// TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (s *stmt) ColumnConverter(idx int) driver.ValueConverter {
 	// TODO implement me
 	panic("implement me")
+}
+
+func (s *stmt) Close() error {
+	return s.stmt.Close()
 }

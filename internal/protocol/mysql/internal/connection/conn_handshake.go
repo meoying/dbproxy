@@ -71,5 +71,5 @@ func (mc *Conn) auth() error {
 	mc.clientFlags = flags.CapabilityFlags(resp.ClientFlags())
 	mc.characterSet = resp.CharacterSet()
 	// 写回 OK 响应
-	return mc.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	return mc.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
 }

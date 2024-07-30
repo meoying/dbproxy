@@ -43,6 +43,10 @@ func (t *TxDatasource) Exec(ctx context.Context, query datasource.Query) (sql.Re
 	return t.tx.Exec(ctx, query)
 }
 
+func (t *TxDatasource) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	return t.tx.Prepare(ctx, query)
+}
+
 func (t *TxDatasource) Close() error {
 	return fmt.Errorf("%w", ErrUnSupportedOperation)
 }

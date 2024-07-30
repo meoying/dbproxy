@@ -72,7 +72,7 @@ func (mc *Conn) Loop() error {
 		// ctx, _ := context.WithTimeout(context.Background(), mc.cmdTimeout)
 		ctx := context.Background()
 		err1 = mc.onCmd(ctx, mc, pkt)
-		// cancel() // TODO：暂时注释，因为这个会影响事务自动回滚，还不清楚原因
+		// cancel() // TODO：暂时注释，每次取消会影响事务和prepare的后续操作
 		if err1 != nil {
 			return err1
 		}
@@ -93,4 +93,8 @@ func (mc *Conn) CharacterSet() uint32 {
 
 func (mc *Conn) SetInTransaction(s bool) {
 	mc.inTransaction = s
+}
+
+func (mc *Conn) InTransaction() bool {
+	return mc.inTransaction
 }

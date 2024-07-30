@@ -20,12 +20,14 @@ type ShardingHandler interface {
 type NewHandlerFunc func(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error)
 
 type Result struct {
-	// 这两个字段中只能有一个可用
+	// 底层连接是否处于事务状态,可以与下面字段组合使用
+	InTransactionState bool
+
+	// 下面的三组字段只能有一组可用
 	// Rows 的 error 会被传递过去客户端
 	Rows sqlx.Rows
 	// Result 的 error 会被传递过去客户端
 	Result sql.Result
-
-	// 底层连接是否处于事务状态,可以与上面字段组合使用
-	InTransactionState bool
+	// StmtID 会被传递过去客户端
+	StmtID uint32
 }

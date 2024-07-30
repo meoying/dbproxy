@@ -15,9 +15,9 @@ type PingExecutor struct {
 
 // Exec 默认返回处于 AutoCommit 状态
 // TODO 由于调整了Executor结构这里也改了一下，需要看一下
-func (p *PingExecutor) Exec(
+func (e *PingExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	return conn.WritePacket(packet.BuildOKResp(packet.ServerStatusAutoCommit))
+	return conn.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
 }

@@ -90,7 +90,15 @@ func (c *connection) Prepare(query string) (driver.Stmt, error) {
 }
 
 func (c *connection) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
-	return &stmt{}, nil
+	st, err := c.ds.Prepare(ctx, datasource.Query{SQL: query})
+	if err != nil {
+		return nil, err
+	}
+	return &stmt{
+		conn:  c,
+		stmt:  st,
+		query: query,
+	}, nil
 }
 
 func (c *connection) Begin() (driver.Tx, error) {

@@ -18,7 +18,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
+	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves"
 	"go.uber.org/multierr"
 
@@ -26,8 +28,11 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 )
 
-var _ datasource.TxBeginner = &MasterSlavesDB{}
-var _ datasource.DataSource = &MasterSlavesDB{}
+var (
+	_ datasource.TxBeginner   = &MasterSlavesDB{}
+	_ datasource.DataSource   = &MasterSlavesDB{}
+	_ datasource.StmtPreparer = &MasterSlavesDB{}
+)
 
 type MasterSlavesDB struct {
 	master *sql.DB
@@ -50,6 +55,12 @@ func (m *MasterSlavesDB) Query(ctx context.Context, query datasource.Query) (*sq
 		return nil, err
 	}
 	return slave.DB.QueryContext(ctx, query.SQL, query.Args...)
+}
+
+func (m *MasterSlavesDB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	stmt, err := m.master.PrepareContext(ctx, query.SQL)
+	log.Printf("MasterSlavesDB.Prepare query: %#v, err = %#v\n", query.SQL, err)
+	return statement.NewPreparedStatement(stmt), err
 }
 
 func (m *MasterSlavesDB) Exec(ctx context.Context, query datasource.Query) (sql.Result, error) {

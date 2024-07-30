@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"strings"
 
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -84,4 +85,15 @@ func (h *baseHandler) handleRollbackStmt(ctx *pcontext.Context) (*plugin.Result,
 		h.connID2Tx.Delete(ctx.ConnID)
 	}
 	return &plugin.Result{}, err
+}
+
+func (h *baseHandler) getStmtPreparer(ctx *pcontext.Context) datasource.StmtPreparer {
+	if tx := h.getTxByConnID(ctx.ConnID); tx != nil {
+		return tx
+	}
+	return h.ds
+}
+
+func (h *baseHandler) convertQuery(query string) string {
+	return strings.ReplaceAll(query, "?", "'?'")
 }

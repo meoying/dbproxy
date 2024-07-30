@@ -19,6 +19,7 @@ import (
 	"database/sql"
 
 	"github.com/meoying/dbproxy/internal/datasource"
+	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
 )
 
 var _ datasource.Tx = &Tx{}
@@ -26,6 +27,10 @@ var _ datasource.Tx = &Tx{}
 // Tx 直接就是数
 type Tx struct {
 	tx *sql.Tx
+}
+
+func NewTx(tx *sql.Tx) *Tx {
+	return &Tx{tx: tx}
 }
 
 func (t *Tx) Query(ctx context.Context, query datasource.Query) (*sql.Rows, error) {
@@ -36,14 +41,15 @@ func (t *Tx) Exec(ctx context.Context, query datasource.Query) (sql.Result, erro
 	return t.tx.ExecContext(ctx, query.SQL, query.Args...)
 }
 
+func (t *Tx) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
+	stmt, err := t.tx.PrepareContext(ctx, query.SQL)
+	return statement.NewPreparedStatement(stmt), err
+}
+
 func (t *Tx) Commit() error {
 	return t.tx.Commit()
 }
 
 func (t *Tx) Rollback() error {
 	return t.tx.Rollback()
-}
-
-func NewTx(tx *sql.Tx) *Tx {
-	return &Tx{tx: tx}
 }
