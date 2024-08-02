@@ -4,13 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"log"
 	"strings"
 	"sync/atomic"
 
-	"github.com/ecodeclub/ekit/slice"
 	"github.com/ecodeclub/ekit/syncx"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
 type BaseStmtExecutor struct {
@@ -23,10 +20,6 @@ func NewBaseStmtExecutor(base *BaseExecutor) *BaseStmtExecutor {
 	return &BaseStmtExecutor{BaseExecutor: base}
 }
 
-// func (e *BaseStmtExecutor) cleanQuery(query string) string {
-// 	return strings.ReplaceAll(query, "?", "'?'")
-// }
-
 // parseStmtID 获取对应prepare stmt id
 func (e *BaseStmtExecutor) parseStmtID(payload []byte) uint32 {
 	var stmtId uint32
@@ -36,27 +29,6 @@ func (e *BaseStmtExecutor) parseStmtID(payload []byte) uint32 {
 		return 0
 	}
 	return stmtId
-}
-
-func (e *BaseStmtExecutor) parseArgs(stmtID uint32, payload []byte) ([]any, error) {
-	var req packet.ExecuteStmtRequest
-	numParams, ok := e.loadNumParams(stmtID)
-	log.Printf("loadNumParams stmtID = %d, numParams = %d", stmtID, numParams)
-	if !ok {
-		return nil, fmt.Errorf("failed to load num params")
-	}
-	if err := req.Parse(numParams, payload); err != nil {
-		return nil, err
-	}
-	return slice.Map(req.Parameters, func(idx int, src packet.ExecuteStmtRequestParameter) any {
-		log.Printf("get execute params[%d] = %#v\n", idx, src)
-		return src.Value
-	}), nil
-}
-
-// generatePrepareStmtSQL 获取创建prepare的sql语句
-func (e *BaseStmtExecutor) generatePrepareStmtSQL(stmtId uint32, query string) string {
-	return fmt.Sprintf("PREPARE stmt%d FROM '%s'", stmtId, query)
 }
 
 // generateExecuteStmtSQL 获取执行prepare的sql语句

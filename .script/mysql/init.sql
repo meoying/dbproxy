@@ -94,9 +94,11 @@ INSERT INTO `test_int_type` (`id`, `type_tinyint`, `type_smallint`, `type_medium
 VALUES (4, NULL, NULL, NULL, NULL, NULL, NULL);
 
 INSERT INTO `test_float_type` (`id`, `type_float`, `type_double`, `type_decimal`, `type_numeric`, `type_real`)
-VALUES (1, 66.66000, 999.99900, 33.33, 123456.78, 12345.6789);
-INSERT INTO `test_float_type` (`id`, `type_float`, `type_double`, `type_decimal`, `type_numeric`, `type_real`)
-VALUES (2, NULL, NULL, NULL, NULL, NULL);
+VALUES
+    (1, 66.66000, 999.99900, 33.33, 123456.78, 12345.6789),
+    (2, -99999.99999, -99999.99999, -99999999.99, -99999999.99, -1.7976931348623157E+308),
+    (3, 99999.99999, 99999.99999, 99999999.99, 99999999.99, 1.7976931348623157E+308),
+    (4, NULL, NULL, NULL, NULL, NULL);
 
 INSERT INTO `test_string_type` (`id`, `type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`,
                                 `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`,

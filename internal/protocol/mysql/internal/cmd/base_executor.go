@@ -141,12 +141,15 @@ func (e *BaseExecutor) buildResultSetRespPackets(cols []packet.ColumnType, rows 
 	for _, c := range cols {
 		packets = append(packets, packet.BuildColumnDefinitionPacket(c, charset))
 	}
-	packets = append(packets, packet.BuildEOFPacket(status))
+	if len(cols) != 0 {
+		packets = append(packets, packet.BuildEOFPacket(status))
+	}
 
 	// 写入真实每行数据
 	for _, row := range rows {
 		packets = append(packets, buildFunc(row, cols))
 	}
+
 	packets = append(packets, packet.BuildEOFPacket(status))
 
 	return packets, nil

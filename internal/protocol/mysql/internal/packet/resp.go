@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
 )
 
 // 构造返回给客户端响应的 packet
@@ -198,9 +200,9 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 }
 
 // writeBinaryValue2
-// bool 表示 写入 buf 成功
-// error 表示 转换、写入过程中的错误
-// NULL = false, nil, 没写入buf,没错误
+// bool 表示 写入buf
+// error 表示 转换数据类型或者写入buf的过程中的错误
+// 当 value = NULL 时 返回 false, nil 表示 没有写入buf且没错误
 func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, error) {
 	if value == nil {
 		return false, nil
@@ -688,20 +690,27 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	res := make([]byte, 4, 20)
 
-	// status int<1>
-	res = append(res, 0)
+	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
+	res = append(res, 0x00)
 
-	// statement_id int<4>
+	// int<4>	statement_id	statement ID
 	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
 
-	// num_columns int<2>
+	// int<2>	num_columns SELECT语句中选中列的个数
 	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
 
-	// num_params int<2>
+	// int<2>	num_params 占位符?的个数
 	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
 
-	// reserved_1 int<1>
-	res = append(res, 0)
+	// int<1>	reserved_1	[00] filler
+	res = append(res, 0x00)
+
+	// if (packet_lenght > 12) {
+	// int<2>	warning_count	Number of warnings
+	// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA {
+	// int<1>	metadata_follows	Flag specifying if metadata are skipped or not. See enum_resultset_metadata
+	// } – CLIENT_OPTIONAL_RESULTSET_METADATA
+	// } – packet_lenght > 12
 
 	// warning_count int<2>
 	if len(res) > 12 {
@@ -709,4 +718,36 @@ func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	}
 
 	return res
+}
+
+func BuildStmtPrepareRespPacket2(capabilities flags.CapabilityFlags, stmtId, numColumns, numParams int) []byte {
+	p := make([]byte, 4, 20)
+
+	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
+	p = append(p, 0x00)
+
+	// int<4>	statement_id	statement ID
+	p = append(p, FixedLengthInteger(uint32(stmtId), 4)...)
+
+	// int<2>	num_columns SELECT语句中选中列的个数
+	p = append(p, FixedLengthInteger(uint32(numColumns), 2)...)
+
+	// int<2>	num_params 占位符?的个数
+	p = append(p, FixedLengthInteger(uint32(numParams), 2)...)
+
+	// int<1>	reserved_1	[00] filler
+	p = append(p, 0x00)
+
+	// if (packet_lenght > 12)
+	if len(p[4:]) > 12 {
+		// int<2>	warning_count	Number of warnings
+		p = append(p, 0x00, 0x00)
+		// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA
+		if capabilities.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA) {
+			// int<1>	metadata_follows	Flag specifying if metadata are skipped or not.
+			// See enum_resultset_metadata
+			p = append(p, 0x00)
+		}
+	}
+	return p
 }

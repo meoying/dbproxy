@@ -97,9 +97,14 @@ func (e *StmtPrepareExecutor) Exec(
 	return e.writeRespPackets(conn, packets)
 }
 
+// generatePrepareStmtSQL 获取创建prepare的sql语句
+func (e *StmtPrepareExecutor) generatePrepareStmtSQL(stmtId uint32, query string) string {
+	return fmt.Sprintf("PREPARE stmt%d FROM '%s'", stmtId, query)
+}
+
 // buildStmtPrepareOKRespPacket 根据执行结果返回转换成对应的格式并返回
 // response 的 COM_STMT_PREPARE_OK
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html#sect_protocol_com_stmt_prepare_response_ok
 func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, numParams uint64, charset uint32, status packet.SeverStatus) ([][]byte, error) {
 	var packets [][]byte
 
@@ -108,14 +113,16 @@ func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, numPar
 
 	// 写入预处理信息包
 	packets = append(packets, packet.BuildStmtPrepareRespPacket(int(stmtId), len(fields), len(params)))
-	// 写入参数描述包
-	packets = append(packets, params...)
-	if len(packets) > 0 {
+	if len(params) > 0 {
+		// 写入参数描述包
+		packets = append(packets, params...)
 		packets = append(packets, packet.BuildEOFPacket(status))
 	}
-	// 写入字段描述包
-	packets = append(packets, fields...)
-	packets = append(packets, packet.BuildEOFPacket(status))
+	if len(fields) > 0 {
+		// 写入字段描述包
+		packets = append(packets, fields...)
+		packets = append(packets, packet.BuildEOFPacket(status))
+	}
 	return packets, nil
 }
 
