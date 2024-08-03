@@ -309,15 +309,18 @@ func (s *BasicTestSuite) TestSelect() {
 func (s *BasicTestSuite) TestInsert() {
 	t := s.T()
 	testcases := []struct {
-		name   string
-		sql    string
-		before func(t *testing.T)
-		after  func(t *testing.T)
+		name             string
+		before           func(t *testing.T)
+		sql              string
+		wantRowsAffected int64
+		wantLastInsertId int64
+		after            func(t *testing.T)
 	}{
 		{
-			name:   "插入多条数据",
-			sql:    "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
-			before: func(t *testing.T) {},
+			name:             "插入多行",
+			before:           func(t *testing.T) {},
+			sql:              "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
+			wantRowsAffected: 3,
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3})
@@ -351,8 +354,16 @@ func (s *BasicTestSuite) TestInsert() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			_, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.sql)
 			require.NoError(t, err)
+
+			affected, err := res.RowsAffected()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantRowsAffected, affected)
+
+			id, err := res.LastInsertId()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantLastInsertId, id)
 
 			tc.after(t)
 			// 清理数据
@@ -365,14 +376,15 @@ func (s *BasicTestSuite) TestInsert() {
 func (s *BasicTestSuite) TestUpdate() {
 	t := s.T()
 	testcases := []struct {
-		name   string
-		sql    string
-		before func(t *testing.T)
-		after  func(t *testing.T)
+		name             string
+		before           func(t *testing.T)
+		sql              string
+		wantRowsAffected int64
+		wantLastInsertId int64
+		after            func(t *testing.T)
 	}{
 		{
 			name: "更新一行",
-			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1;",
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
@@ -381,6 +393,8 @@ func (s *BasicTestSuite) TestUpdate() {
 				}
 				execSQL(t, s.db, sqls)
 			},
+			sql:              "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1;",
+			wantRowsAffected: 1,
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2})
@@ -404,26 +418,21 @@ func (s *BasicTestSuite) TestUpdate() {
 		},
 		{
 			name: "更新多行",
-			sql:  "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1 OR `order_id` = 4;",
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
 				}
 				execSQL(t, s.db, sqls)
 			},
+			sql:              "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1 OR `order_id` = 4;",
+			wantRowsAffected: 2,
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3})
 				wantOrderList := []Order{
-					{
-						UserId:  3,
-						OrderId: 1,
-						Content: "content1",
-						Account: 1.1,
-					},
 					{
 						UserId:  1,
 						OrderId: 3,
@@ -436,6 +445,12 @@ func (s *BasicTestSuite) TestUpdate() {
 						Content: "content",
 						Account: 1.6,
 					},
+					{
+						UserId:  3,
+						OrderId: 1,
+						Content: "content1",
+						Account: 1.1,
+					},
 				}
 				orders := getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, wantOrderList, orders)
@@ -446,8 +461,16 @@ func (s *BasicTestSuite) TestUpdate() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			_, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.sql)
 			require.NoError(t, err)
+
+			affected, err := res.RowsAffected()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantRowsAffected, affected)
+
+			id, err := res.LastInsertId()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantLastInsertId, id)
 
 			tc.after(t)
 			// 清理数据
@@ -460,28 +483,31 @@ func (s *BasicTestSuite) TestUpdate() {
 func (s *BasicTestSuite) TestDelete() {
 	t := s.T()
 	testcases := []struct {
-		name   string
-		sql    string
-		before func(t *testing.T)
-		after  func(t *testing.T)
+		name             string
+		before           func(t *testing.T)
+		sql              string
+		wantRowsAffected int64
+		wantLastInsertId int64
+		after            func(t *testing.T)
 	}{
 		{
 			name: "删除多行_分片列与非分片列混合",
-			sql:  "DELETE FROM `order` WHERE `user_id` = 1 OR `user_id` = 4 OR `order_id` = 5;",
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,4,'content4',1.4);",
 					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,5,'content5',1.5);",
 				}
 				execSQL(t, s.db, sqls)
 			},
+			sql:              "DELETE FROM `order` WHERE `user_id` = 1 OR `user_id` = 4 OR `order_id` = 5;",
+			wantRowsAffected: 3,
 			after: func(t *testing.T) {
 				t.Helper()
-				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3})
+				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3, 4, 5})
 				wantOrderList := []Order{
 					{
 						UserId:  3,
@@ -505,8 +531,16 @@ func (s *BasicTestSuite) TestDelete() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			_, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.sql)
 			require.NoError(t, err)
+
+			affected, err := res.RowsAffected()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantRowsAffected, affected)
+
+			id, err := res.LastInsertId()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.wantLastInsertId, id)
 
 			tc.after(t)
 			// 清理数据

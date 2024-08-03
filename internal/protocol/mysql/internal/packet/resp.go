@@ -126,7 +126,7 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 
 // BuildTextResultsetRowRespPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) []byte {
+func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) ([]byte, error) {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	// 减少切片扩容
 	// return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
@@ -142,12 +142,12 @@ func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) []byte {
 		}
 	}
 
-	return p
+	return p, nil
 }
 
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
-func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
+func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) ([]byte, error) {
 	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", values)
 	// Calculate the length of the NULL bitmap
 	nullBitmapLen := (len(values) + 7 + 2) / 8
@@ -164,6 +164,7 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 		if err != nil {
 			// handle error or panic
 			log.Printf("BuildBinaryResultsetRowRespPacket ERROR: %#v\n", err)
+			return nil, err
 		}
 
 		// 写入失败但没有error 就是 NULL的意思
@@ -191,7 +192,7 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	p = append(p, row...)
 
 	log.Printf("write rows p = %#v\n", p[4:])
-	return p
+	return p, nil
 }
 
 // writeBinaryValue

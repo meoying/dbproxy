@@ -60,16 +60,18 @@ func (e *StmtExecuteExecutor) Exec(
 
 func (e *StmtExecuteExecutor) parseArgs(clientCapabilityFlags flags.CapabilityFlags, stmtID uint32, payload []byte) ([]any, error) {
 	numParams, ok := e.loadNumParams(stmtID)
+
 	log.Printf("loadNumParams stmtID = %d, numParams = %d", stmtID, numParams)
 	if !ok {
 		return nil, fmt.Errorf("failed to load num params")
 	}
+
 	req := packet.NewExecuteStmtRequestParser(clientCapabilityFlags, numParams)
 	if err := req.Parse(payload); err != nil {
 		return nil, err
 	}
-	return slice.Map(req.Parameters(), func(idx int, src packet.ExecuteStmtRequestParameter) any {
 
+	return slice.Map(req.Parameters(), func(idx int, src packet.ExecuteStmtRequestParameter) any {
 		log.Printf("get execute params[%d] = %#v\n", idx, src)
 		return src.Value
 	}), nil

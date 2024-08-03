@@ -20,8 +20,6 @@ import (
 
 // ForwardHandler 什么也不做，就是转发请求
 // 一般用于测试环境
-// 这个实现有一个巨大的问题，即 ForwardHandler 不是线程安全的
-// TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type ForwardHandler struct {
 	*baseHandler
 	stmtID2Stmt       syncx.Map[uint32, datasource.Stmt]

@@ -147,6 +147,7 @@ func (b *PrepareStmtResponseBuilder) buildParameterDefinitionPackets() [][]byte 
 		} else {
 			// 发送ok包 表示 中间的EOF
 			// append(packets, EOF)
+			panic("TODO: 用OK包表示EOF")
 		}
 		return packets
 	}
@@ -175,7 +176,7 @@ func (b *PrepareStmtResponseBuilder) buildColumnDefinitionPackets() [][]byte {
 			packets = append(packets, BuildEOFPacket(b.ServerStatus))
 		} else {
 			// 发送ok包 表示 中间的EOF
-
+			panic("TODO: 用OK包表示EOF")
 		}
 		return packets
 	}
