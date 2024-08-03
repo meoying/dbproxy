@@ -159,11 +159,13 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	var buf bytes.Buffer
 	for i, val := range values {
 		//
-		ok, err := writeBinaryValue2(&buf, val, cols[i])
+		ok, err := writeBinaryValue(&buf, val, cols[i])
+
 		if err != nil {
 			// handle error or panic
-			log.Printf(">>>>>>>>>>>> ERROR ERROR >>>>>>>> %#v\n", err)
+			log.Printf("BuildBinaryResultsetRowRespPacket ERROR: %#v\n", err)
 		}
+
 		// 写入失败但没有error 就是 NULL的意思
 		if !ok {
 			// Set the NULL bit in the bitmap
@@ -171,18 +173,12 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 			bitPos := (i + 2) % 8
 			nullBitmap[bytePos] |= 1 << bitPos
 		}
-		// else {
-		// 	// Append the value to the row bytes
-		// 	err := writeBinaryValue(&buf, val)
-		// 	if err != nil {
-		// 		// handle error or panic
-		// 		log.Printf(">>>>>>>>>>>> ERROR ERROR >>>>>>>> %#v\n", err)
-		// 	}
-		// }
 	}
+
 	row := buf.Bytes()
 	p := make([]byte, 4, 4+1+len(nullBitmap)+len(row))
 	log.Printf("packet  len=%#v, cap=%#v\n", len(p), cap(p))
+
 	// header
 	p = append(p, 0x00)
 	log.Printf("write Header p = %#v\n", p[4:])
@@ -190,17 +186,19 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	// null_bitmap
 	p = append(p, nullBitmap...)
 	log.Printf("write null bitmap p = %#v\n", p[4:])
+
 	// values
 	p = append(p, row...)
+
 	log.Printf("write rows p = %#v\n", p[4:])
 	return p
 }
 
-// writeBinaryValue2
+// writeBinaryValue
 // bool 表示 写入buf
 // error 表示 转换数据类型或者写入buf的过程中的错误
 // 当 value = NULL 时 返回 false, nil 表示 没有写入buf且没错误
-func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, error) {
+func writeBinaryValue(buf *bytes.Buffer, value any, col ColumnType) (bool, error) {
 	if value == nil {
 		return false, nil
 	}
@@ -506,111 +504,6 @@ func parseTime(data []byte, columnDatabaseType string) (time.Time, string, error
 	return time.Time{}, "", fmt.Errorf("cannot parse date: %s", dateStr)
 }
 
-// ConvertToBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 mysql二进制协议值
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row_value
-// func ConvertToBinaryProtocolValue(value any, col *sql.ColumnType) (any, error) {
-// 	log.Printf("ConvertToBinaryProtocolValue, name = %s, type = %T, val = %#v\n", col.Name(), value, value)
-//
-// 	if value == nil {
-// 		return nil, nil
-// 	}
-//
-// 	// 确保 val 是 *[]byte 类型
-// 	bytesPtr, ok := value.(*[]byte)
-// 	if !ok {
-// 		return nil, fmt.Errorf("val类型非法: %T", value)
-// 	}
-//
-// 	if bytesPtr == nil {
-// 		return nil, nil
-// 	}
-//
-// 	// 解引用 *[]byte 得到 []byte
-// 	bytesVal := *bytesPtr
-//
-// 	if bytesVal == nil {
-// 		return nil, nil
-// 	}
-//
-// 	switch col.DatabaseTypeName() {
-// 	case "TINYINT":
-// 		// 将 []byte 转换为 int8 类型
-// 		v, err := strconv.ParseInt(string(bytesVal), 10, 8)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return int8(v), nil
-// 	case "SMALLINT", "YEAR":
-// 		// 将 []byte 转换为 int16 类型
-// 		v, err := strconv.ParseInt(string(bytesVal), 10, 16)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return int16(v), nil
-// 	case "INT", "MEDIUMINT":
-// 		// 将 []byte 转换为 int32 类型
-// 		s := string(bytesVal)
-// 		log.Printf("INT, MEDIUMINT = %s\n", s)
-// 		v, err := strconv.ParseInt(s, 10, 32)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return int32(v), nil
-// 	case "BIGINT":
-// 		// 将 []byte 转换为 int64 类型
-// 		return strconv.ParseInt(string(bytesVal), 10, 64)
-// 	case "FLOAT":
-// 		f, err := strconv.ParseFloat(string(bytesVal), 32)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return float32(f), nil
-// 	case "DOUBLE":
-// 		return strconv.ParseFloat(string(bytesVal), 64)
-// 	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
-// 		return string(bytesVal), nil
-// 	case "DATE", "DATETIME", "TIMESTAMP":
-// 		return nil, nil
-// 	case "TIME":
-// 		return nil, nil
-// 	default:
-// 		return nil, errors.New("unsupported database type")
-// 	}
-// }
-
-// func writeBinaryValue(buf *bytes.Buffer, value any) error {
-//
-// 	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
-//
-// 	switch v := value.(type) {
-// 	case int8, int16, int32, int64, float32, float64:
-// 		log.Printf("write %T, %#v\n", v, v)
-// 		return binary.Write(buf, binary.LittleEndian, v)
-// 	case sql.NullInt64:
-// 		if v.Valid {
-// 			return writeBinaryValue(buf, v.Int64)
-// 		}
-// 		return nil
-// 	case bool:
-// 		var boolValue byte
-// 		if v {
-// 			boolValue = 1
-// 		}
-// 		log.Printf("write %T, %#v\n", v, v)
-// 		return buf.WriteByte(boolValue)
-// 	case []byte:
-// 		log.Printf("write %T, %#v\n", v, v)
-// 		_, err := buf.Write(LengthEncodeString(string(v)))
-// 		return err
-// 	case string:
-// 		log.Printf("write %T, %#v\n", v, v)
-// 		_, err := buf.Write(LengthEncodeString(v))
-// 		return err
-// 	default:
-// 		return fmt.Errorf("未支持的列类型 %T", v)
-// 	}
-// }
-
 // getMysqlTypeMaxLength 获取字段类型最大长度
 func getMysqlTypeMaxLength(dataType string) uint32 {
 	// TODO 目前为了跑通流程先用着需要的，后续要继续补充所有类型
@@ -681,70 +574,3 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 		return uint16(MySQLTypeVarString) // 未知类型
 	}
 }
-
-// BuildStmtPrepareRespPacket 构建预处理响应包
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-// func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
-// 	res := make([]byte, 4, 20)
-//
-// 	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
-// 	res = append(res, 0x00)
-//
-// 	// int<4>	statement_id	statement ID
-// 	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
-//
-// 	// int<2>	num_columns SELECT语句中选中列的个数
-// 	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
-//
-// 	// int<2>	num_params 占位符?的个数
-// 	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
-//
-// 	// int<1>	reserved_1	[00] filler
-// 	res = append(res, 0x00)
-//
-// 	// if (packet_lenght > 12) {
-// 	// int<2>	warning_count	Number of warnings
-// 	// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA {
-// 	// int<1>	metadata_follows	Flag specifying if metadata are skipped or not. See enum_resultset_metadata
-// 	// } – CLIENT_OPTIONAL_RESULTSET_METADATA
-// 	// } – packet_lenght > 12
-//
-// 	// warning_count int<2>
-// 	if len(res) > 12 {
-// 		res = append(res, 0, 0)
-// 	}
-//
-// 	return res
-// }
-
-// func BuildStmtPrepareRespPacket2(capabilities flags.CapabilityFlags, stmtId, numColumns, numParams int) []byte {
-// 	p := make([]byte, 4, 20)
-//
-// 	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
-// 	p = append(p, 0x00)
-//
-// 	// int<4>	statement_id	statement ID
-// 	p = append(p, FixedLengthInteger(uint32(stmtId), 4)...)
-//
-// 	// int<2>	num_columns SELECT语句中选中列的个数
-// 	p = append(p, FixedLengthInteger(uint32(numColumns), 2)...)
-//
-// 	// int<2>	num_params 占位符?的个数
-// 	p = append(p, FixedLengthInteger(uint32(numParams), 2)...)
-//
-// 	// int<1>	reserved_1	[00] filler
-// 	p = append(p, 0x00)
-//
-// 	// if (packet_lenght > 12)
-// 	if len(p[4:]) > 12 {
-// 		// int<2>	warning_count	Number of warnings
-// 		p = append(p, 0x00, 0x00)
-// 		// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA
-// 		if capabilities.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA) {
-// 			// int<1>	metadata_follows	Flag specifying if metadata are skipped or not.
-// 			// See enum_resultset_metadata
-// 			p = append(p, 0x00)
-// 		}
-// 	}
-// 	return p
-// }

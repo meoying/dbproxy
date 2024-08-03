@@ -24,7 +24,7 @@ func (p *BaseBuilder) BuildBinaryResultsetRespPackets(cols []ColumnType, rows []
 
 type buildResultsetRowRespPacket func(values []any, cols []ColumnType) []byte
 
-func (p *BaseBuilder) buildResultSetRespPackets(cols []ColumnType, rows [][]any, serverStatus SeverStatus, charset uint32, buildFunc buildResultsetRowRespPacket) ([][]byte, error) {
+func (p *BaseBuilder) buildResultSetRespPackets(cols []ColumnType, rows [][]any, serverStatus SeverStatus, charset uint32, buildRowRespPacketFunc buildResultsetRowRespPacket) ([][]byte, error) {
 	// resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
 	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
 	var packets [][]byte
@@ -43,7 +43,7 @@ func (p *BaseBuilder) buildResultSetRespPackets(cols []ColumnType, rows [][]any,
 
 	// 写入真实每行数据
 	for _, row := range rows {
-		packets = append(packets, buildFunc(row, cols))
+		packets = append(packets, buildRowRespPacketFunc(row, cols))
 	}
 
 	packets = append(packets, BuildEOFPacket(serverStatus))
