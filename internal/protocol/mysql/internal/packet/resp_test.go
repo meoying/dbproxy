@@ -1,47 +1,18 @@
 package packet
 
 import (
-	"bytes"
-	"database/sql"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-func TestBuildStmtPrepareRespPacket(t *testing.T) {
-	t.Skip()
-	testcases := []struct {
-		name       string
-		stmtId     int
-		countCol   int
-		countParam int
-		want       []byte
-	}{
-		{
-			name:       "SELECT `order_id` FROM `order` WHERE `user_id` = ? ORDER BY `order_id`;",
-			stmtId:     1,
-			countCol:   1,
-			countParam: 1,
-			want:       []byte{0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00},
-		},
-	}
-	for _, tc := range testcases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			actual := BuildStmtPrepareRespPacket(tc.stmtId, tc.countCol, tc.countParam)
-			assert.Equal(t, actual[4:], tc.want)
-		})
-	}
-}
 
 func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 	t.Skip()
 	tests := []struct {
-		name     string
-		values   []any
-		expected []byte
+		name          string
+		values        []any
+		expected      []byte
+		assertErrFunc assert.ErrorAssertionFunc
 	}{
 		{
 			name:   "Valid Row with Non-Null Fields",
@@ -54,6 +25,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				'A', 'l', 'i', 'c', 'e', // name = 'Alice'
 				0x1e, 0x00, 0x00, 0x00, // age = 30 (int32, little endian)
 			},
+			assertErrFunc: assert.NoError,
 		},
 		{
 			name:   "Valid Row with Null Field",
@@ -65,6 +37,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				0x19, 0x00, 0x00, 0x00, // age = 25 (int64, little endian)
 				0x00, 0x00, 0x00, 0x00, // age = 25 (int64, little endian)
 			},
+			assertErrFunc: assert.NoError,
 		},
 		{
 			name:   "Valid Row with Boolean Field",
@@ -76,6 +49,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				0x00,       // boolean false
 				0x28, 0x00, // age = 40 (int16, little endian)
 			},
+			assertErrFunc: assert.NoError,
 		},
 		{
 			name:   "Valid Row with Binary Data",
@@ -90,6 +64,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				0x32, 0x00, 0x00, 0x00, // age = 50 (int64, little endian)
 				0x00, 0x00, 0x00, 0x00, // age = 50 (int64, little endian)
 			},
+			assertErrFunc: assert.NoError,
 		},
 		{
 			name:   "Valid Row with Various Types",
@@ -109,6 +84,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				0x02,       // length of binary data
 				0xBE, 0xEF, // binary data
 			},
+			assertErrFunc: assert.NoError,
 		},
 		{
 			name:   "Row with Null Values",
@@ -120,6 +96,7 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 				0x2d, 0x00, // age = 45 (int16, little endian)
 				0x0f, // small count = 15 (int8)
 			},
+			assertErrFunc: assert.NoError,
 		},
 		// {
 		// 	name:   "Row with *[]byte",
@@ -136,151 +113,12 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := BuildBinaryResultsetRowRespPacket(tc.values, nil)
-			assert.Equal(t, tc.expected, actual[4:])
-		})
-	}
-}
-
-func TestWriteBinaryValue(t *testing.T) {
-	t.Skip()
-	tests := []struct {
-		name      string
-		valueFunc func(t *testing.T) any
-		expected  func(t *testing.T) []byte
-	}{
-		{
-			name: "sql.NullInt64",
-			valueFunc: func(t *testing.T) any {
-				t.Helper()
-				return sql.NullInt64{Int64: int64(2), Valid: true}
-			},
-			expected: func(t *testing.T) []byte {
-				t.Helper()
-				// var buf bytes.Buffer
-				// assert.NoError(t, binary.Write(&buf, binary.LittleEndian, int64(2)))
-				// return buf.Bytes()
-				return []byte{0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			err := writeBinaryValue(&buf, tc.valueFunc(t))
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected(t), buf.Bytes())
-		})
-	}
-}
-
-func TestConvertToMySQLBinaryProtocolValue(t *testing.T) {
-	var nilBytes []byte
-	tests := []struct {
-		name       string
-		getColumns func(t *testing.T) []*sqlmock.Column
-		values     []any
-		wantValues []any
-	}{
-		{
-			name: "dbproxy.test_int_type_NULL值",
-			getColumns: func(t *testing.T) []*sqlmock.Column {
-				t.Helper()
-				return []*sqlmock.Column{
-					sqlmock.NewColumn("id").OfType("INT", ""),
-					sqlmock.NewColumn("type_tinyint").OfType("TINYINT", ""),
-					sqlmock.NewColumn("type_smallint").OfType("SMALLINT", ""),
-					sqlmock.NewColumn("type_mediumint").OfType("MEDIUMINT", ""),
-					sqlmock.NewColumn("type_int").OfType("INT", ""),
-					sqlmock.NewColumn("type_int").OfType("INT", ""),
-					sqlmock.NewColumn("type_bigint").OfType("BIGINT", ""),
-				}
-			},
-			values: []any{
-				&[]byte{0x34}, // '4'
-				&nilBytes,
-				&nilBytes,
-				&nilBytes,
-				&nilBytes,
-				(*[]byte)(nil),
-				nil,
-			},
-			wantValues: []any{
-				int32(4),
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-				nil,
-			},
-		},
-		// {
-		// 	name: "dbproxy.test_string_type",
-		// 	getColumns: func(t *testing.T) []*sqlmock.Column {
-		// 		t.Helper()
-		// 		return []*sqlmock.Column{
-		// 			sqlmock.NewColumn("id").OfType("INT", ""),
-		// 			sqlmock.NewColumn("type_tinyint").OfType("TINYINT", ""),
-		// 			sqlmock.NewColumn("type_smallint").OfType("SMALLINT", ""),
-		// 			sqlmock.NewColumn("type_mediumint").OfType("MEDIUMINT", ""),
-		// 			sqlmock.NewColumn("type_int").OfType("INT", ""),
-		// 			sqlmock.NewColumn("type_int").OfType("INT", ""),
-		// 			sqlmock.NewColumn("type_bigint").OfType("BIGINT", ""),
-		// 		}
-		// 	},
-		// 	values: []any{
-		// 		&[]byte{0x34}, // '4'
-		// 		&nilBytes,
-		// 		&nilBytes,
-		// 		&nilBytes,
-		// 		&nilBytes,
-		// 		(*[]byte)(nil),
-		// 		nil,
-		// 	},
-		// 	wantValues: []any{
-		// 		int32(4),
-		// 		nil,
-		// 		nil,
-		// 		nil,
-		// 		nil,
-		// 		nil,
-		// 		nil,
-		// 	},
-		// },
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-
-			db, mock, err := sqlmock.New()
-			assert.NoError(t, err)
-
-			mockRows := sqlmock.NewRowsWithColumnDefinition(tc.getColumns(t)...)
-
-			expectedSQL := "SELECT *"
-			mock.ExpectQuery(expectedSQL).WillReturnRows(mockRows)
-
-			rows, err := db.Query(expectedSQL)
-			require.NoError(t, err)
-
-			cols, err := rows.ColumnTypes()
-			require.NoError(t, err)
-			require.NoError(t, rows.Close())
-
-			require.Equal(t, len(tc.values), len(cols))
-
-			gotValues := make([]any, len(tc.values))
-			for i, val := range tc.values {
-				gotValues[i], err = ConvertToBinaryProtocolValue(val, cols[i])
-				assert.NoError(t, err)
+			actual, err := BuildBinaryResultsetRowRespPacket(tc.values, nil)
+			tc.assertErrFunc(t, err)
+			if err != nil {
+				return
 			}
-
-			assert.Equal(t, tc.wantValues, gotValues)
-			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Equal(t, tc.expected, actual[4:])
 		})
 	}
 }

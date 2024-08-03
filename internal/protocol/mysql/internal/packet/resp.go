@@ -2,7 +2,6 @@ package packet
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -127,7 +126,7 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 
 // BuildTextResultsetRowRespPacket 构建查询结果行字段包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) []byte {
+func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) ([]byte, error) {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	// 减少切片扩容
 	// return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
@@ -143,12 +142,12 @@ func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) []byte {
 		}
 	}
 
-	return p
+	return p, nil
 }
 
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
-func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
+func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) ([]byte, error) {
 	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", values)
 	// Calculate the length of the NULL bitmap
 	nullBitmapLen := (len(values) + 7 + 2) / 8
@@ -160,11 +159,14 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	var buf bytes.Buffer
 	for i, val := range values {
 		//
-		ok, err := writeBinaryValue2(&buf, val, cols[i])
+		ok, err := writeBinaryValue(&buf, val, cols[i])
+
 		if err != nil {
 			// handle error or panic
-			log.Printf(">>>>>>>>>>>> ERROR ERROR >>>>>>>> %#v\n", err)
+			log.Printf("BuildBinaryResultsetRowRespPacket ERROR: %#v\n", err)
+			return nil, err
 		}
+
 		// 写入失败但没有error 就是 NULL的意思
 		if !ok {
 			// Set the NULL bit in the bitmap
@@ -172,18 +174,12 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 			bitPos := (i + 2) % 8
 			nullBitmap[bytePos] |= 1 << bitPos
 		}
-		// else {
-		// 	// Append the value to the row bytes
-		// 	err := writeBinaryValue(&buf, val)
-		// 	if err != nil {
-		// 		// handle error or panic
-		// 		log.Printf(">>>>>>>>>>>> ERROR ERROR >>>>>>>> %#v\n", err)
-		// 	}
-		// }
 	}
+
 	row := buf.Bytes()
 	p := make([]byte, 4, 4+1+len(nullBitmap)+len(row))
 	log.Printf("packet  len=%#v, cap=%#v\n", len(p), cap(p))
+
 	// header
 	p = append(p, 0x00)
 	log.Printf("write Header p = %#v\n", p[4:])
@@ -191,17 +187,19 @@ func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) []byte {
 	// null_bitmap
 	p = append(p, nullBitmap...)
 	log.Printf("write null bitmap p = %#v\n", p[4:])
+
 	// values
 	p = append(p, row...)
+
 	log.Printf("write rows p = %#v\n", p[4:])
-	return p
+	return p, nil
 }
 
-// writeBinaryValue2
-// bool 表示 写入 buf 成功
-// error 表示 转换、写入过程中的错误
-// NULL = false, nil, 没写入buf,没错误
-func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, error) {
+// writeBinaryValue
+// bool 表示 写入buf
+// error 表示 转换数据类型或者写入buf的过程中的错误
+// 当 value = NULL 时 返回 false, nil 表示 没有写入buf且没错误
+func writeBinaryValue(buf *bytes.Buffer, value any, col ColumnType) (bool, error) {
 	if value == nil {
 		return false, nil
 	}
@@ -373,110 +371,6 @@ func writeBinaryValue2(buf *bytes.Buffer, value any, col ColumnType) (bool, erro
 	default:
 		return false, errors.New("未支持的数据库数据类型")
 	}
-
-	// 写入buffer
-	// switch vv := val.(type) {
-	// case int8, int16, int32, int64, float32, float64:
-	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	err := binary.Write(buf, binary.LittleEndian, vv)
-	// 	if err != nil {
-	// 		return false, err
-	// 	}
-	// 	return true, nil
-	// case sql.NullInt64:
-	// 	if vv.Valid {
-	// 		err := binary.Write(buf, binary.LittleEndian, vv.Int64)
-	// 		if err != nil {
-	// 			return false, err
-	// 		}
-	// 		return true, nil
-	// 	}
-	// 	return false, nil
-	// case bool:
-	// 	var boolValue byte
-	// 	if vv {
-	// 		boolValue = 1
-	// 	}
-	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	err := buf.WriteByte(boolValue)
-	// 	if err != nil {
-	// 		return false, err
-	// 	}
-	// 	return true, nil
-	// case []byte:
-	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	_, err := buf.Write(LengthEncodeString(string(vv)))
-	// 	if err != nil {
-	// 		return false, err
-	// 	}
-	// 	return true, nil
-	// case string:
-	// 	log.Printf("write %T, %#v\n", vv, vv)
-	// 	_, err := buf.Write(LengthEncodeString(vv))
-	// 	if err != nil {
-	// 		return false, err
-	// 	}
-	// 	return true, nil
-	// case time.Time:
-	//
-	// 	if col.DatabaseTypeName() == "TIME" {
-	//
-	// 		isNegative := 0
-	// 		if strings.HasPrefix(string(bytesVal), "-") {
-	// 			isNegative = 1
-	// 		}
-	//
-	// 		hour := vv.Hour()
-	//
-	// 		days := hour / 24
-	// 		hours := hour % 24
-	//
-	// 		minute := vv.Minute()
-	// 		second := vv.Second()
-	// 		microsecond := vv.Nanosecond() / 1000
-	//
-	// 		for _, field := range []any{
-	// 			int8(12),         // 长度
-	// 			int8(isNegative), // is_negative	1 if minus, 0 for plus
-	// 			int32(days),
-	// 			int8(hours),
-	// 			int8(minute),
-	// 			int8(second),
-	// 			int32(microsecond),
-	// 		} {
-	// 			if err := binary.Write(buf, binary.LittleEndian, field); err != nil {
-	// 				return false, err
-	// 			}
-	// 		}
-	// 	} else {
-	//
-	// 		year, month, day := vv.Date()
-	// 		hour, minute, second := vv.Clock()
-	// 		nanosecond := vv.Nanosecond()
-	//
-	// 		// 将纳秒转换为微秒
-	// 		microsecond := nanosecond / int(time.Microsecond)
-	//
-	// 		for _, field := range []any{
-	// 			int8(11), // 长度
-	// 			int16(year),
-	// 			int8(month),
-	// 			int8(day),
-	// 			int8(hour),
-	// 			int8(minute),
-	// 			int8(second),
-	// 			int32(microsecond),
-	// 		} {
-	// 			if err := binary.Write(buf, binary.LittleEndian, field); err != nil {
-	// 				return false, err
-	// 			}
-	// 		}
-	// 	}
-	// 	return true, nil
-	// default:
-	// 	return false, fmt.Errorf("未支持的Go数据类型 %T", vv)
-	// }
-
 }
 
 // 定义可能的日期格式
@@ -505,111 +399,6 @@ func parseTime(data []byte, columnDatabaseType string) (time.Time, string, error
 	}
 
 	return time.Time{}, "", fmt.Errorf("cannot parse date: %s", dateStr)
-}
-
-// ConvertToBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 mysql二进制协议值
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row_value
-func ConvertToBinaryProtocolValue(value any, col *sql.ColumnType) (any, error) {
-	log.Printf("ConvertToBinaryProtocolValue, name = %s, type = %T, val = %#v\n", col.Name(), value, value)
-
-	if value == nil {
-		return nil, nil
-	}
-
-	// 确保 val 是 *[]byte 类型
-	bytesPtr, ok := value.(*[]byte)
-	if !ok {
-		return nil, fmt.Errorf("val类型非法: %T", value)
-	}
-
-	if bytesPtr == nil {
-		return nil, nil
-	}
-
-	// 解引用 *[]byte 得到 []byte
-	bytesVal := *bytesPtr
-
-	if bytesVal == nil {
-		return nil, nil
-	}
-
-	switch col.DatabaseTypeName() {
-	case "TINYINT":
-		// 将 []byte 转换为 int8 类型
-		v, err := strconv.ParseInt(string(bytesVal), 10, 8)
-		if err != nil {
-			return nil, err
-		}
-		return int8(v), nil
-	case "SMALLINT", "YEAR":
-		// 将 []byte 转换为 int16 类型
-		v, err := strconv.ParseInt(string(bytesVal), 10, 16)
-		if err != nil {
-			return nil, err
-		}
-		return int16(v), nil
-	case "INT", "MEDIUMINT":
-		// 将 []byte 转换为 int32 类型
-		s := string(bytesVal)
-		log.Printf("INT, MEDIUMINT = %s\n", s)
-		v, err := strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		return int32(v), nil
-	case "BIGINT":
-		// 将 []byte 转换为 int64 类型
-		return strconv.ParseInt(string(bytesVal), 10, 64)
-	case "FLOAT":
-		f, err := strconv.ParseFloat(string(bytesVal), 32)
-		if err != nil {
-			return nil, err
-		}
-		return float32(f), nil
-	case "DOUBLE":
-		return strconv.ParseFloat(string(bytesVal), 64)
-	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
-		return string(bytesVal), nil
-	case "DATE", "DATETIME", "TIMESTAMP":
-		return nil, nil
-	case "TIME":
-		return nil, nil
-	default:
-		return nil, errors.New("unsupported database type")
-	}
-}
-
-func writeBinaryValue(buf *bytes.Buffer, value any) error {
-
-	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
-
-	switch v := value.(type) {
-	case int8, int16, int32, int64, float32, float64:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
-	case sql.NullInt64:
-		if v.Valid {
-			return writeBinaryValue(buf, v.Int64)
-		}
-		return nil
-	case bool:
-		var boolValue byte
-		if v {
-			boolValue = 1
-		}
-		log.Printf("write %T, %#v\n", v, v)
-		return buf.WriteByte(boolValue)
-	case []byte:
-		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(LengthEncodeString(string(v)))
-		return err
-	case string:
-		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(LengthEncodeString(v))
-		return err
-	default:
-		return fmt.Errorf("未支持的列类型 %T", v)
-	}
 }
 
 // getMysqlTypeMaxLength 获取字段类型最大长度
@@ -681,32 +470,4 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 	default:
 		return uint16(MySQLTypeVarString) // 未知类型
 	}
-}
-
-// BuildStmtPrepareRespPacket 构建预处理响应包
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
-	res := make([]byte, 4, 20)
-
-	// status int<1>
-	res = append(res, 0)
-
-	// statement_id int<4>
-	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
-
-	// num_columns int<2>
-	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
-
-	// num_params int<2>
-	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
-
-	// reserved_1 int<1>
-	res = append(res, 0)
-
-	// warning_count int<2>
-	if len(res) > 12 {
-		res = append(res, 0, 0)
-	}
-
-	return res
 }

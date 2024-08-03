@@ -2,8 +2,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"log"
 
+	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -28,7 +33,7 @@ func (e *StmtExecuteExecutor) Exec(
 	payload []byte) error {
 
 	stmtId := e.parseStmtID(payload)
-	args, err := e.parseArgs(stmtId, payload)
+	args, err := e.parseArgs(conn.ClientCapabilityFlags(), stmtId, payload)
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)
 	}
@@ -50,5 +55,24 @@ func (e *StmtExecuteExecutor) Exec(
 		return e.writeErrRespPacket(conn, err)
 	}
 
-	return e.handlePluginResult(result, conn, e.handlePrepareRows)
+	return e.handlePluginResult(result, conn, e.handlePrepareSQLRows)
+}
+
+func (e *StmtExecuteExecutor) parseArgs(clientCapabilityFlags flags.CapabilityFlags, stmtID uint32, payload []byte) ([]any, error) {
+	numParams, ok := e.loadNumParams(stmtID)
+
+	log.Printf("loadNumParams stmtID = %d, numParams = %d", stmtID, numParams)
+	if !ok {
+		return nil, fmt.Errorf("failed to load num params")
+	}
+
+	req := packet.NewExecuteStmtRequestParser(clientCapabilityFlags, numParams)
+	if err := req.Parse(payload); err != nil {
+		return nil, err
+	}
+
+	return slice.Map(req.Parameters(), func(idx int, src packet.ExecuteStmtRequestParameter) any {
+		log.Printf("get execute params[%d] = %#v\n", idx, src)
+		return src.Value
+	}), nil
 }

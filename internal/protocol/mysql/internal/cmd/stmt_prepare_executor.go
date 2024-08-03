@@ -12,30 +12,8 @@ import (
 )
 
 var (
-	_ Executor          = &StmtPrepareExecutor{}
-	_ packet.ColumnType = Column{}
+	_ Executor = &StmtPrepareExecutor{}
 )
-
-// Column 直接传入数据，伪装成了一个 [packet.ColumnType] 非线程安全实现
-type Column struct {
-	name         string
-	databaseType string
-}
-
-func NewColumn(name string, databaseType string) Column {
-	return Column{
-		name:         name,
-		databaseType: databaseType,
-	}
-}
-
-func (c Column) Name() string {
-	return c.name
-}
-
-func (c Column) DatabaseTypeName() string {
-	return c.databaseType
-}
 
 type StmtPrepareExecutor struct {
 	hdl plugin.Handler
@@ -48,14 +26,6 @@ func NewStmtPrepareExecutor(hdl plugin.Handler, executor *BaseStmtExecutor) *Stm
 		BaseStmtExecutor: executor,
 	}
 }
-
-/*
-client --> prepare stmt FROM 'query' --> server 生成id, 构建query= PREPARE stmt{ID} FROM 'Query' -->
-
-                                     <--  根据结果, stmtID=1,
-
-
-*/
 
 func (e *StmtPrepareExecutor) Exec(
 	ctx context.Context,
@@ -89,63 +59,19 @@ func (e *StmtPrepareExecutor) Exec(
 
 	conn.SetInTransaction(result.InTransactionState)
 
-	packets, err := e.buildStmtPrepareOKRespPacket(result.StmtID, numParams, conn.CharacterSet(), e.getServerStatus(conn))
-	if err != nil {
-		return e.writeErrRespPacket(conn, err)
-	}
-
-	return e.writeRespPackets(conn, packets)
+	return e.writeRespPackets(conn, e.buildRespPackets(stmtID, numParams, conn))
 }
 
-// buildStmtPrepareOKRespPacket 根据执行结果返回转换成对应的格式并返回
-// response 的 COM_STMT_PREPARE_OK
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-func (e *StmtPrepareExecutor) buildStmtPrepareOKRespPacket(stmtId uint32, numParams uint64, charset uint32, status packet.SeverStatus) ([][]byte, error) {
-	var packets [][]byte
-
-	params := e.buildParameterDefinitionBlock(numParams, charset)
-	fields := e.buildColumnDefinitionBlock(numParams, charset)
-
-	// 写入预处理信息包
-	packets = append(packets, packet.BuildStmtPrepareRespPacket(int(stmtId), len(fields), len(params)))
-	// 写入参数描述包
-	packets = append(packets, params...)
-	if len(packets) > 0 {
-		packets = append(packets, packet.BuildEOFPacket(status))
-	}
-	// 写入字段描述包
-	packets = append(packets, fields...)
-	packets = append(packets, packet.BuildEOFPacket(status))
-	return packets, nil
+// generatePrepareStmtSQL 获取创建prepare的sql语句
+func (e *StmtPrepareExecutor) generatePrepareStmtSQL(stmtId uint32, query string) string {
+	return fmt.Sprintf("PREPARE stmt%d FROM '%s'", stmtId, query)
 }
 
-// buildParameterDefinitionBlock 构建参数定义块
-func (e *StmtPrepareExecutor) buildParameterDefinitionBlock(n uint64, charset uint32) [][]byte {
-	params := make([]Column, 0, n)
-	for i := uint64(0); i < n; i++ {
-		params = append(params, NewColumn("?", "BIGINT"))
-	}
-	var packets [][]byte
-	for _, p := range params {
-		packets = append(packets, packet.BuildColumnDefinitionPacket(p, charset))
-	}
-	return packets
-}
-
-// buildColumnDefinitionBlock 构建列定义块
-func (e *StmtPrepareExecutor) buildColumnDefinitionBlock(n uint64, charset uint32) [][]byte {
-	// TODO 这里的字段可能要获取Prepare中展示的字段信息，不过也可以试试能不能瞎编数据
-	// fields := []Column{
-	// 	NewColumn("id", "INT"),
-	// 	NewColumn("name", "STRING"),
-	// }
-	fields := make([]Column, 0, n+1)
-	for i := uint64(0); i < n; i++ {
-		fields = append(fields, NewColumn(fmt.Sprintf("fake_field_%d", i), "INT"))
-	}
-	var packets [][]byte
-	for _, f := range fields {
-		packets = append(packets, packet.BuildColumnDefinitionPacket(f, charset))
-	}
-	return packets
+func (e *StmtPrepareExecutor) buildRespPackets(stmtID uint32, numParams uint64, conn *connection.Conn) [][]byte {
+	b := packet.PrepareStmtResponseBuilder{}
+	b.FieldStatementID = stmtID
+	b.FieldNumParams = uint16(numParams)
+	b.Charset = conn.CharacterSet()
+	b.ServerStatus = e.getServerStatus(conn)
+	return b.BuildOK()
 }

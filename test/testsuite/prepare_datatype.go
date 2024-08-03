@@ -3,7 +3,9 @@ package testsuite
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,24 +42,34 @@ func (s *PrepareDataTypeTestSuite) TestIntTypes() {
 		args []any
 	}{
 		{
-			name: "随意整数",
-			sql:  s.getIntTypeQuery(),
+			name: "非NULL值_按照单个字段查询",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "最大整数",
-			sql:  s.getIntTypeQuery(),
-			args: []any{2},
+			name: "非NULL值_按照多个字段查询_最小值",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`type_tinyint`, `type_smallint`, `type_mediumint`, `type_int`, `type_integer`, `type_bigint`}, false),
+			args: []any{-128, -32768, -8388608, -2147483648, -2147483648, int64(-9223372036854775808)},
 		},
 		{
-			name: "最小整数",
-			sql:  s.getIntTypeQuery(),
-			args: []any{3},
+			name: "非NULL值_按照多个字段查询_中间值",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`type_tinyint`, `type_smallint`, `type_mediumint`, `type_int`, `type_integer`, `type_bigint`}, false),
+			args: []any{1, 2, 3, 4, 5, 6},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getIntTypeQuery(),
+			name: "非NULL值_按照多个字段查询_最大值",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`type_tinyint`, `type_smallint`, `type_mediumint`, `type_int`, `type_integer`, `type_bigint`}, false),
+			args: []any{127, 32767, 8388607, 2147483647, 2147483647, int64(9223372036854775807)},
+		},
+		{
+			name: "NULL值_按照单个字段查询",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{4},
+		},
+		{
+			name: "NULL值_按照多个字段查询",
+			sql:  s.generateSQL(s.intTypeQueryTmpl(), []string{`type_tinyint`, `type_smallint`, `type_mediumint`, `type_int`, `type_integer`, `type_bigint`}, true),
+			args: []any{},
 		},
 	}
 	for _, tc := range testCases {
@@ -71,8 +83,19 @@ func (s *PrepareDataTypeTestSuite) TestIntTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getIntTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) intTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE %s"
+}
+
+func (s *PrepareDataTypeTestSuite) generateSQL(tmpl string, columns []string, isNULL bool) string {
+	for i := range columns {
+		if isNULL {
+			columns[i] = fmt.Sprintf("`%s` IS NULL", strings.Trim(columns[i], "`"))
+		} else {
+			columns[i] = fmt.Sprintf("`%s` = ?", strings.Trim(columns[i], "`"))
+		}
+	}
+	return fmt.Sprintf(tmpl, strings.Join(columns, " AND "))
 }
 
 type scanValuesFunc func(t *testing.T, rows *sql.Rows) [][]any
@@ -121,21 +144,81 @@ func (s *PrepareDataTypeTestSuite) scanIntValues(t *testing.T, rows *sql.Rows) [
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareDataTypeTestSuite) TestFloatTypes() {
 	t := s.T()
-
+	// t.Skip()
 	testCases := []struct {
 		name string
 		sql  string
 		args []any
 	}{
 		{
-			name: "随意浮点数",
-			sql:  s.getFloatTypeQuery(),
+			name: "非NULL值_按单个字段查询_id",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getFloatTypeQuery(),
-			args: []any{2},
+			name: "非NULL值_按单个字段查询_type_float_最小值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_float`}, false),
+			args: []any{-99999.99999},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_double_最小值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_double`}, false),
+			args: []any{-99999.99999},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_decimal_最小值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_decimal`}, false),
+			args: []any{-99999999.99},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_numeric_最小值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_numeric`}, false),
+			args: []any{-99999999.99},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_real_最小值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_real`}, false),
+			args: []any{-1.7976931348623158e+308},
+		},
+		{
+			name: "NULL值_按多个字段查询_各个字段_中间值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_float`, `type_double`, `type_decimal`, `type_numeric`, `type_real`}, false),
+			args: []any{66.66000, 999.99900, 33.33, 123456.78, 12345.6789},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_float_最大值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_float`}, false),
+			args: []any{99999.99999},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_double_最大值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_double`}, false),
+			args: []any{99999.99999},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_decimal_最大值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_decimal`}, false),
+			args: []any{99999999.99},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_numeric_最大值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_numeric`}, false),
+			args: []any{99999999.99},
+		},
+		{
+			name: "非NULL值_按单个字段查询_type_real_最大值",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_real`}, false),
+			args: []any{1.7976931348623158e+308},
+		},
+		{
+			name: "NULL值_按单个字段查询_id",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`id`}, false),
+			args: []any{4},
+		},
+		{
+			name: "NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.floatTypeQueryTmpl(), []string{`type_float`, `type_double`, `type_decimal`, `type_numeric`, `type_real`}, true),
+			args: []any{},
 		},
 	}
 	for _, tc := range testCases {
@@ -147,8 +230,8 @@ func (s *PrepareDataTypeTestSuite) TestFloatTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getFloatTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) floatTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -169,21 +252,30 @@ func (s *PrepareDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows)
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *PrepareDataTypeTestSuite) TestStringTypes() {
 	t := s.T()
-
 	testCases := []struct {
 		name string
 		sql  string
 		args []any
 	}{
 		{
-			name: "随意字符串",
-			sql:  s.getStringTypeQuery(),
+			name: "非NULL值_按单字段查询",
+			sql:  s.generateSQL(s.stringTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getStringTypeQuery(),
+			name: "非NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.stringTypeQueryTmpl(), []string{`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit`}, false),
+			args: []any{"一", "二", "三", "四", "五", "六", "small", "b,c", "0x61626300000000000000", "abcdef", `{"age": 25, "name": "Tom", "address": {"city": "New York", "zipcode": "10001"}}`, "0010101010"},
+		},
+		{
+			name: "NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.stringTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{2},
+		},
+		{
+			name: "NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.stringTypeQueryTmpl(), []string{`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit`}, true),
+			args: []any{},
 		},
 	}
 	for _, tc := range testCases {
@@ -195,8 +287,8 @@ func (s *PrepareDataTypeTestSuite) TestStringTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getStringTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) stringTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanStringValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -223,14 +315,24 @@ func (s *PrepareDataTypeTestSuite) TestDateTypes() {
 		args []any
 	}{
 		{
-			name: "随意日期",
-			sql:  s.getDateTypeQuery(),
+			name: "非NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.dateTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getDateTypeQuery(),
+			name: "非NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.dateTypeQueryTmpl(), []string{`type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year`}, false),
+			args: []any{"2024-05-25", "2024-05-25 23:51:00", "2024-05-25 23:51:05", "23:51:08", "2024"},
+		},
+		{
+			name: "NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.dateTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{2},
+		},
+		{
+			name: "NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.dateTypeQueryTmpl(), []string{`type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year`}, true),
+			args: []any{},
 		},
 	}
 	for _, tc := range testCases {
@@ -242,8 +344,8 @@ func (s *PrepareDataTypeTestSuite) TestDateTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getDateTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) dateTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanDateValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -270,14 +372,32 @@ func (s *PrepareDataTypeTestSuite) TestGeographyTypes() {
 		args []any
 	}{
 		{
-			name: "随意地理位置",
-			sql:  s.getGeographyTypeQuery(),
+			name: "非NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.geographyTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getGeographyTypeQuery(),
+			name: "非NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.geographyTypeQueryTmpl(), []string{`type_geometry`, `type_geomcollection`, `type_linestring`, `type_multilinestring`, `type_point`, `type_multipoint`, `type_polygon`, `type_multipolygon`}, false),
+			args: []any{
+				`0x0000000001020000000300000000000000000000000000000000000000000000000000F03F000000000000F03F00000000000000400000000000000040`,
+				`0x000000000107000000020000000101000000000000000000F03F000000000000F03F01020000000300000000000000000000000000000000000000000000000000F03F000000000000F03F00000000000000400000000000000040`,
+				`0x0000000001020000000300000000000000000000000000000000000000000000000000F03F000000000000F03F00000000000000400000000000000040`,
+				`0x0000000001050000000200000001020000000300000000000000000000000000000000000000000000000000F03F000000000000F03F00000000000000400000000000000040010200000003000000000000000000004000000000000000400000000000000840000000000000084000000000000010400000000000001040`,
+				`0x0000000001010000005E4BC8073D5B4440AAF1D24D628052C0`,
+				`0x0000000001040000000200000001010000005E4BC8073D5B4440AAF1D24D628052C00101000000F46C567DAE0641404182E2C7988F5DC0`,
+				`0x00000000010300000001000000050000000000000000000000000000000000000000000000000000000000000000002440000000000000244000000000000024400000000000002440000000000000000000000000000000000000000000000000`,
+				`0x00000000010600000002000000010300000001000000050000000000000000000000000000000000000000000000000000000000000000002440000000000000244000000000000024400000000000002440000000000000000000000000000000000000000000000000010300000001000000050000000000000000003440000000000000344000000000000034400000000000003E400000000000003E400000000000003E400000000000003E40000000000000344000000000000034400000000000003440`,
+			},
+		},
+		{
+			name: "NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.geographyTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{2},
+		},
+		{
+			name: "NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.geographyTypeQueryTmpl(), []string{`type_geometry`, `type_geomcollection`, `type_linestring`, `type_multilinestring`, `type_point`, `type_multipoint`, `type_polygon`, `type_multipolygon`}, true),
 		},
 	}
 	for _, tc := range testCases {
@@ -289,8 +409,8 @@ func (s *PrepareDataTypeTestSuite) TestGeographyTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getGeographyTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) geographyTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanGeographyValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -317,14 +437,23 @@ func (s *PrepareDataTypeTestSuite) TestFilePathTypes() {
 		args []any
 	}{
 		{
-			name: "随意字符串",
-			sql:  s.getFilepathTypeQuery(),
+			name: "非NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.filepathTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{1},
 		},
 		{
-			name: "NULL值",
-			sql:  s.getFilepathTypeQuery(),
+			name: "非NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.filepathTypeQueryTmpl(), []string{`type_tinyblob`, `type_mediumblob`, `type_blob`, `type_longblob`}, false),
+			args: []any{`0x01020304FFFFFFFF0000000CAACB0000`, `0x01020304FFFFFFFF0000000CAACB0000`, `0x01020304FFFFFFFF0000000CAACB0000`, `0x01020304FFFFFFFF0000000CAACB0000`},
+		},
+		{
+			name: "NULL值_按单个字段查询",
+			sql:  s.generateSQL(s.filepathTypeQueryTmpl(), []string{`id`}, false),
 			args: []any{2},
+		},
+		{
+			name: "NULL值_按多个字段查询",
+			sql:  s.generateSQL(s.filepathTypeQueryTmpl(), []string{`type_tinyblob`, `type_mediumblob`, `type_blob`, `type_longblob`}, true),
 		},
 	}
 	for _, tc := range testCases {
@@ -336,8 +465,8 @@ func (s *PrepareDataTypeTestSuite) TestFilePathTypes() {
 	}
 }
 
-func (s *PrepareDataTypeTestSuite) getFilepathTypeQuery() string {
-	return "SELECT /*useMaster*/ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE `id` = ?"
+func (s *PrepareDataTypeTestSuite) filepathTypeQueryTmpl() string {
+	return "SELECT /*useMaster*/ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanFilepathValues(t *testing.T, rows *sql.Rows) [][]any {

@@ -20,8 +20,6 @@ import (
 
 // ForwardHandler 什么也不做，就是转发请求
 // 一般用于测试环境
-// 这个实现有一个巨大的问题，即 ForwardHandler 不是线程安全的
-// TODO 后续要考虑多个事务（不同的 Connection) 同时执行的问题
 type ForwardHandler struct {
 	*baseHandler
 	stmtID2Stmt       syncx.Map[uint32, datasource.Stmt]
@@ -140,9 +138,9 @@ func (h *ForwardHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugi
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("ExecutePrepare: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
+	log.Printf("handleExecutePrepareStmt: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
 	var result sql.Result
-	var rows *sql.Rows
+	var rows sqlx.Rows
 	switch c.ParsedQuery.Type() {
 	case vparser.SelectStmt:
 		rows, err = stmt.Query(ctx.Context, datasource.Query{
@@ -157,10 +155,12 @@ func (h *ForwardHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugi
 			DB:   h.config.DBName,
 		})
 	}
+	log.Printf("handleExecutePrepareStmt: result : %#v, rows : %#v\n", result, rows)
 	return &plugin.Result{
 		Result:             result,
 		Rows:               rows,
 		InTransactionState: h.isInTransaction(ctx.ConnID),
+		StmtID:             ctx.StmtID,
 	}, err
 }
 

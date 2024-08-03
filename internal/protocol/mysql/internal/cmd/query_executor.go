@@ -45,5 +45,5 @@ func (e *QueryExecutor) Exec(
 		// 先返回系统错误
 		return e.writeErrRespPacket(conn, err)
 	}
-	return e.handlePluginResult(result, conn, e.handleQueryRows)
+	return e.handlePluginResult(result, conn, e.handleQuerySQLRows)
 }
