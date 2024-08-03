@@ -1,5 +1,9 @@
 package packet
 
+var (
+	_ ColumnType = Column{}
+)
+
 type Column struct {
 	name         string
 	databaseType string

@@ -5,10 +5,6 @@ package packet
 type CursorType byte
 
 const (
-	CURSOR_TYPE_NO_CURSOR  CursorType = 0
-	CURSOR_TYPE_READ_ONLY             = 1
-	CURSOR_TYPE_FOR_UPDATE            = 2
-	CURSOR_TYPE_SCROLLABLE            = 4
-	// PARAMETER_COUNT_AVAILABLE  当客户端发送参数数量即使为0也开启该选项
-	PARAMETER_COUNT_AVAILABLE = 8
+	// ParameterCountAvailable  当客户端发送参数数量即使为0也开启该选项
+	ParameterCountAvailable CursorType = 8
 )

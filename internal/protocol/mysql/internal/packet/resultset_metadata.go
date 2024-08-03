@@ -1,13 +1,15 @@
 package packet
 
+// ResultSetMetadata Flag specifying if metadata are skipped or not.
+// https://dev.mysql.com/doc/dev/mysql-server/latest/mysql__com_8h.html#aba06d1157f6dee3f20537154103c91a1
 type ResultSetMetadata byte
 
 const (
-	// RESULTSET_METADATA_NONE
+	// ResultSetMetadataNone
 	// No metadata will be sent.
-	RESULTSET_METADATA_NONE ResultSetMetadata = 0
+	ResultSetMetadataNone ResultSetMetadata = 0
 
-	// RESULTSET_METADATA_FULL
+	// ResultSetMetadataFull
 	// The server will send all metadata.
-	RESULTSET_METADATA_FULL = 1
+	ResultSetMetadataFull = 1
 )

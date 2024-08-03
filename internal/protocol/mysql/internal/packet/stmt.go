@@ -124,11 +124,11 @@ func (b *PrepareStmtResponseBuilder) buildFirstPacket() []byte {
 }
 
 func (b *PrepareStmtResponseBuilder) isClientOptionalResultsetMetadataFlagSet() bool {
-	return b.ClientCapabilityFlags.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA)
+	return b.ClientCapabilityFlags.Has(flags.ClientOptionalResultsetMetadata)
 }
 
 func (b *PrepareStmtResponseBuilder) buildParameterDefinitionPackets() [][]byte {
-	if b.FieldNumParams > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == RESULTSET_METADATA_FULL {
+	if b.FieldNumParams > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == ResultSetMetadataFull {
 
 		params := make([]Column, 0, b.FieldNumParams)
 		for i := uint16(0); i < b.FieldNumParams; i++ {
@@ -155,11 +155,11 @@ func (b *PrepareStmtResponseBuilder) buildParameterDefinitionPackets() [][]byte 
 }
 
 func (b *PrepareStmtResponseBuilder) isClientDeprecateEOFFlagSet() bool {
-	return b.ClientCapabilityFlags.Has(flags.CLIENT_DEPRECATE_EOF)
+	return b.ClientCapabilityFlags.Has(flags.ClientDeprecateEOF)
 }
 
 func (b *PrepareStmtResponseBuilder) buildColumnDefinitionPackets() [][]byte {
-	if b.FieldNumColumns > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == RESULTSET_METADATA_FULL {
+	if b.FieldNumColumns > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == ResultSetMetadataFull {
 
 		fields := make([]Column, 0, b.FieldNumColumns)
 		for i := uint16(0); i < b.FieldNumColumns; i++ {
@@ -277,7 +277,7 @@ func (p *ExecuteStmtRequestParser) Parse(payload []byte) error {
 	// 判断并解析参数数量
 	var err error
 
-	if p.numParams > 0 || (p.isClientQueryAttributesFlagOn() && (CursorType(p.flags)&PARAMETER_COUNT_AVAILABLE) != 0) {
+	if p.numParams > 0 || (p.isClientQueryAttributesFlagOn() && (CursorType(p.flags)&ParameterCountAvailable) != 0) {
 
 		if p.isClientQueryAttributesFlagOn() {
 			log.Printf("isClientQueryAttributesFlagOn = %#v\n", p.clientCapabilityFlags)

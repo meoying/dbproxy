@@ -6,16 +6,16 @@ package flags
 type CapabilityFlag uint64
 
 const (
-	// CLIENT_PROTOCOL_41  New 4.1 protocol
-	CLIENT_PROTOCOL_41 CapabilityFlag = 512
+	// ClientProtocol41  New 4.1 protocol
+	ClientProtocol41 CapabilityFlag = 512
 
-	// CLIENT_DEPRECATE_EOF
+	// ClientDeprecateEOF
 	// Client no longer needs EOF_Packet and will use OK_Packet instead.
-	CLIENT_DEPRECATE_EOF = 1 << 24
+	ClientDeprecateEOF = 1 << 24
 
-	// CLIENT_OPTIONAL_RESULTSET_METADATA
+	// ClientOptionalResultsetMetadata
 	// The client can handle optional metadata information in the resultset.
-	CLIENT_OPTIONAL_RESULTSET_METADATA = 1 << 25
+	ClientOptionalResultsetMetadata = 1 << 25
 
 	// ClientQueryAttributes
 	// Support optional extension for query parameters into the COM_QUERY and COM_STMT_EXECUTE packets.
