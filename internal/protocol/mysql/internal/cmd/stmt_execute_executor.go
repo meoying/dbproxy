@@ -55,7 +55,7 @@ func (e *StmtExecuteExecutor) Exec(
 		return e.writeErrRespPacket(conn, err)
 	}
 
-	return e.handlePluginResult(result, conn, e.handlePrepareRows)
+	return e.handlePluginResult(result, conn, e.handlePrepareSQLRows)
 }
 
 func (e *StmtExecuteExecutor) parseArgs(clientCapabilityFlags flags.CapabilityFlags, stmtID uint32, payload []byte) ([]any, error) {

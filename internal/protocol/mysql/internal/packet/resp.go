@@ -2,7 +2,6 @@ package packet
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -509,108 +508,108 @@ func parseTime(data []byte, columnDatabaseType string) (time.Time, string, error
 
 // ConvertToBinaryProtocolValue 根据 col 中的类型信息将 val 转换为 mysql二进制协议值
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row_value
-func ConvertToBinaryProtocolValue(value any, col *sql.ColumnType) (any, error) {
-	log.Printf("ConvertToBinaryProtocolValue, name = %s, type = %T, val = %#v\n", col.Name(), value, value)
+// func ConvertToBinaryProtocolValue(value any, col *sql.ColumnType) (any, error) {
+// 	log.Printf("ConvertToBinaryProtocolValue, name = %s, type = %T, val = %#v\n", col.Name(), value, value)
+//
+// 	if value == nil {
+// 		return nil, nil
+// 	}
+//
+// 	// 确保 val 是 *[]byte 类型
+// 	bytesPtr, ok := value.(*[]byte)
+// 	if !ok {
+// 		return nil, fmt.Errorf("val类型非法: %T", value)
+// 	}
+//
+// 	if bytesPtr == nil {
+// 		return nil, nil
+// 	}
+//
+// 	// 解引用 *[]byte 得到 []byte
+// 	bytesVal := *bytesPtr
+//
+// 	if bytesVal == nil {
+// 		return nil, nil
+// 	}
+//
+// 	switch col.DatabaseTypeName() {
+// 	case "TINYINT":
+// 		// 将 []byte 转换为 int8 类型
+// 		v, err := strconv.ParseInt(string(bytesVal), 10, 8)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return int8(v), nil
+// 	case "SMALLINT", "YEAR":
+// 		// 将 []byte 转换为 int16 类型
+// 		v, err := strconv.ParseInt(string(bytesVal), 10, 16)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return int16(v), nil
+// 	case "INT", "MEDIUMINT":
+// 		// 将 []byte 转换为 int32 类型
+// 		s := string(bytesVal)
+// 		log.Printf("INT, MEDIUMINT = %s\n", s)
+// 		v, err := strconv.ParseInt(s, 10, 32)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return int32(v), nil
+// 	case "BIGINT":
+// 		// 将 []byte 转换为 int64 类型
+// 		return strconv.ParseInt(string(bytesVal), 10, 64)
+// 	case "FLOAT":
+// 		f, err := strconv.ParseFloat(string(bytesVal), 32)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return float32(f), nil
+// 	case "DOUBLE":
+// 		return strconv.ParseFloat(string(bytesVal), 64)
+// 	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
+// 		return string(bytesVal), nil
+// 	case "DATE", "DATETIME", "TIMESTAMP":
+// 		return nil, nil
+// 	case "TIME":
+// 		return nil, nil
+// 	default:
+// 		return nil, errors.New("unsupported database type")
+// 	}
+// }
 
-	if value == nil {
-		return nil, nil
-	}
-
-	// 确保 val 是 *[]byte 类型
-	bytesPtr, ok := value.(*[]byte)
-	if !ok {
-		return nil, fmt.Errorf("val类型非法: %T", value)
-	}
-
-	if bytesPtr == nil {
-		return nil, nil
-	}
-
-	// 解引用 *[]byte 得到 []byte
-	bytesVal := *bytesPtr
-
-	if bytesVal == nil {
-		return nil, nil
-	}
-
-	switch col.DatabaseTypeName() {
-	case "TINYINT":
-		// 将 []byte 转换为 int8 类型
-		v, err := strconv.ParseInt(string(bytesVal), 10, 8)
-		if err != nil {
-			return nil, err
-		}
-		return int8(v), nil
-	case "SMALLINT", "YEAR":
-		// 将 []byte 转换为 int16 类型
-		v, err := strconv.ParseInt(string(bytesVal), 10, 16)
-		if err != nil {
-			return nil, err
-		}
-		return int16(v), nil
-	case "INT", "MEDIUMINT":
-		// 将 []byte 转换为 int32 类型
-		s := string(bytesVal)
-		log.Printf("INT, MEDIUMINT = %s\n", s)
-		v, err := strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		return int32(v), nil
-	case "BIGINT":
-		// 将 []byte 转换为 int64 类型
-		return strconv.ParseInt(string(bytesVal), 10, 64)
-	case "FLOAT":
-		f, err := strconv.ParseFloat(string(bytesVal), 32)
-		if err != nil {
-			return nil, err
-		}
-		return float32(f), nil
-	case "DOUBLE":
-		return strconv.ParseFloat(string(bytesVal), 64)
-	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
-		return string(bytesVal), nil
-	case "DATE", "DATETIME", "TIMESTAMP":
-		return nil, nil
-	case "TIME":
-		return nil, nil
-	default:
-		return nil, errors.New("unsupported database type")
-	}
-}
-
-func writeBinaryValue(buf *bytes.Buffer, value any) error {
-
-	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
-
-	switch v := value.(type) {
-	case int8, int16, int32, int64, float32, float64:
-		log.Printf("write %T, %#v\n", v, v)
-		return binary.Write(buf, binary.LittleEndian, v)
-	case sql.NullInt64:
-		if v.Valid {
-			return writeBinaryValue(buf, v.Int64)
-		}
-		return nil
-	case bool:
-		var boolValue byte
-		if v {
-			boolValue = 1
-		}
-		log.Printf("write %T, %#v\n", v, v)
-		return buf.WriteByte(boolValue)
-	case []byte:
-		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(LengthEncodeString(string(v)))
-		return err
-	case string:
-		log.Printf("write %T, %#v\n", v, v)
-		_, err := buf.Write(LengthEncodeString(v))
-		return err
-	default:
-		return fmt.Errorf("未支持的列类型 %T", v)
-	}
-}
+// func writeBinaryValue(buf *bytes.Buffer, value any) error {
+//
+// 	log.Printf("writeBinaryValue = %T, %#v\n", value, value)
+//
+// 	switch v := value.(type) {
+// 	case int8, int16, int32, int64, float32, float64:
+// 		log.Printf("write %T, %#v\n", v, v)
+// 		return binary.Write(buf, binary.LittleEndian, v)
+// 	case sql.NullInt64:
+// 		if v.Valid {
+// 			return writeBinaryValue(buf, v.Int64)
+// 		}
+// 		return nil
+// 	case bool:
+// 		var boolValue byte
+// 		if v {
+// 			boolValue = 1
+// 		}
+// 		log.Printf("write %T, %#v\n", v, v)
+// 		return buf.WriteByte(boolValue)
+// 	case []byte:
+// 		log.Printf("write %T, %#v\n", v, v)
+// 		_, err := buf.Write(LengthEncodeString(string(v)))
+// 		return err
+// 	case string:
+// 		log.Printf("write %T, %#v\n", v, v)
+// 		_, err := buf.Write(LengthEncodeString(v))
+// 		return err
+// 	default:
+// 		return fmt.Errorf("未支持的列类型 %T", v)
+// 	}
+// }
 
 // getMysqlTypeMaxLength 获取字段类型最大长度
 func getMysqlTypeMaxLength(dataType string) uint32 {
@@ -685,38 +684,38 @@ func mapMySQLTypeToEnum(dataType string) uint16 {
 
 // BuildStmtPrepareRespPacket 构建预处理响应包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
-	res := make([]byte, 4, 20)
-
-	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
-	res = append(res, 0x00)
-
-	// int<4>	statement_id	statement ID
-	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
-
-	// int<2>	num_columns SELECT语句中选中列的个数
-	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
-
-	// int<2>	num_params 占位符?的个数
-	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
-
-	// int<1>	reserved_1	[00] filler
-	res = append(res, 0x00)
-
-	// if (packet_lenght > 12) {
-	// int<2>	warning_count	Number of warnings
-	// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA {
-	// int<1>	metadata_follows	Flag specifying if metadata are skipped or not. See enum_resultset_metadata
-	// } – CLIENT_OPTIONAL_RESULTSET_METADATA
-	// } – packet_lenght > 12
-
-	// warning_count int<2>
-	if len(res) > 12 {
-		res = append(res, 0, 0)
-	}
-
-	return res
-}
+// func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
+// 	res := make([]byte, 4, 20)
+//
+// 	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
+// 	res = append(res, 0x00)
+//
+// 	// int<4>	statement_id	statement ID
+// 	res = append(res, FixedLengthInteger(uint32(stmtId), 4)...)
+//
+// 	// int<2>	num_columns SELECT语句中选中列的个数
+// 	res = append(res, FixedLengthInteger(uint32(numColumns), 2)...)
+//
+// 	// int<2>	num_params 占位符?的个数
+// 	res = append(res, FixedLengthInteger(uint32(numParams), 2)...)
+//
+// 	// int<1>	reserved_1	[00] filler
+// 	res = append(res, 0x00)
+//
+// 	// if (packet_lenght > 12) {
+// 	// int<2>	warning_count	Number of warnings
+// 	// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA {
+// 	// int<1>	metadata_follows	Flag specifying if metadata are skipped or not. See enum_resultset_metadata
+// 	// } – CLIENT_OPTIONAL_RESULTSET_METADATA
+// 	// } – packet_lenght > 12
+//
+// 	// warning_count int<2>
+// 	if len(res) > 12 {
+// 		res = append(res, 0, 0)
+// 	}
+//
+// 	return res
+// }
 
 // func BuildStmtPrepareRespPacket2(capabilities flags.CapabilityFlags, stmtId, numColumns, numParams int) []byte {
 // 	p := make([]byte, 4, 20)

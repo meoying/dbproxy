@@ -11,6 +11,7 @@ import (
 )
 
 type BaseExecutor struct {
+	*packet.BaseBuilder
 }
 
 func (e *BaseExecutor) parseQuery(payload []byte) string {
@@ -28,7 +29,11 @@ func (e *BaseExecutor) getServerStatus(conn *connection.Conn) packet.SeverStatus
 
 func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.SeverStatus, affectedRows, lastInsertID uint64) error {
 	// TODO 如果是插入、更新、删除行为应该把影响行数和最后插入ID给传进去
-	return conn.WritePacket(packet.BuildOKRespPacket(status, affectedRows, lastInsertID))
+	return conn.WritePacket(e.BuildOKRespPacket(status, affectedRows, lastInsertID))
+}
+
+func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
+	return conn.WritePacket(e.BuildErrRespPacket(err))
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -41,42 +46,17 @@ func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte)
 	return nil
 }
 
-func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
-	return conn.WritePacket(packet.BuildErrRespPacket(packet.BuildErInternalError(err.Error())))
+// handleQuerySQLRows 处理使用非prepare语句获取到的结果集
+func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
+	return e.handleRows(rows, conn, status, e.BuildTextResultsetRespPackets)
 }
 
-type buildResultSetRespPackets func(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus) ([][]byte, error)
-
-type handleRowsFunc func(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error
-
-func (e *BaseExecutor) handlePluginResult(result *plugin.Result, conn *connection.Conn, handleRowsFunc handleRowsFunc) error {
-	// 重置conn的事务状态
-	conn.SetInTransaction(result.InTransactionState)
-
-	status := packet.ServerStatusAutoCommit
-	if result.InTransactionState {
-		status |= packet.SeverStatusInTrans
-	}
-
-	if result.Rows != nil {
-		return handleRowsFunc(result.Rows, conn, status)
-	}
-
-	if result.Result != nil {
-		return e.handleResult(result.Result, conn, status)
-	}
-
-	return e.writeOKRespPacket(conn, status, 0, 0)
+// handlePrepareSQLRows 处理使用prepare语句获取到的结果集
+func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
+	return e.handleRows(rows, conn, status, e.BuildBinaryResultsetRespPackets)
 }
 
-func (e *BaseExecutor) handleQueryRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.buildTextResultsetRespPackets, false)
-}
-
-func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc buildResultSetRespPackets, isBinaryProtocol bool) error {
-	// if conn.InTransaction() {
-	// 	status |= packet.SeverStatusInTrans
-	// }
+func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc packet.BuildResultsetRespPacketsFunc) error {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)
@@ -94,19 +74,14 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 			return e.writeErrRespPacket(conn, err)
 		}
 
-		// if isBinaryProtocol {
-		// 	row, err = e.convert(row, cols)
-		// 	if err != nil {
-		// 		return e.writeErrRespPacket(conn, err)
-		// 	}
-		// }
-
 		data = append(data, row)
 	}
+
 	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) packet.ColumnType {
 		return src
 	})
-	packets, err := buildPacketsFunc(columnTypes, data, conn.CharacterSet(), status)
+
+	packets, err := buildPacketsFunc(columnTypes, data, status, conn.CharacterSet())
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)
 	}
@@ -118,57 +93,31 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 	return rows.Close()
 }
 
-// buildTextResultsetRespPackets 根据执行结果返回转换成对应的格式并返回
-// response 的 text_resultset 的格式在
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset.html
-func (e *BaseExecutor) buildTextResultsetRespPackets(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus) ([][]byte, error) {
-	// text_resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
-	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof
-	return e.buildResultSetRespPackets(cols, rows, charset, status, packet.BuildTextResultsetRowRespPacket)
-}
+// handleSQLRowsFunc 对 handleQuerySQLRows 和 handlePrepareSQLRows 方法的抽象
+type handleSQLRowsFunc func(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error
 
-type buildResultsetRowRespPacket func(values []any, cols []packet.ColumnType) []byte
+// handlePluginResult 同一处理插件执行结果
+func (e *BaseExecutor) handlePluginResult(result *plugin.Result, conn *connection.Conn, handleSQLRowsFunc handleSQLRowsFunc) error {
+	// 重置conn的事务状态
+	conn.SetInTransaction(result.InTransactionState)
 
-func (e *BaseExecutor) buildResultSetRespPackets(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus, buildFunc buildResultsetRowRespPacket) ([][]byte, error) {
-	// resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
-	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
-	var packets [][]byte
-
-	// 写入字段数量
-	colLenPack := append([]byte{0, 0, 0, 0}, packet.LengthEncodeInteger(uint64(len(cols)))...)
-	packets = append(packets, colLenPack)
-	// 写入字段描述包
-	for _, c := range cols {
-		packets = append(packets, packet.BuildColumnDefinitionPacket(c, charset))
-	}
-	if len(cols) != 0 {
-		packets = append(packets, packet.BuildEOFPacket(status))
+	status := packet.ServerStatusAutoCommit
+	if result.InTransactionState {
+		status |= packet.SeverStatusInTrans
 	}
 
-	// 写入真实每行数据
-	for _, row := range rows {
-		packets = append(packets, buildFunc(row, cols))
+	if result.Rows != nil {
+		return handleSQLRowsFunc(result.Rows, conn, status)
 	}
 
-	packets = append(packets, packet.BuildEOFPacket(status))
+	if result.Result != nil {
+		return e.handleSQLResult(result.Result, conn, status)
+	}
 
-	return packets, nil
+	return e.writeOKRespPacket(conn, status, 0, 0)
 }
 
-func (e *BaseExecutor) handlePrepareRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.buildBinaryResultsetRespPackets, true)
-}
-
-// buildBinaryResultsetRespPackets 根据执行结果返回转换成对应的格式并返回
-// response 的 binary_resultset 的格式在
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html
-func (e *BaseExecutor) buildBinaryResultsetRespPackets(cols []packet.ColumnType, rows [][]any, charset uint32, status packet.SeverStatus) ([][]byte, error) {
-	// binary_resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
-	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
-	return e.buildResultSetRespPackets(cols, rows, charset, status, packet.BuildBinaryResultsetRowRespPacket)
-}
-
-func (e *BaseExecutor) handleResult(result sql.Result, conn *connection.Conn, status packet.SeverStatus) error {
+func (e *BaseExecutor) handleSQLResult(result sql.Result, conn *connection.Conn, status packet.SeverStatus) error {
 	rowsAffected, _ := result.RowsAffected()
 	lastInsertId, _ := result.LastInsertId()
 	return e.writeOKRespPacket(conn, status, uint64(rowsAffected), uint64(lastInsertId))
