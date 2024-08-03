@@ -27,9 +27,8 @@ func (e *BaseExecutor) getServerStatus(conn *connection.Conn) packet.SeverStatus
 	return status
 }
 
-func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.SeverStatus, affectedRows, lastInsertID uint64) error {
-	// TODO 如果是插入、更新、删除行为应该把影响行数和最后插入ID给传进去
-	return conn.WritePacket(e.BuildOKRespPacket(status, affectedRows, lastInsertID))
+func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.SeverStatus, rowsAffected, lastInsertID uint64) error {
+	return conn.WritePacket(e.BuildOKRespPacket(status, rowsAffected, lastInsertID))
 }
 
 func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {

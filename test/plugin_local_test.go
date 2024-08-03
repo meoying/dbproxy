@@ -161,7 +161,6 @@ func (s *localForwardTestSuite) TestPrepareDataTypeSuite() {
 func (s *localForwardTestSuite) TestPrepareBasicSuite() {
 	var prepareBasicTestSuite testsuite.PrepareBasicTestSuite
 	prepareBasicTestSuite.SetDB(s.newProxyClientDB())
-	// prepareBasicTestSuite.SetDB(s.newMySQLDB())
 	suite.Run(s.T(), &prepareBasicTestSuite)
 }
 

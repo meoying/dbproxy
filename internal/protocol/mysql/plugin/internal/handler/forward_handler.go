@@ -140,9 +140,9 @@ func (h *ForwardHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugi
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("ExecutePrepare: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
+	log.Printf("handleExecutePrepareStmt: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
 	var result sql.Result
-	var rows *sql.Rows
+	var rows sqlx.Rows
 	switch c.ParsedQuery.Type() {
 	case vparser.SelectStmt:
 		rows, err = stmt.Query(ctx.Context, datasource.Query{
@@ -157,10 +157,12 @@ func (h *ForwardHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugi
 			DB:   h.config.DBName,
 		})
 	}
+	log.Printf("handleExecutePrepareStmt: result : %#v, rows : %#v\n", result, rows)
 	return &plugin.Result{
 		Result:             result,
 		Rows:               rows,
 		InTransactionState: h.isInTransaction(ctx.ConnID),
+		StmtID:             ctx.StmtID,
 	}, err
 }
 

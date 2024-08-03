@@ -55,6 +55,6 @@ func (p *BaseBuilder) BuildErrRespPacket(err error) []byte {
 	return BuildErrRespPacket(BuildErInternalError(err.Error()))
 }
 
-func (p *BaseBuilder) BuildOKRespPacket(serverStatus SeverStatus, affectedRows, lastInsertID uint64) []byte {
-	return BuildOKRespPacket(serverStatus, affectedRows, lastInsertID)
+func (p *BaseBuilder) BuildOKRespPacket(serverStatus SeverStatus, rowsAffected, lastInsertID uint64) []byte {
+	return BuildOKRespPacket(serverStatus, rowsAffected, lastInsertID)
 }
