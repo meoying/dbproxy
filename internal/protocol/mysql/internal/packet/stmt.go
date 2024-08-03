@@ -47,128 +47,145 @@ func (p *PrepareStmtRequestParser) Query() string {
 // BuildErr 用于构建 ERR_Packet 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html#sect_protocol_com_stmt_prepare_response_ok
 type PrepareStmtResponseBuilder struct {
-	clientCapabilityFlags flags.CapabilityFlags
+
+	// ClientCapabilityFlags 客户端与服务端建立连接时设置的flags
+	ClientCapabilityFlags flags.CapabilityFlags
+
+	// Charset 客户端与服务端建立连接时设置的
+	Charset uint32
+
+	// ServerStatus 服务端状态
+	ServerStatus SeverStatus
 
 	// 以下是 COM_STMT_PREPARE_OK 包内容
 
 	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
-	Status byte
+	FieldStatus byte
 
 	// int<4>	statement_id	statement ID
-	StatementID int32
+	FieldStatementID uint32
 
 	// int<2>	num_columns	Number of columns
-	NumColumns int16
+	FieldNumColumns uint16
 
 	// int<2>	num_params	Number of parameters
-	NumParams int16
+	FieldNumParams uint16
 
 	// int<1>	reserved_1	[00] filler
 	// 保留字段,默认为0x00
-	reserved byte
+	FieldReserved byte
 
 	// 下列字段当 packet_length > 12 时 才会被写入
 
 	// int<2>	warning_count	Number of warnings
-	WarningCount int16
+	FieldWarningCount uint16
 
 	// int<1>	metadata_follows	Flag specifying if metadata are skipped or not.
 	// 详见 resultset_metadata.go
 	// 该字段当 CLIENT_OPTIONAL_RESULTSET_METADATA 设置时才会写入
-	MetadataFollows ResultSetMetadata
-}
-
-func NewPrepareStmtResponseBuilder(clientCapabilityFlags flags.CapabilityFlags) *PrepareStmtResponseBuilder {
-	return &PrepareStmtResponseBuilder{
-		clientCapabilityFlags: clientCapabilityFlags,
-	}
+	FieldMetadataFollows ResultSetMetadata
 }
 
 func (b *PrepareStmtResponseBuilder) BuildOK() [][]byte {
 
 	var packets [][]byte
 
-	p := b.buildPayload()
+	packets = append(packets, b.buildFirstPacket())
 
-	packets = append(packets, p)
+	packets = append(packets, b.buildParameterDefinitionPackets()...)
 
-	//
-	i, done := b.buildParameterDefinitionBlock()
-	if done {
-		return i
-	}
-
-	if b.NumColumns > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.MetadataFollows == RESULTSET_METADATA_FULL {
-
-		// num_columns * Column Definition
-		// num_columns * Column Definition
-		if !b.isClientDeprecateEOFFlagSet() {
-			// 发送EOF包
-			return nil
-		} else {
-			// 发送ok包 表示 中间的EOF
-			return nil
-		}
-	}
+	packets = append(packets, b.buildColumnDefinitionPackets()...)
 
 	return packets
 }
 
-func (b *PrepareStmtResponseBuilder) buildParameterDefinitionBlock() ([][]byte, bool) {
-	if b.NumParams > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.MetadataFollows == RESULTSET_METADATA_FULL {
-		// Parameter definition block
-		// num_params * Column Definition
-		// num_params packets will follow
-		if !b.isClientDeprecateEOFFlagSet() {
-			// 发送EOF包
-			return nil, true
-		} else {
-			// 发送ok包 表示 中间的EOF
-			return nil, true
-		}
-	}
-	return nil, false
-}
-
-func (b *PrepareStmtResponseBuilder) buildPayload() []byte {
+func (b *PrepareStmtResponseBuilder) buildFirstPacket() []byte {
 	p := make([]byte, 4, 20)
 
-	p = append(p, b.Status)
+	p = append(p, b.FieldStatus)
 
-	p = append(p, FixedLengthInteger(uint32(b.StatementID), 4)...)
+	p = append(p, FixedLengthInteger(b.FieldStatementID, 4)...)
 
-	p = append(p, FixedLengthInteger(uint32(b.NumColumns), 2)...)
+	p = append(p, FixedLengthInteger(uint32(b.FieldNumColumns), 2)...)
 
-	p = append(p, FixedLengthInteger(uint32(b.NumParams), 2)...)
+	p = append(p, FixedLengthInteger(uint32(b.FieldNumParams), 2)...)
 
-	p = append(p, b.reserved)
+	p = append(p, b.FieldReserved)
 
 	if len(p) > 12 {
 
-		p = append(p, FixedLengthInteger(uint32(b.WarningCount), 2)...)
+		p = append(p, FixedLengthInteger(uint32(b.FieldWarningCount), 2)...)
 
 		if b.isClientOptionalResultsetMetadataFlagSet() {
-			p = append(p, byte(b.MetadataFollows))
+			p = append(p, byte(b.FieldMetadataFollows))
 		}
 	}
 	return p
 }
 
 func (b *PrepareStmtResponseBuilder) isClientOptionalResultsetMetadataFlagSet() bool {
-	return b.clientCapabilityFlags.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA)
+	return b.ClientCapabilityFlags.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA)
+}
+
+func (b *PrepareStmtResponseBuilder) buildParameterDefinitionPackets() [][]byte {
+	if b.FieldNumParams > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == RESULTSET_METADATA_FULL {
+
+		params := make([]Column, 0, b.FieldNumParams)
+		for i := uint16(0); i < b.FieldNumParams; i++ {
+			// 伪造参数定义
+			params = append(params, NewColumn("?", "BIGINT"))
+		}
+
+		var packets [][]byte
+		for _, p := range params {
+			packets = append(packets, BuildColumnDefinitionPacket(p, b.Charset))
+		}
+
+		if !b.isClientDeprecateEOFFlagSet() {
+			// 发送EOF包
+			packets = append(packets, BuildEOFPacket(b.ServerStatus))
+		} else {
+			// 发送ok包 表示 中间的EOF
+			// append(packets, EOF)
+		}
+		return packets
+	}
+	return nil
 }
 
 func (b *PrepareStmtResponseBuilder) isClientDeprecateEOFFlagSet() bool {
-	return b.clientCapabilityFlags.Has(flags.CLIENT_DEPRECATE_EOF)
+	return b.ClientCapabilityFlags.Has(flags.CLIENT_DEPRECATE_EOF)
 }
 
-func (b *PrepareStmtResponseBuilder) BuildErr() []byte {
+func (b *PrepareStmtResponseBuilder) buildColumnDefinitionPackets() [][]byte {
+	if b.FieldNumColumns > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == RESULTSET_METADATA_FULL {
+
+		fields := make([]Column, 0, b.FieldNumColumns)
+		for i := uint16(0); i < b.FieldNumColumns; i++ {
+			fields = append(fields, NewColumn(fmt.Sprintf("fake_field_%d", i), "INT"))
+		}
+
+		var packets [][]byte
+		for _, f := range fields {
+			packets = append(packets, BuildColumnDefinitionPacket(f, b.Charset))
+		}
+
+		if !b.isClientDeprecateEOFFlagSet() {
+			// 发送EOF包
+			packets = append(packets, BuildEOFPacket(b.ServerStatus))
+		} else {
+			// 发送ok包 表示 中间的EOF
+
+		}
+		return packets
+	}
 	return nil
 }
 
 // ExecuteStmtRequestParser 用于解析客户端发送的 COM_STMT_EXECUTE 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
 type ExecuteStmtRequestParser struct {
+	*baseParser
 
 	// clientCapabilityFlags 客户端与服务端建立连接、握手时传递的参数,从 connection.Conn 中获取
 	// 不属于 COM_STMT_EXECUTE 包
@@ -177,7 +194,7 @@ type ExecuteStmtRequestParser struct {
 	// numParams 之前传递的 prepare 语句中参数的个数
 	numParams uint64
 
-	// 一下是 COM_STMT_EXECUTE 包的各个字段
+	// 以下是 COM_STMT_EXECUTE 包的各个字段
 
 	// int<1>	status 默认 [0x17] 表示 COM_STMT_EXECUTE
 	status byte
@@ -221,74 +238,75 @@ type ExecuteStmtRequestParameter struct {
 
 func NewExecuteStmtRequestParser(clientCapabilityFlags flags.CapabilityFlags, numParams uint64) *ExecuteStmtRequestParser {
 	return &ExecuteStmtRequestParser{
+		baseParser:            &baseParser{},
 		clientCapabilityFlags: clientCapabilityFlags,
 		numParams:             numParams,
 	}
 }
 
-func (req *ExecuteStmtRequestParser) Parse(payload []byte) error {
+func (p *ExecuteStmtRequestParser) Parse(payload []byte) error {
 	log.Printf("pay = %#v\n", payload)
 	buf := bytes.NewBuffer(payload)
 
 	// 解析 Command
-	if err := binary.Read(buf, binary.LittleEndian, &req.status); err != nil {
+	if err := binary.Read(buf, binary.LittleEndian, &p.status); err != nil {
 		return fmt.Errorf("error reading Command: %v", err)
 	}
 
 	// Command 验证
-	if req.status != 0x17 {
-		return fmt.Errorf("invalid Command: %x", req.status)
+	if p.status != 0x17 {
+		return fmt.Errorf("invalid Command: %x", p.status)
 	}
 
 	// 解析 StatementID
-	if err := binary.Read(buf, binary.LittleEndian, &req.statementID); err != nil {
+	if err := binary.Read(buf, binary.LittleEndian, &p.statementID); err != nil {
 		return fmt.Errorf("error reading StatementID: %v", err)
 	}
 
 	// 解析 Flags
-	if err := binary.Read(buf, binary.LittleEndian, &req.flags); err != nil {
+	if err := binary.Read(buf, binary.LittleEndian, &p.flags); err != nil {
 		return fmt.Errorf("error reading Flags: %v", err)
 	}
 
 	// 解析 IterationCount
-	if err := binary.Read(buf, binary.LittleEndian, &req.iterationCount); err != nil {
+	if err := binary.Read(buf, binary.LittleEndian, &p.iterationCount); err != nil {
 		return fmt.Errorf("error reading IterationCount: %v", err)
 	}
 
 	// 判断并解析参数数量
 	var err error
 
-	if req.numParams > 0 || (req.isClientQueryAttributesFlagOn() && (CursorType(req.flags)&PARAMETER_COUNT_AVAILABLE) != 0) {
+	if p.numParams > 0 || (p.isClientQueryAttributesFlagOn() && (CursorType(p.flags)&PARAMETER_COUNT_AVAILABLE) != 0) {
 
-		if req.isClientQueryAttributesFlagOn() {
-			log.Printf("isClientQueryAttributesFlagOn = %#v\n", req.clientCapabilityFlags)
-			req.parameterCount, err = readLengthEncodedInteger(buf)
+		if p.isClientQueryAttributesFlagOn() {
+			log.Printf("isClientQueryAttributesFlagOn = %#v\n", p.clientCapabilityFlags)
+			p.parameterCount, err = p.ParseLengthEncodedInteger(buf)
 			if err != nil {
 				return fmt.Errorf("error reading ParameterCount: %v", err)
 			}
 		} else {
-			req.parameterCount = req.numParams
+			p.parameterCount = p.numParams
 		}
 
 		// 如果 ParameterCount 大于 0
-		if req.parameterCount > 0 {
+		if p.parameterCount > 0 {
 
-			nullBitmapLen := (req.parameterCount + 7) / 8
-			req.nullBitmap = make([]byte, nullBitmapLen)
-			if _, err := buf.Read(req.nullBitmap); err != nil {
+			nullBitmapLen := (p.parameterCount + 7) / 8
+			p.nullBitmap = make([]byte, nullBitmapLen)
+			if _, err := buf.Read(p.nullBitmap); err != nil {
 				return fmt.Errorf("error reading NullBitmap: %v", err)
 			}
 
-			log.Printf("req.nullBitmap = %#v\n", req.nullBitmap)
+			log.Printf("req.nullBitmap = %#v\n", p.nullBitmap)
 
 			log.Printf("buf = %#v\n", buf.Bytes())
-			if err := binary.Read(buf, binary.LittleEndian, &req.newParamsBindFlag); err != nil {
+			if err := binary.Read(buf, binary.LittleEndian, &p.newParamsBindFlag); err != nil {
 				return fmt.Errorf("error reading NewParamsBindFlag: %v", err)
 			}
 
-			log.Printf("NewParamsBindFlag = %#v\n", req.newParamsBindFlag)
+			log.Printf("NewParamsBindFlag = %#v\n", p.newParamsBindFlag)
 
-			err1 := req.parseParameters(buf)
+			err1 := p.parseParameters(buf)
 			if err1 != nil {
 				return err1
 			}
@@ -298,39 +316,39 @@ func (req *ExecuteStmtRequestParser) Parse(payload []byte) error {
 	return nil
 }
 
-func (req *ExecuteStmtRequestParser) isClientQueryAttributesFlagOn() bool {
-	return req.clientCapabilityFlags.Has(flags.ClientQueryAttributes)
+func (p *ExecuteStmtRequestParser) isClientQueryAttributesFlagOn() bool {
+	return p.clientCapabilityFlags.Has(flags.ClientQueryAttributes)
 }
 
-func (req *ExecuteStmtRequestParser) isNewParamsBindFlagOn() bool {
-	return req.newParamsBindFlag != 0
+func (p *ExecuteStmtRequestParser) isNewParamsBindFlagOn() bool {
+	return p.newParamsBindFlag != 0
 }
 
-func (req *ExecuteStmtRequestParser) parseParameters(buf *bytes.Buffer) error {
+func (p *ExecuteStmtRequestParser) parseParameters(buf *bytes.Buffer) error {
 
-	req.parameters = make([]ExecuteStmtRequestParameter, req.parameterCount)
+	p.parameters = make([]ExecuteStmtRequestParameter, p.parameterCount)
 
-	err2 := req.parseParametersType(buf)
+	err2 := p.parseParametersType(buf)
 	if err2 != nil {
 		return err2
 	}
 
-	err3 := req.parseParametersName(buf)
+	err3 := p.parseParametersName(buf)
 	if err3 != nil {
 		return err3
 	}
 
-	err4 := req.parseParametersValue(buf)
+	err4 := p.parseParametersValue(buf)
 	if err4 != nil {
 		return err4
 	}
 	return nil
 }
 
-func (req *ExecuteStmtRequestParser) parseParametersType(buf *bytes.Buffer) error {
-	if req.isNewParamsBindFlagOn() {
-		for i := uint64(0); i < req.parameterCount; i++ {
-			if err := binary.Read(buf, binary.LittleEndian, &req.parameters[i].Type); err != nil {
+func (p *ExecuteStmtRequestParser) parseParametersType(buf *bytes.Buffer) error {
+	if p.isNewParamsBindFlagOn() {
+		for i := uint64(0); i < p.parameterCount; i++ {
+			if err := binary.Read(buf, binary.LittleEndian, &p.parameters[i].Type); err != nil {
 				return fmt.Errorf("解析参数[%d]的类型失败: %v", i, err)
 			}
 		}
@@ -338,36 +356,32 @@ func (req *ExecuteStmtRequestParser) parseParametersType(buf *bytes.Buffer) erro
 	return nil
 }
 
-func (req *ExecuteStmtRequestParser) parseParametersName(buf *bytes.Buffer) error {
-	if req.isNewParamsBindFlagOn() && req.isClientQueryAttributesFlagOn() {
-		for i := uint64(0); i < req.parameterCount; i++ {
-			name, err := readLengthEncodedString(buf)
+func (p *ExecuteStmtRequestParser) parseParametersName(buf *bytes.Buffer) error {
+	if p.isNewParamsBindFlagOn() && p.isClientQueryAttributesFlagOn() {
+		for i := uint64(0); i < p.parameterCount; i++ {
+			name, err := p.ParseLengthEncodedString(buf)
 			if err != nil {
 				return fmt.Errorf("解析参数[%d]的名称失败: %v", i, err)
 			}
-			req.parameters[i].Name = name
+			p.parameters[i].Name = name
 		}
 	}
 	return nil
 }
 
-func (req *ExecuteStmtRequestParser) parseParametersValue(buf *bytes.Buffer) error {
-	for i := uint64(0); i < req.parameterCount; i++ {
-		value, err := readParameterValue(buf, req.parameters[i].Type)
+func (p *ExecuteStmtRequestParser) parseParametersValue(buf *bytes.Buffer) error {
+	for i := uint64(0); i < p.parameterCount; i++ {
+		value, err := p.parseParameterValue(buf, p.parameters[i].Type)
 		if err != nil {
 			return fmt.Errorf("解析参数[%d]的数值失败: %v", i, err)
 		}
-		req.parameters[i].Value = value
+		p.parameters[i].Value = value
 	}
 	return nil
 }
 
-func (req *ExecuteStmtRequestParser) Parameters() []ExecuteStmtRequestParameter {
-	return req.parameters
-}
-
-// readParameterValue 根据字段的类型来读取对应的字段值
-func readParameterValue(buf *bytes.Buffer, fieldType MySQLType) (any, error) {
+// parseParameterValue 根据字段的类型来读取对应的字段值
+func (p *ExecuteStmtRequestParser) parseParameterValue(buf *bytes.Buffer, fieldType MySQLType) (any, error) {
 	switch fieldType {
 	case MySQLTypeLongLong:
 		var value int64
@@ -406,72 +420,12 @@ func readParameterValue(buf *bytes.Buffer, fieldType MySQLType) (any, error) {
 		}
 		return value, nil
 	case MySQLTypeString, MySQLTypeVarchar, MySQLTypeVarString, MySQLTypeDecimal:
-		return readLengthEncodedString(buf)
+		return p.ParseLengthEncodedString(buf)
 	default:
 		return nil, fmt.Errorf("支持的的参数类型: %d", fieldType)
 	}
 }
 
-// readLengthEncodedInteger 解析 Length-Encoded Integer
-func readLengthEncodedInteger(buf *bytes.Buffer) (uint64, error) {
-	firstByte, err := buf.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-
-	switch {
-	case firstByte < 0xfb:
-		return uint64(firstByte), nil
-	case firstByte == 0xfc:
-		var num uint16
-		if err := binary.Read(buf, binary.LittleEndian, &num); err != nil {
-			return 0, err
-		}
-		return uint64(num), nil
-	case firstByte == 0xfd:
-		var num uint32
-		if err := binary.Read(buf, binary.LittleEndian, &num); err != nil {
-			return 0, err
-		}
-		return uint64(num & 0xFFFFFF), nil // 取24位
-	case firstByte == 0xfe:
-		var num uint64
-		if err := binary.Read(buf, binary.LittleEndian, &num); err != nil {
-			return 0, err
-		}
-		return num, nil
-	default:
-		return 0, fmt.Errorf("invalid length-encoded integer first byte: %d", firstByte)
-	}
+func (p *ExecuteStmtRequestParser) Parameters() []ExecuteStmtRequestParameter {
+	return p.parameters
 }
-
-// readLengthEncodedString 解析 Length-Encoded String
-func readLengthEncodedString(buf *bytes.Buffer) (string, error) {
-	strLength, err := readLengthEncodedInteger(buf)
-	if err != nil {
-		return "", err
-	}
-	log.Printf("StrLength = %d\n", strLength)
-
-	strBytes := make([]byte, strLength)
-	if _, err := buf.Read(strBytes); err != nil {
-		return "", err
-	}
-	log.Printf("StrBytes = %s\n", string(strBytes))
-	return string(strBytes), nil
-}
-
-// readVariableLengthBinary 解析 Variable-Length Binary
-// func readVariableLengthBinary(buf *bytes.Buffer) ([]byte, error) {
-// 	binLength, err := readLengthEncodedInteger(buf)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	binBytes := make([]byte, binLength)
-// 	if _, err := buf.Read(binBytes); err != nil {
-// 		return nil, err
-// 	}
-//
-// 	return binBytes, nil
-// }

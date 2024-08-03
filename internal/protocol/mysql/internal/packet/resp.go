@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
 )
 
 // 构造返回给客户端响应的 packet
@@ -720,34 +718,34 @@ func BuildStmtPrepareRespPacket(stmtId, numColumns, numParams int) []byte {
 	return res
 }
 
-func BuildStmtPrepareRespPacket2(capabilities flags.CapabilityFlags, stmtId, numColumns, numParams int) []byte {
-	p := make([]byte, 4, 20)
-
-	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
-	p = append(p, 0x00)
-
-	// int<4>	statement_id	statement ID
-	p = append(p, FixedLengthInteger(uint32(stmtId), 4)...)
-
-	// int<2>	num_columns SELECT语句中选中列的个数
-	p = append(p, FixedLengthInteger(uint32(numColumns), 2)...)
-
-	// int<2>	num_params 占位符?的个数
-	p = append(p, FixedLengthInteger(uint32(numParams), 2)...)
-
-	// int<1>	reserved_1	[00] filler
-	p = append(p, 0x00)
-
-	// if (packet_lenght > 12)
-	if len(p[4:]) > 12 {
-		// int<2>	warning_count	Number of warnings
-		p = append(p, 0x00, 0x00)
-		// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA
-		if capabilities.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA) {
-			// int<1>	metadata_follows	Flag specifying if metadata are skipped or not.
-			// See enum_resultset_metadata
-			p = append(p, 0x00)
-		}
-	}
-	return p
-}
+// func BuildStmtPrepareRespPacket2(capabilities flags.CapabilityFlags, stmtId, numColumns, numParams int) []byte {
+// 	p := make([]byte, 4, 20)
+//
+// 	// int<1>	status	0x00: OK: Ignored by cli_read_prepare_result
+// 	p = append(p, 0x00)
+//
+// 	// int<4>	statement_id	statement ID
+// 	p = append(p, FixedLengthInteger(uint32(stmtId), 4)...)
+//
+// 	// int<2>	num_columns SELECT语句中选中列的个数
+// 	p = append(p, FixedLengthInteger(uint32(numColumns), 2)...)
+//
+// 	// int<2>	num_params 占位符?的个数
+// 	p = append(p, FixedLengthInteger(uint32(numParams), 2)...)
+//
+// 	// int<1>	reserved_1	[00] filler
+// 	p = append(p, 0x00)
+//
+// 	// if (packet_lenght > 12)
+// 	if len(p[4:]) > 12 {
+// 		// int<2>	warning_count	Number of warnings
+// 		p = append(p, 0x00, 0x00)
+// 		// if capabilities & CLIENT_OPTIONAL_RESULTSET_METADATA
+// 		if capabilities.Has(flags.CLIENT_OPTIONAL_RESULTSET_METADATA) {
+// 			// int<1>	metadata_follows	Flag specifying if metadata are skipped or not.
+// 			// See enum_resultset_metadata
+// 			p = append(p, 0x00)
+// 		}
+// 	}
+// 	return p
+// }
