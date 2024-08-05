@@ -24,7 +24,7 @@ import (
 
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
-
+	"github.com/meoying/dbproxy/internal/datasource/preparestatment"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 )
 
@@ -49,8 +49,14 @@ func (db *DB) Exec(ctx context.Context, query datasource.Query) (sql.Result, err
 }
 
 func (db *DB) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
-	stmt, err := db.db.PrepareContext(ctx, query.SQL)
-	return statement.NewPreparedStatement(stmt), err
+	stmt, ok := preparestatment.Stmts.Load(ctx, query)
+	if ok {
+		return stmt, nil
+	}
+	newStmt, err := db.db.PrepareContext(ctx, query.SQL)
+	dataStmt := statement.NewPreparedStatement(newStmt)
+	preparestatment.Stmts.Store(ctx, query, dataStmt)
+	return dataStmt, err
 }
 
 func OpenDB(driver string, dsn string, opts ...Option) (*DB, error) {

@@ -204,6 +204,33 @@ func TestDB_Wait(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestDB_Prepare(t *testing.T) {
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = mockDB.Close() }()
+
+	db := NewDB(mockDB)
+	q := datasource.Query{
+		SQL:        "SELECT `first_name` FROM `test_model`",
+		DB:         "db",
+		Table:      "test_model",
+		Datasource: "single:3306",
+	}
+
+	mock.ExpectPrepare("SELECT `first_name` FROM `test_model`")
+
+	ctx := context.Background()
+	stmt, err := db.Prepare(ctx, q)
+	assert.NoError(t, err)
+	assert.NotNil(t, stmt)
+
+	stmt1, err := db.Prepare(ctx, q)
+	assert.NoError(t, err)
+	assert.Equal(t, stmt, stmt1)
+}
+
 func ExampleDB_BeginTx() {
 	db, _ := OpenDB("sqlite3", "file:test.db?cache=shared&mode=memory")
 	defer func() {

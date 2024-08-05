@@ -336,6 +336,58 @@ func (c *ShardingDataSourceSuite) TestClusterDbExec() {
 	}
 }
 
+func (c *ShardingDataSourceSuite) TestClusterDbPrepare() {
+	// 通过select不同的数据表示访问不同的db
+	c.mockMaster.ExpectPrepare("SELECT `first_name` FROM `test_model`")
+
+	testCasesQuery := []struct {
+		name     string
+		reqCnt   int
+		ctx      context.Context
+		query    sharding.Query
+		wantResp []string
+		wantErr  error
+	}{
+		{
+			name:   "not found target DataSource",
+			ctx:    context.Background(),
+			reqCnt: 1,
+			query: sharding.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_0",
+				Table:      "test_model",
+				Datasource: "2.db.cluster.company.com:3306",
+			},
+			wantErr: errs.NewErrNotFoundTargetDataSource("2.db.cluster.company.com:3306"),
+		},
+		{
+			name:   "prepare in master",
+			ctx:    context.Background(),
+			reqCnt: 1,
+			query: sharding.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_0",
+				Table:      "test_model",
+				Datasource: "0.db.cluster.company.com:3306",
+			},
+		},
+	}
+
+	for _, tc := range testCasesQuery {
+		c.T().Run(tc.name, func(t *testing.T) {
+			for i := 1; i <= tc.reqCnt; i++ {
+				stmt, queryErr := c.DataSource.Prepare(tc.ctx, tc.query)
+				fmt.Println(queryErr)
+				assert.Equal(t, queryErr, tc.wantErr)
+				if queryErr != nil {
+					return
+				}
+				assert.NotNil(t, stmt)
+			}
+		})
+	}
+}
+
 func (c *ShardingDataSourceSuite) newSlaves(dbs ...*sql.DB) slaves.Slaves {
 	res, err := roundrobin.NewSlaves(dbs...)
 	require.NoError(c.T(), err)

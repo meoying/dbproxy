@@ -21,6 +21,7 @@ import (
 
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
+	"github.com/meoying/dbproxy/internal/datasource/preparestatment"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 
 	"go.uber.org/multierr"
@@ -58,7 +59,16 @@ func (s *ShardingDataSource) Prepare(ctx context.Context, query datasource.Query
 	if err != nil {
 		return nil, err
 	}
-	return ds.Prepare(ctx, query)
+	stmt, ok := preparestatment.Stmts.Load(ctx, query)
+	if ok {
+		return stmt, nil
+	}
+	newStmt, err := ds.Prepare(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	preparestatment.Stmts.Store(ctx, query, newStmt)
+	return newStmt, nil
 }
 
 func (s *ShardingDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.TxBeginner, error) {
