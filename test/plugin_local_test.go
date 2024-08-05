@@ -150,6 +150,8 @@ func (s *localForwardTestSuite) TestSingleTxSuite() {
 		}()
 	}
 	wg.Wait()
+	// 清理数据库表
+	testsuite.ClearTables(t, s.newProxyClientDB())
 }
 
 func (s *localForwardTestSuite) TestPrepareDataTypeSuite() {
@@ -162,6 +164,33 @@ func (s *localForwardTestSuite) TestPrepareBasicSuite() {
 	var prepareBasicTestSuite testsuite.PrepareBasicTestSuite
 	prepareBasicTestSuite.SetDB(s.newProxyClientDB())
 	suite.Run(s.T(), &prepareBasicTestSuite)
+}
+
+func (s *localForwardTestSuite) TestPrepareSingleTxSuite() {
+	// 因为是并发测试,所以放在最后
+	t := s.T()
+	var wg sync.WaitGroup
+	for id, txSuite := range []*testsuite.PrepareSingleTXTestSuite{
+		new(testsuite.PrepareSingleTXTestSuite),
+		new(testsuite.PrepareSingleTXTestSuite),
+		new(testsuite.PrepareSingleTXTestSuite),
+	} {
+		wg.Add(1)
+		id := id + 5
+		clientID := id * 10
+		txSuite := txSuite
+		txSuite.SetClientID(clientID)
+		txSuite.SetDB(s.newProxyClientDB())
+		go func() {
+			defer wg.Done()
+			t.Run(fmt.Sprintf("客户端-%d", clientID), func(t *testing.T) {
+				suite.Run(t, txSuite)
+			})
+		}()
+	}
+	wg.Wait()
+	// 清理数据库表
+	testsuite.ClearTables(t, s.newProxyClientDB())
 }
 
 // localShardingTestSuite 用于测试启用Sharding插件的本地dbproxy
