@@ -31,6 +31,14 @@ type Order struct {
 	Account float64
 }
 
+type sqlInfo struct {
+	query string
+	args  []any
+	// 执行 Exec 后返回的结果
+	rowsAffected int64
+	lastInsertId int64
+}
+
 func OpenDefaultDB() (*sql.DB, error) {
 	return OpenSQLDB(fmt.Sprintf(MYSQLDSNTmpl, ""))
 }

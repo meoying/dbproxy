@@ -23,15 +23,11 @@ func (s *BasicTestSuite) SetDB(db *sql.DB) {
 // TestSelect 测试查询语句
 func (s *BasicTestSuite) TestSelect() {
 	t := s.T()
-	// 初始化数据
 	testcases := []struct {
-		name string
-		// 初始化数据
+		name   string
 		before func(t *testing.T)
-		// 处理
-		after func(t *testing.T, rows *sql.Rows)
-		// 执行的sql
-		sql string
+		info   sqlInfo
+		after  func(t *testing.T, rows *sql.Rows)
 	}{
 		{
 			name: "简单查询",
@@ -41,7 +37,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` = 2);",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` = 2);",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, []Order{
@@ -68,7 +66,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ AVG(`account`)  FROM `order`;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ AVG(`account`)  FROM `order`;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				avgAccounts := make([]sql.NullFloat64, 0, 2)
 				for rows.Next() {
@@ -93,7 +93,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ MAX(`account`)  FROM `order`;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ MAX(`account`)  FROM `order`;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				maxAccounts := make([]sql.NullFloat64, 0, 2)
 				for rows.Next() {
@@ -123,7 +125,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` ORDER BY `account` DESC,`order_id`;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` ORDER BY `account` DESC,`order_id`;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
 				assert.Equal(t, []Order{
@@ -182,7 +186,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ `order_id` AS `oid`  FROM `order` GROUP BY `oid`;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ `order_id` AS `oid`  FROM `order` GROUP BY `oid`;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
 				for rows.Next() {
@@ -212,7 +218,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ `user_id` AS `uid`  FROM `order` ORDER BY `uid` LIMIT 6 OFFSET 0;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ `user_id` AS `uid`  FROM `order` ORDER BY `uid` LIMIT 6 OFFSET 0;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
 				for rows.Next() {
@@ -242,7 +250,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ DISTINCT `order_id` AS `oid`  FROM `order`;",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ DISTINCT `order_id` AS `oid`  FROM `order`;",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
 				for rows.Next() {
@@ -266,7 +276,9 @@ func (s *BasicTestSuite) TestSelect() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` =2) OR (`user_id` = 3);",
+			info: sqlInfo{
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 1) OR (`user_id` =2) OR (`user_id` = 3);",
+			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
 				assert.ElementsMatch(t, []Order{
@@ -296,7 +308,7 @@ func (s *BasicTestSuite) TestSelect() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 			// 使用主库查找
-			rows, err := s.db.Query(tc.sql)
+			rows, err := s.db.Query(tc.info.query)
 			require.NoError(t, err)
 			tc.after(t, rows)
 			// 清理数据
@@ -309,18 +321,18 @@ func (s *BasicTestSuite) TestSelect() {
 func (s *BasicTestSuite) TestInsert() {
 	t := s.T()
 	testcases := []struct {
-		name             string
-		before           func(t *testing.T)
-		sql              string
-		wantRowsAffected int64
-		wantLastInsertId int64
-		after            func(t *testing.T)
+		name   string
+		before func(t *testing.T)
+		info   sqlInfo
+		after  func(t *testing.T)
 	}{
 		{
-			name:             "插入多行",
-			before:           func(t *testing.T) {},
-			sql:              "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
-			wantRowsAffected: 3,
+			name:   "插入多行",
+			before: func(t *testing.T) {},
+			info: sqlInfo{
+				query:        "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,3,'content',1.1),(2,4,'content4',1.3),(3,3,'content3',1.3);",
+				rowsAffected: 3,
+			},
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3})
@@ -354,16 +366,16 @@ func (s *BasicTestSuite) TestInsert() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			res, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.info.query)
 			require.NoError(t, err)
 
 			affected, err := res.RowsAffected()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantRowsAffected, affected)
+			assert.Equal(t, tc.info.rowsAffected, affected)
 
 			id, err := res.LastInsertId()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantLastInsertId, id)
+			assert.Equal(t, tc.info.lastInsertId, id)
 
 			tc.after(t)
 			// 清理数据
@@ -376,12 +388,10 @@ func (s *BasicTestSuite) TestInsert() {
 func (s *BasicTestSuite) TestUpdate() {
 	t := s.T()
 	testcases := []struct {
-		name             string
-		before           func(t *testing.T)
-		sql              string
-		wantRowsAffected int64
-		wantLastInsertId int64
-		after            func(t *testing.T)
+		name   string
+		before func(t *testing.T)
+		info   sqlInfo
+		after  func(t *testing.T)
 	}{
 		{
 			name: "更新一行",
@@ -393,8 +403,10 @@ func (s *BasicTestSuite) TestUpdate() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql:              "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1;",
-			wantRowsAffected: 1,
+			info: sqlInfo{
+				query:        "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1;",
+				rowsAffected: 1,
+			},
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2})
@@ -427,8 +439,10 @@ func (s *BasicTestSuite) TestUpdate() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql:              "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1 OR `order_id` = 4;",
-			wantRowsAffected: 2,
+			info: sqlInfo{
+				query:        "UPDATE `order` SET `order_id` = 3,`content`='content',`account`=1.6 WHERE `user_id` = 1 OR `order_id` = 4;",
+				rowsAffected: 2,
+			},
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3})
@@ -461,16 +475,16 @@ func (s *BasicTestSuite) TestUpdate() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			res, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.info.query)
 			require.NoError(t, err)
 
 			affected, err := res.RowsAffected()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantRowsAffected, affected)
+			assert.Equal(t, tc.info.rowsAffected, affected)
 
 			id, err := res.LastInsertId()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantLastInsertId, id)
+			assert.Equal(t, tc.info.lastInsertId, id)
 
 			tc.after(t)
 			// 清理数据
@@ -483,12 +497,10 @@ func (s *BasicTestSuite) TestUpdate() {
 func (s *BasicTestSuite) TestDelete() {
 	t := s.T()
 	testcases := []struct {
-		name             string
-		before           func(t *testing.T)
-		sql              string
-		wantRowsAffected int64
-		wantLastInsertId int64
-		after            func(t *testing.T)
+		name   string
+		before func(t *testing.T)
+		info   sqlInfo
+		after  func(t *testing.T)
 	}{
 		{
 			name: "删除多行_分片列与非分片列混合",
@@ -503,8 +515,10 @@ func (s *BasicTestSuite) TestDelete() {
 				}
 				execSQL(t, s.db, sqls)
 			},
-			sql:              "DELETE FROM `order` WHERE `user_id` = 1 OR `user_id` = 4 OR `order_id` = 5;",
-			wantRowsAffected: 3,
+			info: sqlInfo{
+				query:        "DELETE FROM `order` WHERE `user_id` = 1 OR `user_id` = 4 OR `order_id` = 5;",
+				rowsAffected: 3,
+			},
 			after: func(t *testing.T) {
 				t.Helper()
 				rows := getRowsFromTable(t, s.db, []int64{1, 2, 3, 4, 5})
@@ -531,16 +545,16 @@ func (s *BasicTestSuite) TestDelete() {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			res, err := s.db.Exec(tc.sql)
+			res, err := s.db.Exec(tc.info.query)
 			require.NoError(t, err)
 
 			affected, err := res.RowsAffected()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantRowsAffected, affected)
+			assert.Equal(t, tc.info.rowsAffected, affected)
 
 			id, err := res.LastInsertId()
 			assert.NoError(t, err)
-			assert.Equal(t, tc.wantLastInsertId, id)
+			assert.Equal(t, tc.info.lastInsertId, id)
 
 			tc.after(t)
 			// 清理数据

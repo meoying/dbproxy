@@ -27,18 +27,9 @@ func (s *PrepareSingleTXTestSuite) SetClientID(cid int) {
 	s.forwardPluginUsedOnlyClientID = cid
 }
 
-type sqlInfo struct {
-	query string
-	args  []any
-	// 执行 Exec 后返回的结果
-	rowsAffected int64
-	lastInsertId int64
-}
-
 // TestLocalTransaction 测试单机(节点)本地事务
 func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 	t := s.T()
-
 	testcases := []struct {
 		name                  string
 		before                func(t *testing.T)
