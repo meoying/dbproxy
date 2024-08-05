@@ -80,6 +80,7 @@ func (s *dockerForwardTestSuite) TestBasicSuite() {
 func (s *dockerForwardTestSuite) TestSingleTxSuite() {
 	// 因为是并发测试,所以放在最后
 	t := s.T()
+	t.Skip("TODO: 没有发布支持prepare的版本, 所以暂时跳过")
 	var wg sync.WaitGroup
 	for id, txSuite := range []*testsuite.SingleTXTestSuite{
 		new(testsuite.SingleTXTestSuite),

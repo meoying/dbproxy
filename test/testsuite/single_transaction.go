@@ -34,16 +34,19 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 		name                  string
 		before                func(t *testing.T)
 		driverUsedOnlyCtxFunc func() context.Context
-		sqlStmts              []string
-		execSQLStmts          func(t *testing.T, sqlStmts []string, tx *sql.Tx)
+		infos                 []sqlInfo
+		execSQLStmts          func(t *testing.T, infos []sqlInfo, tx *sql.Tx)
 		after                 func(t *testing.T)
 	}{
 		{
 			name:                  "插入操作_提交事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(1001)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(1001)),
+					rowsAffected: 1,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -67,8 +70,11 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			name:                  "插入操作_回滚事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'abc_sample content', 10.0)", s.getUserID(1002)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'abc_sample content', 10.0)", s.getUserID(1002)),
+					rowsAffected: 1,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -88,22 +94,25 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d;", s.getUserID(2002)),
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d;", s.getUserID(2002)),
+				},
 			},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
-				sqlStmt := sqlStmts[0]
 				var content string
-				rows, err := tx.Query(sqlStmt)
-				require.NoError(t, err)
-				for rows.Next() {
-					err = rows.Scan(&content)
-					assert.NoError(t, err)
+				for _, sqlStmt := range infos {
+					rows, err := tx.Query(sqlStmt.query)
+					require.NoError(t, err)
+					for rows.Next() {
+						err = rows.Scan(&content)
+						assert.NoError(t, err)
+						assert.Equal(t, "initial content", content)
+					}
+					assert.NoError(t, rows.Close())
+					assert.NoError(t, tx.Commit())
 				}
-				assert.Equal(t, "initial content", content)
-				assert.NoError(t, rows.Close())
-				assert.NoError(t, tx.Commit())
 			},
 			after: func(t *testing.T) {
 				t.Helper()
@@ -130,17 +139,20 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d", s.getUserID(2003)),
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d", s.getUserID(2003)),
+				},
 			},
-			execSQLStmts: func(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
-				sqlStmt := sqlStmts[0]
-				var content string
-				err := tx.QueryRow(sqlStmt).Scan(&content)
-				assert.NoError(t, err)
-				assert.Equal(t, "initial content", content)
-				assert.NoError(t, tx.Rollback())
+				for _, sqlStmt := range infos {
+					var content string
+					err := tx.QueryRow(sqlStmt.query).Scan(&content)
+					assert.NoError(t, err)
+					assert.Equal(t, "initial content", content)
+					assert.NoError(t, tx.Rollback())
+				}
 			},
 			after: func(t *testing.T) {},
 		},
@@ -154,8 +166,11 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` = %d;", s.getUserID(3003)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` = %d;", s.getUserID(3003)),
+					rowsAffected: 1,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -185,11 +200,14 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = %d) OR (`user_id` = %d);",
-					s.getUserID(42),
-					s.getUserID(412),
-				),
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE (`user_id` = %d) OR (`user_id` = %d);",
+						s.getUserID(42),
+						s.getUserID(412),
+					),
+					rowsAffected: 2,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -233,8 +251,11 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(5113)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(5113)),
+					rowsAffected: 1,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -256,8 +277,11 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` in (%d, %d, %d)", s.getUserID(6119), s.getUserID(61119), s.getUserID(611119)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("DELETE FROM `order` WHERE `user_id` in (%d, %d, %d)", s.getUserID(6119), s.getUserID(61119), s.getUserID(611119)),
+					rowsAffected: 3,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -298,9 +322,15 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, account) VALUES (%d, 2005, 'insert content', 250.0);", s.getUserID(7125)),
-				fmt.Sprintf("UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = %d;", s.getUserID(7122)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, account) VALUES (%d, 2005, 'insert content', 250.0);", s.getUserID(7125)),
+					rowsAffected: 1,
+				},
+				{
+					query:        fmt.Sprintf("UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` = %d;", s.getUserID(7122)),
+					rowsAffected: 1,
+				},
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -335,11 +365,21 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			sqlStmts: []string{
-				fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(8225)),
-				fmt.Sprintf("UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = %d;", s.getUserID(8222)),
-				fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(8223)),
+			infos: []sqlInfo{
+				{
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(8225)),
+					rowsAffected: 1,
+				},
+				{
+					query:        fmt.Sprintf("UPDATE `order` SET `content` = 'rollback update content' WHERE `user_id` = %d;", s.getUserID(8222)),
+					rowsAffected: 1,
+				},
+				{
+					query:        fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(8223)),
+					rowsAffected: 1,
+				},
 			},
+
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
 				t.Helper()
@@ -374,7 +414,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			require.NoError(t, err)
 
 			// 在事务tx中执行SQL语句
-			tc.execSQLStmts(t, tc.sqlStmts, tx)
+			tc.execSQLStmts(t, tc.infos, tx)
 
 			// 验证结果, 使用s.db验证执行tc.sqlStmt后的影响
 			tc.after(t)
@@ -388,23 +428,43 @@ func (s *SingleTXTestSuite) getUserID(uid int) int {
 	return uid + s.forwardPluginUsedOnlyClientID
 }
 
-func (s *SingleTXTestSuite) execSQLStmtsAndCommit(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+func (s *SingleTXTestSuite) execSQLStmtsAndCommit(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 	t.Helper()
-	for _, sqlStmt := range sqlStmts {
-		_, err := tx.Exec(sqlStmt)
-		assert.NoError(t, err)
-	}
-	assert.NoError(t, tx.Commit())
+	s.execSQLStmtsAndCommitOrRollback(t, infos, tx, func(tx *sql.Tx) error {
+		return tx.Commit()
+	})
 }
 
-func (s *SingleTXTestSuite) execSQLStmtsAndRollback(t *testing.T, sqlStmts []string, tx *sql.Tx) {
+func (s *SingleTXTestSuite) execSQLStmtsAndCommitOrRollback(t *testing.T, infos []sqlInfo, tx *sql.Tx, fn func(tx *sql.Tx) error) {
 	t.Helper()
-	for _, sqlStmt := range sqlStmts {
-		_, err := tx.Exec(sqlStmt)
+
+	stmts := make([]*sql.Stmt, 0, len(infos))
+
+	for _, sqlStmt := range infos {
+		res, err := tx.Exec(sqlStmt.query)
 		require.NoError(t, err)
+
+		affected, err := res.RowsAffected()
+		assert.NoError(t, err)
+		assert.Equal(t, sqlStmt.rowsAffected, affected)
+
+		lastInsertId, err := res.LastInsertId()
+		assert.NoError(t, err)
+		assert.Equal(t, sqlStmt.lastInsertId, lastInsertId)
 	}
-	err := tx.Rollback()
-	require.NoError(t, err)
+	// commit or rollback
+	assert.NoError(t, fn(tx))
+
+	for _, stmt := range stmts {
+		assert.NoError(t, stmt.Close())
+	}
+}
+
+func (s *SingleTXTestSuite) execSQLStmtsAndRollback(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
+	t.Helper()
+	s.execSQLStmtsAndCommitOrRollback(t, infos, tx, func(tx *sql.Tx) error {
+		return tx.Rollback()
+	})
 }
 
 func (s *SingleTXTestSuite) TestLocalTransactionErr() {

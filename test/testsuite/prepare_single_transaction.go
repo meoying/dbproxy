@@ -28,9 +28,8 @@ func (s *PrepareSingleTXTestSuite) SetClientID(cid int) {
 }
 
 type sqlInfo struct {
-	// key 是要执行的语句, value是参数
-	sql map[string][]any
-
+	query string
+	args  []any
 	// 执行 Exec 后返回的结果
 	rowsAffected int64
 	lastInsertId int64
@@ -44,8 +43,8 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 		name                  string
 		before                func(t *testing.T)
 		driverUsedOnlyCtxFunc func() context.Context
-		info                  sqlInfo
-		execSQLStmts          func(t *testing.T, info sqlInfo, tx *sql.Tx)
+		infos                 []sqlInfo
+		execSQLStmts          func(t *testing.T, infos []sqlInfo, tx *sql.Tx)
 		after                 func(t *testing.T)
 	}{
 
@@ -54,12 +53,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			name:                  "无占位符_插入多行_提交事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content1001', 1001.0),(%d, 1002, 'sample content1002', 1002.0),(%d, 1003, 'sample content1003', 1003.0);",
-						s.getUserID(1001), s.getUserID(1002), s.getUserID(1003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content1001', 1001.0),(%d, 1002, 'sample content1002', 1002.0),(%d, 1003, 'sample content1003', 1003.0);",
+						s.getUserID(1001), s.getUserID(1002), s.getUserID(1003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -98,15 +97,16 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			name:                  "有占位符_插入多行_提交事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (?, ?, ?, ?),(?, ?, ?, ?),(?, ?, ?, ?);": {
+			infos: []sqlInfo{
+				{
+					query: "INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (?, ?, ?, ?),(?, ?, ?, ?),(?, ?, ?, ?);",
+					args: []any{
 						s.getUserID(2001), 2001, "sample content2001", 2001.0,
 						s.getUserID(2002), 2002, "sample content2002", 2002.0,
 						s.getUserID(2003), 2003, "sample content2003", 2003.0,
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -145,12 +145,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			name:                  "无占位符_插入多行_回滚事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 3001, 'sample content3001', 3001.0),(%d, 3002, 'sample content3002', 3002.0),(%d, 3003, 'sample content3003', 3003.0);",
-						s.getUserID(3001), s.getUserID(3002), s.getUserID(3003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 3001, 'sample content3001', 3001.0),(%d, 3002, 'sample content3002', 3002.0),(%d, 3003, 'sample content3003', 3003.0);",
+						s.getUserID(3001), s.getUserID(3002), s.getUserID(3003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -169,15 +169,16 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			name:                  "有占位符_插入多行_回滚事务",
 			before:                func(t *testing.T) {},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (?, ?, ?, ?),(?, ?, ?, ?),(?, ?, ?, ?);": {
+			infos: []sqlInfo{
+				{
+					query: "INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (?, ?, ?, ?),(?, ?, ?, ?),(?, ?, ?, ?);",
+					args: []any{
 						s.getUserID(4001), 4001, "sample content4001", 4001.0,
 						s.getUserID(4002), 4002, "sample content4002", 4002.0,
 						s.getUserID(4003), 4003, "sample content4003", 4003.0,
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -204,21 +205,21 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(5001), s.getUserID(5002), s.getUserID(5003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(5001), s.getUserID(5002), s.getUserID(5003)),
 				},
 			},
-			execSQLStmts: func(t *testing.T, info sqlInfo, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
 				var content string
 				contents := make([]string, 0, 3)
-				for sqlStmt, args := range info.sql {
+				for _, info := range infos {
 
-					stmt, err := tx.Prepare(sqlStmt)
+					stmt, err := tx.Prepare(info.query)
 					require.NoError(t, err)
 
-					rows, err := stmt.Query(args...)
+					rows, err := stmt.Query(info.args...)
 					require.NoError(t, err)
 
 					for rows.Next() {
@@ -279,23 +280,24 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)": {
+			infos: []sqlInfo{
+				{
+					query: "SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
+					args: []any{
 						s.getUserID(6001), s.getUserID(6002), s.getUserID(6003),
 					},
 				},
 			},
-			execSQLStmts: func(t *testing.T, info sqlInfo, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
 				var content string
 				contents := make([]string, 0, 3)
-				for sqlStmt, args := range info.sql {
+				for _, info := range infos {
 
-					stmt, err := tx.Prepare(sqlStmt)
+					stmt, err := tx.Prepare(info.query)
 					require.NoError(t, err)
 
-					rows, err := stmt.Query(args...)
+					rows, err := stmt.Query(info.args...)
 					require.NoError(t, err)
 
 					for rows.Next() {
@@ -356,21 +358,21 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(7001), s.getUserID(7002), s.getUserID(7003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(7001), s.getUserID(7002), s.getUserID(7003)),
 				},
 			},
-			execSQLStmts: func(t *testing.T, info sqlInfo, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
 				var content string
 				contents := make([]string, 0, 3)
-				for sqlStmt, args := range info.sql {
+				for _, info := range infos {
 
-					stmt, err := tx.Prepare(sqlStmt)
+					stmt, err := tx.Prepare(info.query)
 					require.NoError(t, err)
 
-					rows, err := stmt.Query(args...)
+					rows, err := stmt.Query(info.args...)
 					require.NoError(t, err)
 
 					for rows.Next() {
@@ -431,23 +433,24 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)": {
+			infos: []sqlInfo{
+				{
+					query: "SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
+					args: []any{
 						s.getUserID(8001), s.getUserID(8002), s.getUserID(8003),
 					},
 				},
 			},
-			execSQLStmts: func(t *testing.T, info sqlInfo, tx *sql.Tx) {
+			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 				t.Helper()
 				var content string
 				contents := make([]string, 0, 3)
-				for sqlStmt, args := range info.sql {
+				for _, info := range infos {
 
-					stmt, err := tx.Prepare(sqlStmt)
+					stmt, err := tx.Prepare(info.query)
 					require.NoError(t, err)
 
-					rows, err := stmt.Query(args...)
+					rows, err := stmt.Query(info.args...)
 					require.NoError(t, err)
 
 					for rows.Next() {
@@ -510,11 +513,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (%d, %d, %d);", s.getUserID(9001), s.getUserID(9002), s.getUserID(9003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (%d, %d, %d);",
+						s.getUserID(9001), s.getUserID(9002), s.getUserID(9003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -561,13 +565,14 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (?,?,?);": {
+			infos: []sqlInfo{
+				{
+					query: "UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (?,?,?);",
+					args: []any{
 						s.getUserID(10001), s.getUserID(10002), s.getUserID(10003),
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -614,11 +619,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (%d, %d, %d);", s.getUserID(11001), s.getUserID(11002), s.getUserID(11003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (%d, %d, %d);",
+						s.getUserID(11001), s.getUserID(11002), s.getUserID(11003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -665,13 +671,14 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (?,?,?);": {
+			infos: []sqlInfo{
+				{
+					query: "UPDATE `order` SET `content` = 'updated content' WHERE `user_id` IN (?,?,?);",
+					args: []any{
 						s.getUserID(12001), s.getUserID(12002), s.getUserID(12003),
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -719,11 +726,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("DELETE FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(13001), s.getUserID(13002), s.getUserID(13003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("DELETE FROM `order` WHERE `user_id` IN (%d, %d, %d)",
+						s.getUserID(13001), s.getUserID(13002), s.getUserID(13003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -750,13 +758,14 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"DELETE FROM `order` WHERE `user_id` IN (?, ?, ?)": {
+			infos: []sqlInfo{
+				{
+					query: "DELETE FROM `order` WHERE `user_id` IN (?, ?, ?)",
+					args: []any{
 						s.getUserID(14001), s.getUserID(14002), s.getUserID(14003),
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndCommit,
 			after: func(t *testing.T) {
@@ -783,11 +792,12 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					fmt.Sprintf("DELETE FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(15001), s.getUserID(15002), s.getUserID(15003)): nil,
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("DELETE FROM `order` WHERE `user_id` IN (%d, %d, %d)",
+						s.getUserID(15001), s.getUserID(15002), s.getUserID(15003)),
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -835,13 +845,14 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
-			info: sqlInfo{
-				sql: map[string][]any{
-					"DELETE FROM `order` WHERE `user_id` IN (?, ?, ?)": {
+			infos: []sqlInfo{
+				{
+					query: "DELETE FROM `order` WHERE `user_id` IN (?, ?, ?)",
+					args: []any{
 						s.getUserID(16001), s.getUserID(16002), s.getUserID(16003),
 					},
+					rowsAffected: 3,
 				},
-				rowsAffected: 3,
 			},
 			execSQLStmts: s.execSQLStmtsAndRollback,
 			after: func(t *testing.T) {
@@ -893,7 +904,7 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			require.NoError(t, err)
 
 			// 在事务tx中执行SQL语句
-			tc.execSQLStmts(t, tc.info, tx)
+			tc.execSQLStmts(t, tc.infos, tx)
 
 			// 验证结果, 使用s.db验证执行tc.sqlStmt后的影响
 			tc.after(t)
@@ -907,25 +918,25 @@ func (s *PrepareSingleTXTestSuite) getUserID(uid int) int {
 	return uid + s.forwardPluginUsedOnlyClientID
 }
 
-func (s *PrepareSingleTXTestSuite) execSQLStmtsAndCommit(t *testing.T, info sqlInfo, tx *sql.Tx) {
+func (s *PrepareSingleTXTestSuite) execSQLStmtsAndCommit(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 	t.Helper()
-	s.execSQLStmtsAndCommitOrRollback(t, info, tx, func(tx *sql.Tx) error {
+	s.execSQLStmtsAndCommitOrRollback(t, infos, tx, func(tx *sql.Tx) error {
 		return tx.Commit()
 	})
 }
 
-func (s *PrepareSingleTXTestSuite) execSQLStmtsAndCommitOrRollback(t *testing.T, info sqlInfo, tx *sql.Tx, fn func(tx *sql.Tx) error) {
+func (s *PrepareSingleTXTestSuite) execSQLStmtsAndCommitOrRollback(t *testing.T, infos []sqlInfo, tx *sql.Tx, fn func(tx *sql.Tx) error) {
 	t.Helper()
 
-	stmts := make([]*sql.Stmt, 0, len(info.sql))
+	stmts := make([]*sql.Stmt, 0, len(infos))
 
-	for sqlStmt, args := range info.sql {
-		stmt, err := tx.Prepare(sqlStmt)
+	for _, info := range infos {
+		stmt, err := tx.Prepare(info.query)
 		require.NoError(t, err)
 
 		stmts = append(stmts, stmt)
 
-		res, err := stmt.Exec(args...)
+		res, err := stmt.Exec(info.args...)
 		require.NoError(t, err)
 
 		affected, err := res.RowsAffected()
@@ -944,9 +955,9 @@ func (s *PrepareSingleTXTestSuite) execSQLStmtsAndCommitOrRollback(t *testing.T,
 	}
 }
 
-func (s *PrepareSingleTXTestSuite) execSQLStmtsAndRollback(t *testing.T, info sqlInfo, tx *sql.Tx) {
+func (s *PrepareSingleTXTestSuite) execSQLStmtsAndRollback(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
 	t.Helper()
-	s.execSQLStmtsAndCommitOrRollback(t, info, tx, func(tx *sql.Tx) error {
+	s.execSQLStmtsAndCommitOrRollback(t, infos, tx, func(tx *sql.Tx) error {
 		return tx.Rollback()
 	})
 }
