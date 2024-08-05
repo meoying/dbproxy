@@ -43,11 +43,11 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(30001)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(30001)),
 					rowsAffected: 1,
 				},
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(30002)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(30002)),
 					rowsAffected: 1,
 				},
 			},
@@ -60,13 +60,13 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(30001),
 						OrderId: 1001,
 						Content: "sample content",
-						Account: 10.0,
+						Amount:  10.0,
 					},
 					{
 						UserId:  s.getUserID(30002),
 						OrderId: 2002,
 						Content: "sample content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -79,11 +79,11 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(40001)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(40001)),
 					rowsAffected: 1,
 				},
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(40002)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'sample content', 20.0);", s.getUserID(40002)),
 					rowsAffected: 1,
 				},
 			},
@@ -100,7 +100,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(50002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(50002)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -129,7 +129,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(50002),
 						OrderId: 1002,
 						Content: "initial content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -141,7 +141,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(60002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(60002)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -168,9 +168,9 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order`(`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(70002)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(700012)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(7000112)),
+					fmt.Sprintf("INSERT INTO `order`(`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(70002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(700012)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(7000112)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -197,19 +197,19 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(70002),
 						OrderId: 1002,
 						Content: "updated content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 					{
 						UserId:  s.getUserID(700012),
 						OrderId: 1102,
 						Content: "updated content",
-						Account: 120.0,
+						Amount:  120.0,
 					},
 					{
 						UserId:  s.getUserID(7000112),
 						OrderId: 1112,
 						Content: "updated content",
-						Account: 1120.0,
+						Amount:  1120.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -221,9 +221,9 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(80002)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(800012)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(8000112)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(80002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(800012)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(8000112)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -251,19 +251,19 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(80002),
 						OrderId: 1002,
 						Content: "initial content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 					{
 						UserId:  s.getUserID(800012),
 						OrderId: 1102,
 						Content: "initial content",
-						Account: 120.0,
+						Amount:  120.0,
 					},
 					{
 						UserId:  s.getUserID(8000112),
 						OrderId: 1112,
 						Content: "initial content",
-						Account: 1120.0,
+						Amount:  1120.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -275,9 +275,9 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(90003)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(900013)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(9000113)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(90003)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(900013)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(9000113)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -309,9 +309,9 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(100009)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(1000019)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(10000119)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(100009)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(1000019)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(10000119)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -339,19 +339,19 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(100009),
 						OrderId: 1003,
 						Content: "delete content",
-						Account: 30.0,
+						Amount:  30.0,
 					},
 					{
 						UserId:  s.getUserID(1000019),
 						OrderId: 1103,
 						Content: "delete content",
-						Account: 130.0,
+						Amount:  130.0,
 					},
 					{
 						UserId:  s.getUserID(10000119),
 						OrderId: 1113,
 						Content: "delete content",
-						Account: 1130.0,
+						Amount:  1130.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -363,15 +363,15 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(2000022)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(2000023)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(2000022)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(2000023)),
 				}
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2004, 'insert content', 240.0);", s.getUserID(2000024)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2004, 'insert content', 240.0);", s.getUserID(2000024)),
 					rowsAffected: 1,
 				},
 				{
@@ -396,13 +396,13 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(2000022),
 						OrderId: 2002,
 						Content: "updated content again",
-						Account: 220.0,
+						Amount:  220.0,
 					},
 					{
 						UserId:  s.getUserID(2000024),
 						OrderId: 2004,
 						Content: "insert content",
-						Account: 240.0,
+						Amount:  240.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -414,15 +414,15 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(3000022)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(3000023)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(3000022)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(3000023)),
 				}
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(3000025)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(3000025)),
 					rowsAffected: 1,
 				},
 				{
@@ -446,13 +446,13 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 						UserId:  s.getUserID(3000022),
 						OrderId: 2002,
 						Content: "initial content",
-						Account: 220.0,
+						Amount:  220.0,
 					},
 					{
 						UserId:  s.getUserID(3000023),
 						OrderId: 2003,
 						Content: "delete content",
-						Account: 230.0,
+						Amount:  230.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)

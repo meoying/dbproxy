@@ -32,12 +32,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_查询多行",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (21,21,'content21',21.21), (22,22,'content22',22.22);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (21,21,'content21',21.21), (22,22,'content22',22.22);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 21) OR (`user_id` = 22);",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 21) OR (`user_id` = 22);",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -46,13 +46,13 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  21,
 						OrderId: 21,
 						Content: "content21",
-						Account: 21.21,
+						Amount:  21.21,
 					},
 					{
 						UserId:  22,
 						OrderId: 22,
 						Content: "content22",
-						Account: 22.22,
+						Amount:  22.22,
 					},
 				}, res)
 			},
@@ -61,12 +61,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_查询多行",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (21,1,'content1',1.1), (22,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (21,1,'content1',1.1), (22,4,'content4',1.3);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?);",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?);",
 				args:  []any{21, 22},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -76,13 +76,13 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  22,
 						OrderId: 4,
 						Content: "content4",
-						Account: 1.3,
+						Amount:  1.3,
 					},
 					{
 						UserId:  21,
 						OrderId: 1,
 						Content: "content1",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 				}, res)
 			},
@@ -91,12 +91,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_聚合函数AVG",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ AVG(`account`)  FROM `order`",
+				query: "SELECT /* useMaster */ AVG(`amount`)  FROM `order`",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				avgAccounts := make([]sql.NullFloat64, 0, 2)
@@ -118,12 +118,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_聚合函数AVG",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ AVG(`account`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
+				query: "SELECT /* useMaster */ AVG(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
 				args:  []any{1, 2, 3, 4},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -146,12 +146,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_聚合函数MAX",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ MAX(`account`)  FROM `order`;",
+				query: "SELECT /* useMaster */ MAX(`amount`)  FROM `order`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				maxAccounts := make([]sql.NullFloat64, 0, 2)
@@ -173,12 +173,12 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_聚合函数MAX",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (1,1,'content1',6.9),(2,4,'content4',0.1),(3,1,'content1',7.1),(4,1,'content1',9.9);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ MAX(`account`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
+				query: "SELECT /* useMaster */ MAX(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
 				args:  []any{1, 2, 3, 4},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -201,17 +201,17 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_ORDER BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,10,'content4',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,11,'content4',1.6);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,9,'content4',1.4);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,8,'content4',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,9,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,10,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,11,'content4',1.6);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,9,'content4',1.4);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,8,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,9,'content4',1.1);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` ORDER BY `account` DESC,`order_id`;",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount`  FROM `order` ORDER BY `amount` DESC,`order_id`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -220,37 +220,37 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  3,
 						OrderId: 11,
 						Content: "content4",
-						Account: 1.6,
+						Amount:  1.6,
 					},
 					{
 						UserId:  4,
 						OrderId: 9,
 						Content: "content4",
-						Account: 1.4,
+						Amount:  1.4,
 					},
 					{
 						UserId:  1,
 						OrderId: 8,
 						Content: "content4",
-						Account: 1.2,
+						Amount:  1.2,
 					},
 					{
 						UserId:  6,
 						OrderId: 8,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  7,
 						OrderId: 9,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  2,
 						OrderId: 10,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 				}, res)
 			},
@@ -259,17 +259,17 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_ORDER BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,10,'content4',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,11,'content4',1.6);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,9,'content4',1.4);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,8,'content4',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,9,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,10,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,11,'content4',1.6);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,9,'content4',1.4);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,8,'content4',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,9,'content4',1.1);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account`  FROM `order` WHERE `user_id` IN (?,?,?,?,?,?) ORDER BY `account` DESC,`order_id`;",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount`  FROM `order` WHERE `user_id` IN (?,?,?,?,?,?) ORDER BY `amount` DESC,`order_id`;",
 				args:  []any{1, 2, 3, 4, 6, 7},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -279,37 +279,37 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  3,
 						OrderId: 11,
 						Content: "content4",
-						Account: 1.6,
+						Amount:  1.6,
 					},
 					{
 						UserId:  4,
 						OrderId: 9,
 						Content: "content4",
-						Account: 1.4,
+						Amount:  1.4,
 					},
 					{
 						UserId:  1,
 						OrderId: 8,
 						Content: "content4",
-						Account: 1.2,
+						Amount:  1.2,
 					},
 					{
 						UserId:  6,
 						OrderId: 8,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  7,
 						OrderId: 9,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  2,
 						OrderId: 10,
 						Content: "content4",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 				}, res)
 			},
@@ -318,15 +318,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_GROUP BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -350,15 +350,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_GROUP BY",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -383,15 +383,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_Limit",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -415,15 +415,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_Limit",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -448,15 +448,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_SELECT DISTINCT",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -480,15 +480,15 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_SELECT DISTINCT",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (4,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (7,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (6,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (9,7,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,8,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (5,6,'content4',1.2);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (8,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (4,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (7,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (6,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (9,7,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,8,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (5,6,'content4',1.2);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (8,7,'content4',1.2);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -513,14 +513,14 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "无占位符_WHERE子句中多个OR带括号连接",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,1,'content1',1.1);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = 3) OR (`user_id` = 1) OR (`user_id` = 2);",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 3) OR (`user_id` = 1) OR (`user_id` = 2);",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -529,19 +529,19 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  2,
 						OrderId: 4,
 						Content: "content4",
-						Account: 1.3,
+						Amount:  1.3,
 					},
 					{
 						UserId:  1,
 						OrderId: 1,
 						Content: "content1",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  3,
 						OrderId: 1,
 						Content: "content1",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 				}, res)
 			},
@@ -550,14 +550,14 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 			name: "有占位符_WHERE子句中多个OR带括号连接",
 			before: func(t *testing.T) {
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (2,4,'content4',1.3);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (1,1,'content1',1.1);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (3,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (2,4,'content4',1.3);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (1,1,'content1',1.1);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (3,1,'content1',1.1);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`account` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?) OR (`user_id` = ?);",
+				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?) OR (`user_id` = ?);",
 				args:  []any{1, 2, 3},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -567,19 +567,19 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 						UserId:  2,
 						OrderId: 4,
 						Content: "content4",
-						Account: 1.3,
+						Amount:  1.3,
 					},
 					{
 						UserId:  1,
 						OrderId: 1,
 						Content: "content1",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 					{
 						UserId:  3,
 						OrderId: 1,
 						Content: "content1",
-						Account: 1.1,
+						Amount:  1.1,
 					},
 				}, res)
 			},
@@ -618,7 +618,7 @@ func (s *PrepareBasicTestSuite) TestPrepareInsert() {
 			name:   "无占位符_插入多行",
 			before: func(t *testing.T) {},
 			info: sqlInfo{
-				query:        "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (31, 31, 'content31', 31.31),(32, 32, 'content32', 32.32),(33, 33, 'content33', 33.33);",
+				query:        "INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (31, 31, 'content31', 31.31),(32, 32, 'content32', 32.32),(33, 33, 'content33', 33.33);",
 				rowsAffected: 3,
 			},
 			after: func(t *testing.T) {
@@ -630,19 +630,19 @@ func (s *PrepareBasicTestSuite) TestPrepareInsert() {
 						UserId:  31,
 						OrderId: 31,
 						Content: "content31",
-						Account: 31.31,
+						Amount:  31.31,
 					},
 					{
 						UserId:  32,
 						OrderId: 32,
 						Content: "content32",
-						Account: 32.32,
+						Amount:  32.32,
 					},
 					{
 						UserId:  33,
 						OrderId: 33,
 						Content: "content33",
-						Account: 33.33,
+						Amount:  33.33,
 					},
 				}
 				actualOrderList := getOrdersFromRows(t, rows)
@@ -653,7 +653,7 @@ func (s *PrepareBasicTestSuite) TestPrepareInsert() {
 			name:   "有占位符_插入多行",
 			before: func(t *testing.T) {},
 			info: sqlInfo{
-				query: "INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) values (?,?,?,?),(?,?,?,?),(?,?,?,?);",
+				query: "INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) values (?,?,?,?),(?,?,?,?),(?,?,?,?);",
 				args: []any{
 					34, 34, "content34", 34.34,
 					35, 35, "content35", 35.35,
@@ -670,19 +670,19 @@ func (s *PrepareBasicTestSuite) TestPrepareInsert() {
 						UserId:  34,
 						OrderId: 34,
 						Content: "content34",
-						Account: 34.34,
+						Amount:  34.34,
 					},
 					{
 						UserId:  35,
 						OrderId: 35,
 						Content: "content35",
-						Account: 35.35,
+						Amount:  35.35,
 					},
 					{
 						UserId:  36,
 						OrderId: 36,
 						Content: "content36",
-						Account: 36.36,
+						Amount:  36.36,
 					},
 				}
 				actualOrderList := getOrdersFromRows(t, rows)
@@ -734,14 +734,14 @@ func (s *PrepareBasicTestSuite) TestPrepareUpdate() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (51,51,'content51',51.51);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (52,52,'content52',52.52);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (53,53,'content53',53.53);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (51,51,'content51',51.51);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (52,52,'content52',52.52);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (53,53,'content53',53.53);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query:        "UPDATE `order` SET `order_id` = 2,`content`='content2',`account`=2.0 WHERE `user_id` = 51 OR `order_id` = 52;",
+				query:        "UPDATE `order` SET `order_id` = 2,`content`='content2',`amount`=2.0 WHERE `user_id` = 51 OR `order_id` = 52;",
 				rowsAffected: 2,
 			},
 			after: func(t *testing.T) {
@@ -752,19 +752,19 @@ func (s *PrepareBasicTestSuite) TestPrepareUpdate() {
 						UserId:  51,
 						OrderId: 2,
 						Content: "content2",
-						Account: 2.0,
+						Amount:  2.0,
 					},
 					{
 						UserId:  52,
 						OrderId: 2,
 						Content: "content2",
-						Account: 2.0,
+						Amount:  2.0,
 					},
 					{
 						UserId:  53,
 						OrderId: 53,
 						Content: "content53",
-						Account: 53.53,
+						Amount:  53.53,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -776,15 +776,15 @@ func (s *PrepareBasicTestSuite) TestPrepareUpdate() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (51,51,'content51',51.51);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (52,52,'content52',52.52);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (53,53,'content53',53.53);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (54,54,'content54',54.54);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (51,51,'content51',51.51);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (52,52,'content52',52.52);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (53,53,'content53',53.53);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (54,54,'content54',54.54);",
 				}
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query:        "UPDATE `order` SET `order_id` = 2,`content`='content2',`account`=2.0 WHERE `user_id` = ? OR `user_id` = ? OR `order_id` = ?;",
+				query:        "UPDATE `order` SET `order_id` = 2,`content`='content2',`amount`=2.0 WHERE `user_id` = ? OR `user_id` = ? OR `order_id` = ?;",
 				args:         []any{52, 53, 54},
 				rowsAffected: 3,
 			},
@@ -796,25 +796,25 @@ func (s *PrepareBasicTestSuite) TestPrepareUpdate() {
 						UserId:  51,
 						OrderId: 51,
 						Content: "content51",
-						Account: 51.51,
+						Amount:  51.51,
 					},
 					{
 						UserId:  52,
 						OrderId: 2,
 						Content: "content2",
-						Account: 2.0,
+						Amount:  2.0,
 					},
 					{
 						UserId:  53,
 						OrderId: 2,
 						Content: "content2",
-						Account: 2.0,
+						Amount:  2.0,
 					},
 					{
 						UserId:  54,
 						OrderId: 2,
 						Content: "content2",
-						Account: 2.0,
+						Amount:  2.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -865,11 +865,11 @@ func (s *PrepareBasicTestSuite) TestPrepareDelete() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (61,61,'content61',61.61);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (62,62,'content62',62.62);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (63,63,'content63',63.63);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (64,64,'content64',64.64);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (65,65,'content65',65.65);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (61,61,'content61',61.61);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (62,62,'content62',62.62);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (63,63,'content63',63.63);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (64,64,'content64',64.64);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (65,65,'content65',65.65);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -885,13 +885,13 @@ func (s *PrepareBasicTestSuite) TestPrepareDelete() {
 						UserId:  62,
 						OrderId: 62,
 						Content: "content62",
-						Account: 62.62,
+						Amount:  62.62,
 					},
 					{
 						UserId:  63,
 						OrderId: 63,
 						Content: "content63",
-						Account: 63.63,
+						Amount:  63.63,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -903,11 +903,11 @@ func (s *PrepareBasicTestSuite) TestPrepareDelete() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (71,71,'content71',71.71);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (72,72,'content72',72.72);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (73,73,'content73',73.73);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (74,74,'content74',74.74);",
-					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`account`) VALUES (75,75,'content75',75.75);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (71,71,'content71',71.71);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (72,72,'content72',72.72);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (73,73,'content73',73.73);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (74,74,'content74',74.74);",
+					"INSERT INTO `order` (`user_id`,`order_id`,`content`,`amount`) VALUES (75,75,'content75',75.75);",
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -924,7 +924,7 @@ func (s *PrepareBasicTestSuite) TestPrepareDelete() {
 						UserId:  75,
 						OrderId: 75,
 						Content: "content75",
-						Account: 75.75,
+						Amount:  75.75,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)

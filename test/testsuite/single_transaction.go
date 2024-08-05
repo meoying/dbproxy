@@ -44,7 +44,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(1001)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1001, 'sample content', 10.0);", s.getUserID(1001)),
 					rowsAffected: 1,
 				},
 			},
@@ -59,7 +59,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(1001),
 						OrderId: 1001,
 						Content: "sample content",
-						Account: 10.0,
+						Amount:  10.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -72,7 +72,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'abc_sample content', 10.0)", s.getUserID(1002)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'abc_sample content', 10.0)", s.getUserID(1002)),
 					rowsAffected: 1,
 				},
 			},
@@ -89,7 +89,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 20.0)", s.getUserID(2002)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'initial content', 20.0)", s.getUserID(2002)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -122,7 +122,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(2002),
 						OrderId: 2002,
 						Content: "initial content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -134,7 +134,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'initial content', 20.0)", s.getUserID(2003)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2003, 'initial content', 20.0)", s.getUserID(2003)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -161,7 +161,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 3003, 'initial content', 20.0)", s.getUserID(3003)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 3003, 'initial content', 20.0)", s.getUserID(3003)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -181,7 +181,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(3003),
 						OrderId: 3003,
 						Content: "updated content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -193,9 +193,9 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(42)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(412)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(4112)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1002, 'initial content', 20.0)", s.getUserID(42)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1102, 'initial content', 120.0)", s.getUserID(412)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1112, 'initial content', 1120.0)", s.getUserID(4112)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -222,19 +222,19 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(42),
 						OrderId: 1002,
 						Content: "initial content",
-						Account: 20.0,
+						Amount:  20.0,
 					},
 					{
 						UserId:  s.getUserID(412),
 						OrderId: 1102,
 						Content: "initial content",
-						Account: 120.0,
+						Amount:  120.0,
 					},
 					{
 						UserId:  s.getUserID(4112),
 						OrderId: 1112,
 						Content: "initial content",
-						Account: 1120.0,
+						Amount:  1120.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -246,7 +246,7 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(5113)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(5113)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -270,9 +270,9 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(6119)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(61119)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(611119)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1003, 'delete content', 30.0)", s.getUserID(6119)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1103, 'delete content', 130.0)", s.getUserID(61119)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 1113, 'delete content', 1130.0)", s.getUserID(611119)),
 				}
 				execSQL(t, s.db, sqls)
 			},
@@ -292,19 +292,19 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(6119),
 						OrderId: 1003,
 						Content: "delete content",
-						Account: 30.0,
+						Amount:  30.0,
 					},
 					{
 						UserId:  s.getUserID(61119),
 						OrderId: 1103,
 						Content: "delete content",
-						Account: 130.0,
+						Amount:  130.0,
 					},
 					{
 						UserId:  s.getUserID(611119),
 						OrderId: 1113,
 						Content: "delete content",
-						Account: 1130.0,
+						Amount:  1130.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -317,14 +317,14 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 				t.Helper()
 				sqls := []string{
 
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(7122)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(7122)),
 				}
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, account) VALUES (%d, 2005, 'insert content', 250.0);", s.getUserID(7125)),
+					query:        fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, amount) VALUES (%d, 2005, 'insert content', 250.0);", s.getUserID(7125)),
 					rowsAffected: 1,
 				},
 				{
@@ -341,13 +341,13 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(7122),
 						OrderId: 2002,
 						Content: "updated content again",
-						Account: 220.0,
+						Amount:  220.0,
 					},
 					{
 						UserId:  s.getUserID(7125),
 						OrderId: 2005,
 						Content: "insert content",
-						Account: 250.0,
+						Amount:  250.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
@@ -359,15 +359,15 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 			before: func(t *testing.T) {
 				t.Helper()
 				sqls := []string{
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(8222)),
-					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(8223)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2002, 'initial content', 220.0)", s.getUserID(8222)),
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2003, 'delete content', 230.0)", s.getUserID(8223)),
 				}
 				execSQL(t, s.db, sqls)
 			},
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `account`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(8225)),
+					query:        fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 2005, 'rollback insert content', 250.0);", s.getUserID(8225)),
 					rowsAffected: 1,
 				},
 				{
@@ -389,13 +389,13 @@ func (s *SingleTXTestSuite) TestLocalTransaction() {
 						UserId:  s.getUserID(8222),
 						OrderId: 2002,
 						Content: "initial content",
-						Account: 220.0,
+						Amount:  220.0,
 					},
 					{
 						UserId:  s.getUserID(8223),
 						OrderId: 2003,
 						Content: "delete content",
-						Account: 230.0,
+						Amount:  230.0,
 					},
 				}
 				orders := getOrdersFromRows(t, rows)
