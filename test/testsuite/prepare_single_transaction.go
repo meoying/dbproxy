@@ -880,9 +880,197 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 		},
 
 		// 无占位符_组合情况_提交事务
+		{
+			name: "无占位符_组合情况_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 17001, 'initial content17001', 17001.0)", s.getUserID(17001)),
+				}
+				execSQL(t, s.db, sqls)
+			},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, amount) VALUES (%d, 17002, 'insert content17002', 17002.0), (%d, 17003, 'insert content17003', 17003.0);",
+						s.getUserID(17002), s.getUserID(17003)),
+					rowsAffected: 2,
+				},
+				{
+					query:        fmt.Sprintf("UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` IN (%d, %d);", s.getUserID(17001), s.getUserID(17003)),
+					rowsAffected: 2,
+				},
+				{
+					query:        fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(17002)),
+					rowsAffected: 1,
+				},
+			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(17001)), int64(s.getUserID(17002)), int64(s.getUserID(17003))})
+				wantOrderList := []Order{
+					{
+						UserId:  s.getUserID(17001),
+						OrderId: 17001,
+						Content: "updated content again",
+						Amount:  17001.0,
+					},
+					{
+						UserId:  s.getUserID(17003),
+						OrderId: 17003,
+						Content: "updated content again",
+						Amount:  17003.0,
+					},
+				}
+				orders := getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
 		// 有占位符_组合情况_提交事务
+		{
+			name: "有占位符_组合情况_提交事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 18001, 'initial content18001', 18001.0)", s.getUserID(18001)),
+				}
+				execSQL(t, s.db, sqls)
+			},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			infos: []sqlInfo{
+				{
+					query: "INSERT INTO `order` (user_id, order_id, content, amount) VALUES (?,?,?,?),(?,?,?,?)",
+					args: []any{
+						s.getUserID(18002), 18002, "insert content18002", 18002.0,
+						s.getUserID(18003), 18003, "insert content18003", 18003.0,
+					},
+					rowsAffected: 2,
+				},
+				{
+					query:        "UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` IN (?,?);",
+					args:         []any{s.getUserID(18001), s.getUserID(18003)},
+					rowsAffected: 2,
+				},
+				{
+					query:        "DELETE FROM `order` WHERE `user_id` = ?;",
+					args:         []any{s.getUserID(18002)},
+					rowsAffected: 1,
+				},
+			},
+			execSQLStmts: s.execSQLStmtsAndCommit,
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(18001)), int64(s.getUserID(18002)), int64(s.getUserID(18003))})
+				wantOrderList := []Order{
+					{
+						UserId:  s.getUserID(18001),
+						OrderId: 18001,
+						Content: "updated content again",
+						Amount:  18001.0,
+					},
+					{
+						UserId:  s.getUserID(18003),
+						OrderId: 18003,
+						Content: "updated content again",
+						Amount:  18003.0,
+					},
+				}
+				orders := getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
 		// 无占位符_组合情况_回滚事务
+		{
+			name: "无占位符_组合情况_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 19001, 'initial content19001', 19001.0)", s.getUserID(19001)),
+				}
+				execSQL(t, s.db, sqls)
+			},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			infos: []sqlInfo{
+				{
+					query: fmt.Sprintf("INSERT INTO `order` (user_id, order_id, content, amount) VALUES (%d, 19002, 'insert content19002', 19002.0), (%d, 19003, 'insert content19003', 19003.0);",
+						s.getUserID(19002), s.getUserID(19003)),
+					rowsAffected: 2,
+				},
+				{
+					query:        fmt.Sprintf("UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` IN (%d, %d);", s.getUserID(19001), s.getUserID(19003)),
+					rowsAffected: 2,
+				},
+				{
+					query:        fmt.Sprintf("DELETE FROM `order` WHERE `user_id` = %d;", s.getUserID(19002)),
+					rowsAffected: 1,
+				},
+			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(19001)), int64(s.getUserID(19002)), int64(s.getUserID(19003))})
+				wantOrderList := []Order{
+					{
+						UserId:  s.getUserID(19001),
+						OrderId: 19001,
+						Content: "initial content19001",
+						Amount:  19001.0,
+					},
+				}
+				orders := getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
 		// 有占位符_组合情况_回滚事务
+		{
+			name: "有占位符_组合情况_回滚事务",
+			before: func(t *testing.T) {
+				t.Helper()
+				sqls := []string{
+					fmt.Sprintf("INSERT INTO `order` (`user_id`, `order_id`, `content`, `amount`) VALUES (%d, 20001, 'initial content20001', 20001.0)", s.getUserID(20001)),
+				}
+				execSQL(t, s.db, sqls)
+			},
+			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
+			infos: []sqlInfo{
+				{
+					query: "INSERT INTO `order` (user_id, order_id, content, amount) VALUES (?,?,?,?),(?,?,?,?);",
+					args: []any{
+						s.getUserID(20002), 20002, "insert content20002", 20002.0,
+						s.getUserID(20003), 20003, "insert content20003", 20003.0,
+					},
+					rowsAffected: 2,
+				},
+				{
+					query:        "UPDATE `order` SET `content` = 'updated content again' WHERE `user_id` IN (?,?);",
+					args:         []any{s.getUserID(20001), s.getUserID(20003)},
+					rowsAffected: 2,
+				},
+				{
+					query:        "DELETE FROM `order` WHERE `user_id` = ?;",
+					args:         []any{s.getUserID(20002)},
+					rowsAffected: 1,
+				},
+			},
+			execSQLStmts: s.execSQLStmtsAndRollback,
+			after: func(t *testing.T) {
+				t.Helper()
+				rows := getRowsFromTable(t, s.db, []int64{int64(s.getUserID(20001)), int64(s.getUserID(20002)), int64(s.getUserID(20003))})
+				wantOrderList := []Order{
+					{
+						UserId:  s.getUserID(20001),
+						OrderId: 20001,
+						Content: "initial content20001",
+						Amount:  20001.0,
+					},
+				}
+				orders := getOrdersFromRows(t, rows)
+				assert.ElementsMatch(t, wantOrderList, orders)
+			},
+		},
 	}
 
 	for _, tc := range testcases {
