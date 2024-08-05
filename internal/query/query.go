@@ -20,6 +20,7 @@ type Query struct {
 	SQL        string
 	Args       []any
 	DB         string
+	Table      string
 	Datasource string
 }
 
