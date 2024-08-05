@@ -27,8 +27,15 @@ type Order struct {
 	UserId  int
 	OrderId int64
 	Content string
-	// TODO 修改为Amount
-	Account float64
+	Amount  float64
+}
+
+type sqlInfo struct {
+	query string
+	args  []any
+	// 执行 Exec 后返回的结果
+	rowsAffected int64
+	lastInsertId int64
 }
 
 func OpenDefaultDB() (*sql.DB, error) {
@@ -50,7 +57,7 @@ func CreateTables(t *testing.T, db *sql.DB, tableNames ...string) {
 		"user_id INT NOT NULL," +
 		"order_id BIGINT NOT NULL," +
 		"content TEXT," +
-		"account DOUBLE," +
+		"amount DOUBLE," +
 		"PRIMARY KEY (user_id)" +
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 	if len(tableNames) == 0 {
@@ -117,7 +124,7 @@ func getRowsFromTable(t *testing.T, db *sql.DB, ids []int64) *sql.Rows {
 	for _, id := range ids {
 		idStr = append(idStr, strconv.FormatInt(id, 10))
 	}
-	query := fmt.Sprintf("SELECT /*useMaster*/ `user_id`, `order_id`, `content`, `account` FROM `order` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
+	query := fmt.Sprintf("SELECT /*useMaster*/ `user_id`, `order_id`, `content`, `amount` FROM `order` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
 	rows, err := db.Query(query)
 	require.NoError(t, err)
 	return rows
@@ -128,7 +135,7 @@ func getOrdersFromRows(t *testing.T, rows *sql.Rows) []Order {
 	res := make([]Order, 0, 2)
 	for rows.Next() {
 		order := Order{}
-		err := rows.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Account)
+		err := rows.Scan(&order.UserId, &order.OrderId, &order.Content, &order.Amount)
 		require.NoError(t, err)
 		res = append(res, order)
 	}

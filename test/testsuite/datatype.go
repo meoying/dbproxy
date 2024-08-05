@@ -34,37 +34,45 @@ func (s *DataTypeTestSuite) TestIntTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意整数",
-			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 1",
+			},
 		},
 		{
 			name: "最大整数",
-			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 2",
+			},
 		},
 		{
 			name: "最小整数",
-			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 3",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 3",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 4",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 4",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getIntValues(t, s.mysqlDB, tc.sql)
-			actual := s.getIntValues(t, s.proxyDB, tc.sql)
+			expected := s.getIntValues(t, s.mysqlDB, tc.info)
+			actual := s.getIntValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getIntValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getIntValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
@@ -85,29 +93,33 @@ func (s *DataTypeTestSuite) TestFloatTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意浮点数",
-			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 1",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 2",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getFloatValues(t, s.mysqlDB, tc.sql)
-			actual := s.getFloatValues(t, s.proxyDB, tc.sql)
+			expected := s.getFloatValues(t, s.mysqlDB, tc.info)
+			actual := s.getFloatValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getFloatValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getFloatValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
@@ -128,29 +140,33 @@ func (s *DataTypeTestSuite) TestStringTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 1",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 2",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getStringValues(t, s.mysqlDB, tc.sql)
-			actual := s.getStringValues(t, s.proxyDB, tc.sql)
+			expected := s.getStringValues(t, s.mysqlDB, tc.info)
+			actual := s.getStringValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
@@ -169,32 +185,35 @@ func (s *DataTypeTestSuite) getStringValues(t *testing.T, db *sql.DB, sql string
 // 确保客户端收到的和服务端传递的是一样的。
 func (s *DataTypeTestSuite) TestDateTypes() {
 	t := s.T()
-	// t.Skip("TODO: dbproxy需要支持客户端传递parseTime=true参数,然后在convertToBytes中完成转换")
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意日期",
-			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 1",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 2",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getDateValues(t, s.mysqlDB, tc.sql)
-			actual := s.getDateValues(t, s.proxyDB, tc.sql)
+			expected := s.getDateValues(t, s.mysqlDB, tc.info)
+			actual := s.getDateValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getDateValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getDateValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
@@ -215,29 +234,33 @@ func (s *DataTypeTestSuite) TestGeographyTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意地理位置",
-			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 1",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 2",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getGeographyValues(t, s.mysqlDB, tc.sql)
-			actual := s.getGeographyValues(t, s.proxyDB, tc.sql)
+			expected := s.getGeographyValues(t, s.mysqlDB, tc.info)
+			actual := s.getGeographyValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getGeographyValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getGeographyValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
@@ -258,29 +281,33 @@ func (s *DataTypeTestSuite) TestFilePathTypes() {
 	t := s.T()
 	testCases := []struct {
 		name string
-		sql  string
+		info sqlInfo
 	}{
 		{
 			name: "随意字符串",
-			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 1",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 1",
+			},
 		},
 		{
 			name: "NULL值",
-			sql:  "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 2",
+			info: sqlInfo{
+				query: "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 2",
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expected := s.getFilePathTypeValues(t, s.mysqlDB, tc.sql)
-			actual := s.getFilePathTypeValues(t, s.proxyDB, tc.sql)
+			expected := s.getFilePathTypeValues(t, s.mysqlDB, tc.info)
+			actual := s.getFilePathTypeValues(t, s.proxyDB, tc.info)
 			require.Equal(t, expected, actual)
 		})
 	}
 }
 
-func (s *DataTypeTestSuite) getFilePathTypeValues(t *testing.T, db *sql.DB, sql string) [][]any {
+func (s *DataTypeTestSuite) getFilePathTypeValues(t *testing.T, db *sql.DB, info sqlInfo) [][]any {
 	t.Helper()
-	rows, err := db.QueryContext(context.Background(), sql)
+	rows, err := db.QueryContext(context.Background(), info.query)
 	require.NoError(t, err)
 	var values [][]any
 	for rows.Next() {
