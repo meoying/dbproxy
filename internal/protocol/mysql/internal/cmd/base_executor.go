@@ -7,11 +7,12 @@ import (
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
 type BaseExecutor struct {
-	*packet.BaseBuilder
+	*builder.BaseBuilder
 }
 
 func (e *BaseExecutor) parseQuery(payload []byte) string {
@@ -32,7 +33,11 @@ func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.Se
 }
 
 func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
-	return conn.WritePacket(e.BuildErrRespPacket(err))
+	b := builder.ErrorPacketBuilder{
+		ClientCapabilityFlags: conn.ClientCapabilityFlags(),
+		Error:                 builder.NewInternalError(err),
+	}
+	return conn.WritePacket(b.Build())
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -55,7 +60,9 @@ func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Con
 	return e.handleRows(rows, conn, status, e.BuildBinaryResultsetRespPackets)
 }
 
-func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc packet.BuildResultsetRespPacketsFunc) error {
+type buildResultsetRespPacketsFunc func(cols []packet.ColumnType, rows [][]any, serverStatus packet.SeverStatus, charset uint32) ([][]byte, error)
+
+func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc buildResultsetRespPacketsFunc) error {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)

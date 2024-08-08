@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 
 	"github.com/ecodeclub/ekit/randx"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/parser"
 )
 
 // 开始初始化
@@ -56,20 +56,18 @@ func (mc *Conn) startHandshake() error {
 	return mc.WritePacket(data)
 }
 
-// readHandshakeResp 读取客户端在 startHandshake 中返回来的响应
-func (mc *Conn) readHandshakeResp() (packet.HandshakeResp, error) {
-	data, err := mc.readPacket()
-	return data, err
-}
-
 func (mc *Conn) auth() error {
-	// 后续真的执行鉴权，就要处理这里读取到的 data
-	resp, err := mc.readHandshakeResp()
+	payload, err := mc.readPacket()
 	if err != nil {
 		return err
 	}
-	mc.clientFlags = flags.CapabilityFlags(resp.ClientFlags())
-	mc.characterSet = resp.CharacterSet()
+	p := parser.HandshakeResponse41{}
+	err = p.Parse(payload)
+	if err != nil {
+		return err
+	}
+	mc.clientFlags = p.ClientFlags()
+	mc.characterSet = p.CharacterSet()
 	// 写回 OK 响应
 	return mc.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
 }

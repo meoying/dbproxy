@@ -8,7 +8,7 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/parser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -66,12 +66,12 @@ func (e *StmtExecuteExecutor) parseArgs(clientCapabilityFlags flags.CapabilityFl
 		return nil, fmt.Errorf("failed to load num params")
 	}
 
-	req := packet.NewExecuteStmtRequestParser(clientCapabilityFlags, numParams)
+	req := parser.NewExecuteStmtRequestParser(clientCapabilityFlags, numParams)
 	if err := req.Parse(payload); err != nil {
 		return nil, err
 	}
 
-	return slice.Map(req.Parameters(), func(idx int, src packet.ExecuteStmtRequestParameter) any {
+	return slice.Map(req.Parameters(), func(idx int, src parser.ExecuteStmtRequestParameter) any {
 		log.Printf("get execute params[%d] = %#v\n", idx, src)
 		return src.Value
 	}), nil

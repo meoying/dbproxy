@@ -9,34 +9,36 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
 // 构造返回给客户端响应的 packet
 
 // BuildErrRespPacket 构造一个错误响应给客户端
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_err_packet.html
-func BuildErrRespPacket(err ErrorResp) []byte {
-	// 头部四个字节保留
-	res := make([]byte, 4, 13+len(err.msg))
-
-	// int<1> header 固定 0xFF 代表错误
-	res = append(res, 0xFF)
-
-	// int<2>	error_code	错误码
-	res = binary.LittleEndian.AppendUint16(res, err.code)
-
-	// 我们是必然支持 CLIENT_PROTOCOL_41，所以要加 state 相关字段
-	// string[1] sql_state_marker	固定的 # 作为分隔符
-	res = append(res, '#')
-
-	// string[5]  sql_state	SQL state
-	res = append(res, err.state...)
-
-	// string<EOF>	error_message 人可读的错误信息
-	res = append(res, err.msg...)
-
-	return res
-}
+// func BuildErrRespPacket(err ErrorResp) []byte {
+// 	// 头部四个字节保留
+// 	res := make([]byte, 4, 13+len(err.msg))
+//
+// 	// int<1> header 固定 0xFF 代表错误
+// 	res = append(res, 0xFF)
+//
+// 	// int<2>	error_code	错误码
+// 	res = binary.LittleEndian.AppendUint16(res, err.code)
+//
+// 	// 我们是必然支持 CLIENT_PROTOCOL_41，所以要加 state 相关字段
+// 	// string[1] sql_state_marker	固定的 # 作为分隔符
+// 	res = append(res, '#')
+//
+// 	// string[5]  sql_state	SQL state
+// 	res = append(res, err.state...)
+//
+// 	// string<EOF>	error_message 人可读的错误信息
+// 	res = append(res, err.msg...)
+//
+// 	return res
+// }
 
 // BuildOKRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
@@ -48,10 +50,10 @@ func BuildOKRespPacket(status SeverStatus, affectedRows, lastInsertID uint64) []
 	p = append(p, 0x00)
 
 	// int<lenenc>	affected_rows 受影响的行数
-	p = append(p, LengthEncodeInteger(affectedRows)...)
+	p = append(p, encoding.LengthEncodeInteger(affectedRows)...)
 
 	// int<lenenc>	last_insert_id 最后插入的ID
-	p = append(p, LengthEncodeInteger(lastInsertID)...)
+	p = append(p, encoding.LengthEncodeInteger(lastInsertID)...)
 
 	// capabilities & CLIENT_PROTOCOL_41
 	// int<2>	status_flags	SERVER_STATUS_flags_enum 服务器状态
@@ -93,28 +95,28 @@ func BuildColumnDefinitionPacket(col ColumnType, charset uint32) []byte {
 	p := make([]byte, 4, 32)
 
 	// catalog string<lenenc> 目录
-	p = append(p, LengthEncodeString("def")...)
+	p = append(p, encoding.LengthEncodeString("def")...)
 	// 这部分暂时用不到，所以全部写死
 	// schema string<lenenc> 数据库
-	p = append(p, LengthEncodeString("unsupported")...)
+	p = append(p, encoding.LengthEncodeString("unsupported")...)
 	// table string<lenenc> 虚拟数据表名
-	p = append(p, LengthEncodeString("unsupported")...)
+	p = append(p, encoding.LengthEncodeString("unsupported")...)
 	// orgTable string<lenenc> 物理数据表名
-	p = append(p, LengthEncodeString("unsupported")...)
+	p = append(p, encoding.LengthEncodeString("unsupported")...)
 	// name string<lenenc> 虚拟字段名
-	p = append(p, LengthEncodeString(col.Name())...)
+	p = append(p, encoding.LengthEncodeString(col.Name())...)
 	// orgName string<lenenc> 物理字段名
-	p = append(p, LengthEncodeString(col.Name())...)
+	p = append(p, encoding.LengthEncodeString(col.Name())...)
 	// 固定长度
 	p = append(p, 0x0c)
 	// character_set int<2> 编码
-	p = append(p, FixedLengthInteger(charset, 2)...)
+	p = append(p, encoding.FixedLengthInteger(uint64(charset), 2)...)
 	// column_length int<4> 字段类型最大长度
-	p = append(p, FixedLengthInteger(getMysqlTypeMaxLength(col.DatabaseTypeName()), 4)...)
+	p = append(p, encoding.FixedLengthInteger(uint64(getMysqlTypeMaxLength(col.DatabaseTypeName())), 4)...)
 	// type int<1> 字段类型
-	p = append(p, uint16ToBytes(mapMySQLTypeToEnum(col.DatabaseTypeName()))...)
+	p = append(p, encoding.FixedLengthInteger(uint64(mapMySQLTypeToEnum(col.DatabaseTypeName())), 1)...)
 	// flags int<2> 标志
-	p = append(p, FixedLengthInteger(0, 2)...)
+	p = append(p, encoding.FixedLengthInteger(0, 2)...)
 	// decimals int<1> 小数点
 	p = append(p, 0)
 
@@ -138,7 +140,7 @@ func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) ([]byte, erro
 			p = append(p, 0xFB)
 		} else {
 			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
-			p = append(p, LengthEncodeString(string(data))...)
+			p = append(p, encoding.LengthEncodeString(string(data))...)
 		}
 	}
 
@@ -298,7 +300,7 @@ func writeBinaryValue(buf *bytes.Buffer, value any, col ColumnType) (bool, error
 		return true, nil
 	case "DECIMAL", "CHAR", "VARCHAR", "TEXT", "ENUM", "SET", "BINARY", "VARBINARY", "JSON", "BIT", "BLOB", "GEOMETRY":
 		// val = string(bytesVal)
-		_, err := buf.Write(LengthEncodeString(string(bytesVal)))
+		_, err := buf.Write(encoding.LengthEncodeString(string(bytesVal)))
 		if err != nil {
 			return false, err
 		}
