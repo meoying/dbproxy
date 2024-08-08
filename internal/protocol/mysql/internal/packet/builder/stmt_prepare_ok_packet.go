@@ -13,6 +13,7 @@ import (
 // BuildErr 用于构建 ERR_Packet 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html#sect_protocol_com_stmt_prepare_response_ok
 type StmtPrepareOKPacketBuilder struct {
+	*BaseBuilder
 
 	// ClientCapabilityFlags 客户端与服务端建立连接时设置的flags
 	ClientCapabilityFlags flags.CapabilityFlags
@@ -104,7 +105,7 @@ func (b *StmtPrepareOKPacketBuilder) buildParameterDefinitionPackets() [][]byte 
 
 		var packets [][]byte
 		for _, p := range params {
-			packets = append(packets, packet.BuildColumnDefinitionPacket(p, b.Charset))
+			packets = append(packets, b.buildColumnDefinitionPacket(p))
 		}
 
 		packets = append(packets, b.buildEOFPacket())
@@ -145,7 +146,7 @@ func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPackets() [][]byte {
 
 		var packets [][]byte
 		for _, f := range fields {
-			packets = append(packets, packet.BuildColumnDefinitionPacket(f, b.Charset))
+			packets = append(packets, b.buildColumnDefinitionPacket(f))
 		}
 
 		packets = append(packets, b.buildEOFPacket())
@@ -153,4 +154,21 @@ func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPackets() [][]byte {
 		return packets
 	}
 	return nil
+}
+
+func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPacket(column packet.ColumnType) []byte {
+	bb := ColumnDefinition41Packet{
+		Catalog:      "def",
+		Schema:       "unsupported",
+		Table:        "unsupported",
+		OrgTable:     "unsupported",
+		Name:         column.Name(),
+		OrgName:      column.Name(),
+		CharacterSet: b.Charset,
+		ColumnLength: packet.GetMysqlTypeMaxLength(column.DatabaseTypeName()),
+		Type:         byte(packet.GetMySQLType(column.DatabaseTypeName())),
+		Flags:        0,
+		Decimals:     0,
+	}
+	return bb.Build()
 }

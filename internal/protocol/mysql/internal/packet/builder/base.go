@@ -50,7 +50,7 @@ func (b *BaseBuilder) buildResultSetRespPackets(cols []packet.ColumnType, rows [
 
 	// 写入字段描述包
 	for _, c := range cols {
-		packets = append(packets, packet.BuildColumnDefinitionPacket(c, charset))
+		packets = append(packets, b.buildColumnDefinitionPacket(c, charset))
 	}
 	if len(cols) != 0 {
 		packets = append(packets, eofPacket)
@@ -68,6 +68,23 @@ func (b *BaseBuilder) buildResultSetRespPackets(cols []packet.ColumnType, rows [
 	packets = append(packets, eofPacket)
 
 	return packets, nil
+}
+
+func (b *BaseBuilder) buildColumnDefinitionPacket(column packet.ColumnType, charset uint32) []byte {
+	bb := ColumnDefinition41Packet{
+		Catalog:      "def",
+		Schema:       "unsupported",
+		Table:        "unsupported",
+		OrgTable:     "unsupported",
+		Name:         column.Name(),
+		OrgName:      column.Name(),
+		CharacterSet: charset,
+		ColumnLength: packet.GetMysqlTypeMaxLength(column.DatabaseTypeName()),
+		Type:         byte(packet.GetMySQLType(column.DatabaseTypeName())),
+		Flags:        0,
+		Decimals:     0,
+	}
+	return bb.Build()
 }
 
 // func (b *BaseBuilder) buildPacket(data []byte) ([]byte, error) {
