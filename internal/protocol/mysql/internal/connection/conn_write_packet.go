@@ -8,6 +8,7 @@ import (
 )
 
 // WritePacket 写入一个 packet
+// https://mariadb.com/kb/en/0-packet/
 // 注意：
 // 1. WritePacket 并不会执行拆包。也就是说如果你的 data 需要多个报文来发送，那么你需要自己手动拆分
 // 2. 你需要在 data 里面预留出来四个字节的头部字段

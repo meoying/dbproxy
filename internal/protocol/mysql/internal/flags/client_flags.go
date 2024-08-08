@@ -9,6 +9,14 @@ const (
 	// ClientProtocol41  New 4.1 protocol
 	ClientProtocol41 CapabilityFlag = 512
 
+	// ClientTransactions
+	// Client knows about transactions
+	ClientTransactions = 8192
+
+	// ClientSessionTrack
+	// Capable of handling server state change information
+	ClientSessionTrack = 1 << 23
+
 	// ClientDeprecateEOF
 	// Client no longer needs EOF_Packet and will use OK_Packet instead.
 	ClientDeprecateEOF = 1 << 24

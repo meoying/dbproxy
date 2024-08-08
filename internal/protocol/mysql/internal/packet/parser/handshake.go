@@ -20,7 +20,8 @@ type HandshakeResponse41 struct {
 }
 
 func (h *HandshakeResponse41) Parse(payload []byte) error {
-	h.clientFlag = flags.CapabilityFlags(binary.LittleEndian.Uint32(payload[4:8]))
+	h.clientFlag = flags.CapabilityFlags(flags.ClientProtocol41)
+	h.clientFlag |= flags.CapabilityFlags(binary.LittleEndian.Uint32(payload[4:8]))
 	h.characterSet = uint32(payload[12])
 	return nil
 }

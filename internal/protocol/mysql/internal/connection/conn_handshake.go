@@ -4,7 +4,8 @@ import (
 	"encoding/binary"
 
 	"github.com/ecodeclub/ekit/randx"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/parser"
 )
 
@@ -69,5 +70,8 @@ func (mc *Conn) auth() error {
 	mc.clientFlags = p.ClientFlags()
 	mc.characterSet = p.CharacterSet()
 	// 写回 OK 响应
-	return mc.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
+	b := builder.OKOrEOFPacketBuilder{
+		StatusFlags: flags.ServerStatusAutoCommit,
+	}
+	return mc.WritePacket(b.BuildOK())
 }

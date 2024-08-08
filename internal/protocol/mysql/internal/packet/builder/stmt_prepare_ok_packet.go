@@ -21,7 +21,7 @@ type StmtPrepareOKPacketBuilder struct {
 	Charset uint32
 
 	// ServerStatus 服务端状态
-	ServerStatus packet.SeverStatus
+	ServerStatus flags.SeverStatus
 
 	// 以下是 COM_STMT_PREPARE_OK 包内容
 
@@ -107,17 +107,28 @@ func (b *StmtPrepareOKPacketBuilder) buildParameterDefinitionPackets() [][]byte 
 			packets = append(packets, packet.BuildColumnDefinitionPacket(p, b.Charset))
 		}
 
-		if !b.isClientDeprecateEOFFlagSet() {
-			// 发送EOF包
-			packets = append(packets, packet.BuildEOFPacket(b.ServerStatus))
-		} else {
-			// 发送ok包 表示 中间的EOF
-			// append(packets, EOF)
-			panic("TODO: 用OK包表示EOF")
-		}
+		packets = append(packets, b.buildEOFPacket())
+
 		return packets
 	}
 	return nil
+}
+
+func (b *StmtPrepareOKPacketBuilder) buildEOFPacket() []byte {
+	if b.isClientDeprecateEOFFlagSet() {
+		// 发送ok包表示EOF
+		eofBuilder := OKOrEOFPacketBuilder{
+			Capabilities: b.ClientCapabilityFlags,
+			StatusFlags:  b.ServerStatus,
+		}
+		return eofBuilder.BuildEOF()
+	}
+	// 发送EOF包
+	eofBuilder := EOFPacketBuilder{
+		Capabilities: b.ClientCapabilityFlags,
+		StatusFlags:  b.ServerStatus,
+	}
+	return eofBuilder.Build()
 }
 
 func (b *StmtPrepareOKPacketBuilder) isClientDeprecateEOFFlagSet() bool {
@@ -137,13 +148,8 @@ func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPackets() [][]byte {
 			packets = append(packets, packet.BuildColumnDefinitionPacket(f, b.Charset))
 		}
 
-		if !b.isClientDeprecateEOFFlagSet() {
-			// 发送EOF包
-			packets = append(packets, packet.BuildEOFPacket(b.ServerStatus))
-		} else {
-			// 发送ok包 表示 中间的EOF
-			panic("TODO: 用OK包表示EOF")
-		}
+		packets = append(packets, b.buildEOFPacket())
+
 		return packets
 	}
 	return nil

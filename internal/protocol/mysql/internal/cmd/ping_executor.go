@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 )
 
 var _ Executor = &PingExecutor{}
@@ -19,5 +20,8 @@ func (e *PingExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	return conn.WritePacket(packet.BuildOKRespPacket(packet.ServerStatusAutoCommit, 0, 0))
+	b := builder.OKOrEOFPacketBuilder{
+		StatusFlags: flags.ServerStatusAutoCommit,
+	}
+	return conn.WritePacket(b.BuildOK())
 }

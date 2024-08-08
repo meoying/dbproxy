@@ -52,7 +52,7 @@ func (e Error) Msg() string {
 	return e.msg
 }
 
-// ErrorPacketBuilder 构造一个错误响应给客户端
+// ErrorPacketBuilder 错误包构建器
 type ErrorPacketBuilder struct {
 
 	// ClientCapabilityFlags 客户端与服务端建立连接时设置的flags
