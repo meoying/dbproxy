@@ -12,7 +12,6 @@ import (
 )
 
 type BaseExecutor struct {
-	// *builder.BaseBuilder
 }
 
 func (e *BaseExecutor) parseQuery(payload []byte) string {
