@@ -6,3 +6,8 @@ func LengthEncodeString(str string) []byte {
 	// 将字符串的长度以 int<lenenc> 编码形式作为前缀与字符串内容拼接
 	return append(LengthEncodeInteger(uint64(len(str))), []byte(str)...)
 }
+
+// NullTerminatedString Strings that are terminated by a 00 byte.
+func NullTerminatedString(str string) []byte {
+	return append([]byte(str), 0x00)
+}

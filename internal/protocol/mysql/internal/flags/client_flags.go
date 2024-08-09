@@ -13,6 +13,10 @@ const (
 	// Client knows about transactions
 	ClientTransactions = 8192
 
+	// ClientPluginAuth
+	// Client supports plugin authentication.
+	ClientPluginAuth = 1 << 19
+
 	// ClientSessionTrack
 	// Capable of handling server state change information
 	ClientSessionTrack = 1 << 23
