@@ -2,6 +2,7 @@ package connection
 
 import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/parser"
 )
@@ -12,7 +13,7 @@ import (
 // 而后客户端要响应 startHandshake
 func (mc *Conn) startHandshake() error {
 	b := builder.NewHandshakeV10Packet(flags.CapabilityFlags(flags.ClientPluginAuth), flags.ServerStatusAutoCommit, builder.AuthPluginDataGenerator)
-	b.ProtocolVersion = minProtocolVersion
+	b.ProtocolVersion = packet.MinProtocolVersion
 	b.ServerVersion = "8.4.0"
 	b.ConnectionID = mc.id
 	b.AuthPluginName = "mysql_native_password"

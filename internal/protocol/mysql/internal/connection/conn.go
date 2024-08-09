@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
 // OnCmd 返回是否处理成功
@@ -37,7 +38,7 @@ type Conn struct {
 func NewConn(id uint32, rc net.Conn, onCmd OnCmd) *Conn {
 	return &Conn{
 		conn:             rc,
-		maxAllowedPacket: maxPacketSize,
+		maxAllowedPacket: packet.MaxPacketSize,
 		// 后续要考虑做成可配置的
 		writeTimeout: time.Second * 3,
 		onCmd:        onCmd,
