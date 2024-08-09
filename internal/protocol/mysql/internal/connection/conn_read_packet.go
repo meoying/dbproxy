@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/meoying/dbproxy/internal/errs"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
 // readPacket 读取一个完整报文，已经去除了头部字段，只剩下 payload 字段
@@ -47,7 +48,7 @@ func (mc *Conn) readPacket() ([]byte, error) {
 			return nil, fmt.Errorf("%w，读取报文体失败 %w", errs.ErrInvalidConn, err)
 		}
 		// return data if this was the last packet
-		if pktLen < maxPacketSize {
+		if pktLen < packet.MaxPacketSize {
 			// zero allocations for non-split packets
 			if prevData == nil {
 				return body, nil

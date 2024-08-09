@@ -6,12 +6,12 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
 type BaseExecutor struct {
-	*packet.BaseBuilder
 }
 
 func (e *BaseExecutor) parseQuery(payload []byte) string {
@@ -19,20 +19,23 @@ func (e *BaseExecutor) parseQuery(payload []byte) string {
 	return string(payload[1:])
 }
 
-func (e *BaseExecutor) getServerStatus(conn *connection.Conn) packet.SeverStatus {
-	status := packet.ServerStatusAutoCommit
+func (e *BaseExecutor) getServerStatus(conn *connection.Conn) flags.SeverStatus {
+	status := flags.ServerStatusAutoCommit
 	if conn.InTransaction() {
-		status |= packet.SeverStatusInTrans
+		status |= flags.SeverStatusInTrans
 	}
 	return status
 }
 
-func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status packet.SeverStatus, rowsAffected, lastInsertID uint64) error {
-	return conn.WritePacket(e.BuildOKRespPacket(status, rowsAffected, lastInsertID))
+func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status flags.SeverStatus, rowsAffected, lastInsertID uint64) error {
+	b := builder.NewOKPacket(conn.ClientCapabilityFlags(), status)
+	b.AffectedRows = rowsAffected
+	b.LastInsertID = lastInsertID
+	return conn.WritePacket(b.Build())
 }
 
 func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
-	return conn.WritePacket(e.BuildErrRespPacket(err))
+	return conn.WritePacket(builder.NewErrPacket(conn.ClientCapabilityFlags(), builder.NewInternalError(err)).Build())
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -46,16 +49,24 @@ func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte)
 }
 
 // handleQuerySQLRows 处理使用非prepare语句获取到的结果集
-func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.BuildTextResultsetRespPackets)
+func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
+	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
+		textResultset := builder.NewTextResultsetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return textResultset.Build(), nil
+	})
 }
 
 // handlePrepareSQLRows 处理使用prepare语句获取到的结果集
-func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.BuildBinaryResultsetRespPackets)
+func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
+	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
+		binaryResultset := builder.NewBinaryResultsetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return binaryResultset.Build()
+	})
 }
 
-func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus, buildPacketsFunc packet.BuildResultsetRespPacketsFunc) error {
+type buildResultsetRespPacketsFunc func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error)
+
+func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus, buildPacketsFunc buildResultsetRespPacketsFunc) error {
 	cols, err := rows.ColumnTypes()
 	if err != nil {
 		return e.writeErrRespPacket(conn, err)
@@ -76,7 +87,7 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 		data = append(data, row)
 	}
 
-	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) packet.ColumnType {
+	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) builder.ColumnType {
 		return src
 	})
 
@@ -93,16 +104,16 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 }
 
 // handleSQLRowsFunc 对 handleQuerySQLRows 和 handlePrepareSQLRows 方法的抽象
-type handleSQLRowsFunc func(rows sqlx.Rows, conn *connection.Conn, status packet.SeverStatus) error
+type handleSQLRowsFunc func(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error
 
 // handlePluginResult 同一处理插件执行结果
 func (e *BaseExecutor) handlePluginResult(result *plugin.Result, conn *connection.Conn, handleSQLRowsFunc handleSQLRowsFunc) error {
 	// 重置conn的事务状态
 	conn.SetInTransaction(result.InTransactionState)
 
-	status := packet.ServerStatusAutoCommit
+	status := flags.ServerStatusAutoCommit
 	if result.InTransactionState {
-		status |= packet.SeverStatusInTrans
+		status |= flags.SeverStatusInTrans
 	}
 
 	if result.Rows != nil {
@@ -116,7 +127,7 @@ func (e *BaseExecutor) handlePluginResult(result *plugin.Result, conn *connectio
 	return e.writeOKRespPacket(conn, status, 0, 0)
 }
 
-func (e *BaseExecutor) handleSQLResult(result sql.Result, conn *connection.Conn, status packet.SeverStatus) error {
+func (e *BaseExecutor) handleSQLResult(result sql.Result, conn *connection.Conn, status flags.SeverStatus) error {
 	rowsAffected, _ := result.RowsAffected()
 	lastInsertId, _ := result.LastInsertId()
 	return e.writeOKRespPacket(conn, status, uint64(rowsAffected), uint64(lastInsertId))

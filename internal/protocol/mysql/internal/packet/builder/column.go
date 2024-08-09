@@ -1,8 +1,13 @@
-package packet
+package builder
 
 var (
 	_ ColumnType = Column{}
 )
+
+type ColumnType interface {
+	Name() string
+	DatabaseTypeName() string
+}
 
 type Column struct {
 	name         string

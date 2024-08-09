@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
@@ -68,10 +68,8 @@ func (e *StmtPrepareExecutor) generatePrepareStmtSQL(stmtId uint32, query string
 }
 
 func (e *StmtPrepareExecutor) buildRespPackets(stmtID uint32, numParams uint64, conn *connection.Conn) [][]byte {
-	b := packet.PrepareStmtResponseBuilder{}
-	b.FieldStatementID = stmtID
-	b.FieldNumParams = uint16(numParams)
-	b.Charset = conn.CharacterSet()
-	b.ServerStatus = e.getServerStatus(conn)
-	return b.BuildOK()
+	b := builder.NewStmtPrepareOKPacket(conn.ClientCapabilityFlags(), e.getServerStatus(conn), conn.CharacterSet())
+	b.StatementID = stmtID
+	b.NumParams = uint16(numParams)
+	return b.Build()
 }

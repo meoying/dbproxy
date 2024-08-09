@@ -1,12 +1,17 @@
-package packet
+package flags
 
 // SeverStatus MySQL 中代表服务器状态的枚举
+// The status flags are a bit-field.
 // https://dev.mysql.com/doc/dev/mysql-server/latest/mysql__com_8h.html#a1d854e841086925be1883e4d7b4e8cad
 type SeverStatus uint64
 
 // AsUint16 目前在协议中都是用两个字节来传输的
 func (s SeverStatus) AsUint16() uint16 {
 	return uint16(s)
+}
+
+func (s SeverStatus) Has(ss SeverStatus) bool {
+	return uint64(s)&uint64(ss) > 0
 }
 
 // 4 这个值并没有定义

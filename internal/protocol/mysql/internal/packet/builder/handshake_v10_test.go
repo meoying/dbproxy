@@ -1,0 +1,59 @@
+package builder
+
+import (
+	"testing"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestHandshakeV10Packet_Build(t *testing.T) {
+	tests := []struct {
+		name    string
+		builder *HandshakeV10Packet
+		want    []byte
+	}{
+		{
+			name: "正常情况",
+			builder: func() *HandshakeV10Packet {
+				b := NewHandshakeV10Packet(flags.CapabilityFlags(flags.ClientPluginAuth), flags.ServerStatusAutoCommit, func() string {
+					return string([]byte{
+						0x65, 0x75, 0x27, 0x71, 0x01, 0x62, 0x05, 0x27, // auth-plugin-data-part-1
+						0x09, 0x29, 0x58, 0x17, 0x38, 0x45, 0x5d, 0x5f, 0x06, 0x31, 0x5f, 0x63, // auth-plugin-data-part-2
+					})
+				})
+				b.ProtocolVersion = 10
+				b.ServerVersion = "8.4.0"
+				b.ConnectionID = 1
+				b.CapabilityFlags1 = 0xFFFF
+				b.CharacterSet = 0xFF
+				b.CapabilityFlags2 = 0xDFFF
+				b.AuthPluginDataLength = 0x15
+				b.AuthPluginName = "mysql_native_password"
+				return b
+			}(),
+			want: []byte{
+				0x33, 0x00, 0x00, 0x00, // packet header
+				0x0a,                               // protocol version
+				0x38, 0x2e, 0x34, 0x2e, 0x30, 0x00, // server version
+				0x01, 0x00, 0x00, 0x00, // 	thread id
+				0x65, 0x75, 0x27, 0x71, 0x01, 0x62, 0x05, 0x27, // auth-plugin-data-part-1
+				0x00,       // filler
+				0xff, 0xff, // 	capability_flags_1
+				0xff,       // character_set
+				0x02, 0x00, // status_flags
+				0xff, 0xdf, // 	capability_flags_2
+				0x15,                                                       // auth_plugin_data_len
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // reserved
+				0x0d, 0x09, 0x29, 0x58, 0x17, 0x38, 0x45, 0x5d, 0x5f, 0x06, 0x31, 0x5f, 0x63, 0x00, // auth-plugin-data-part-2
+				0x6d, 0x79, 0x73, 0x71, 0x6c, 0x5f, 0x6e, 0x61, 0x74, 0x69, 0x76, 0x65, 0x5f, // auth_plugin_name
+				0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x00,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want[4:], tt.builder.Build()[4:])
+		})
+	}
+}
