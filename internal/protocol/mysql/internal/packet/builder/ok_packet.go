@@ -7,7 +7,7 @@ import (
 
 // OKOrEOFPacketBuilder OK/EOF包构建器
 type OKOrEOFPacketBuilder struct {
-	// Capabilities 客户端与服务端建立连接时设置的flags
+	// Capabilities 客户端与服务端建立连接时设置的flags OK 和 EOF 包都需要设置此字段
 	Capabilities flags.CapabilityFlags
 
 	header byte

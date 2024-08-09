@@ -55,11 +55,18 @@ func (e Error) Msg() string {
 // ErrorPacketBuilder 错误包构建器
 type ErrorPacketBuilder struct {
 
-	// ClientCapabilityFlags 客户端与服务端建立连接时设置的flags
-	ClientCapabilityFlags flags.CapabilityFlags
+	// capabilities 客户端与服务端建立连接时设置的flags
+	Capabilities flags.CapabilityFlags
 
 	// Error 发生的错误
 	Error Error
+}
+
+func NewErrorPacketBuilder(cap flags.CapabilityFlags, err Error) *ErrorPacketBuilder {
+	return &ErrorPacketBuilder{
+		Capabilities: cap,
+		Error:        err,
+	}
 }
 
 // Build 构造 ERR_Packet
@@ -74,7 +81,7 @@ func (b *ErrorPacketBuilder) Build() []byte {
 	// int<2>	error_code	错误码
 	p = binary.LittleEndian.AppendUint16(p, b.Error.Code())
 
-	if b.ClientCapabilityFlags.Has(flags.ClientProtocol41) {
+	if b.Capabilities.Has(flags.ClientProtocol41) {
 		// string[1] sql_state_marker	固定的 # 作为分隔符
 		p = append(p, '#')
 

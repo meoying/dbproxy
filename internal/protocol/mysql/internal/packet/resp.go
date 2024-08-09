@@ -20,27 +20,6 @@ type ColumnType interface {
 	DatabaseTypeName() string
 }
 
-// BuildTextResultsetRowRespPacket 构建查询结果行字段包
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func BuildTextResultsetRowRespPacket(values []any, _ []ColumnType) ([]byte, error) {
-	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
-	// 减少切片扩容
-	// return []byte{0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x03, 0x54, 0x6f, 0x6d}
-	p := make([]byte, 4, 20)
-	for _, v := range values {
-		data := *(v.(*[]byte))
-		if data == nil {
-			// 字段值为null 默认返回0xFB
-			p = append(p, 0xFB)
-		} else {
-			// 字段值 string<lenenc>，由于row.Scan一定是指针，所以这里必定是*any指针，要取值，不然转字符串会返回16进制的地址
-			p = append(p, encoding.LengthEncodeString(string(data))...)
-		}
-	}
-
-	return p, nil
-}
-
 // BuildBinaryResultsetRowRespPacket
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
 func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) ([]byte, error) {

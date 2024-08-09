@@ -40,11 +40,7 @@ func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status flags.Sev
 }
 
 func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
-	b := builder.ErrorPacketBuilder{
-		ClientCapabilityFlags: conn.ClientCapabilityFlags(),
-		Error:                 builder.NewInternalError(err),
-	}
-	return conn.WritePacket(b.Build())
+	return conn.WritePacket(builder.NewErrorPacketBuilder(conn.ClientCapabilityFlags(), builder.NewInternalError(err)).Build())
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -59,7 +55,10 @@ func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte)
 
 // handleQuerySQLRows 处理使用非prepare语句获取到的结果集
 func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.BuildTextResultsetRespPackets)
+	return e.handleRows(rows, conn, status, func(cols []packet.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
+		textResultSet := builder.NewTextResultSetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return textResultSet.Build(), nil
+	})
 }
 
 // handlePrepareSQLRows 处理使用prepare语句获取到的结果集

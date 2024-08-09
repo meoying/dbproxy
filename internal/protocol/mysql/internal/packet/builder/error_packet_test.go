@@ -31,10 +31,7 @@ func TestErrorPacketBuilder_Build(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := ErrorPacketBuilder{
-				ClientCapabilityFlags: tt.ClientCapabilityFlags,
-				Error:                 tt.Error,
-			}
+			b := NewErrorPacketBuilder(tt.ClientCapabilityFlags, tt.Error)
 			assert.Equal(t, tt.want, b.Build()[4:])
 		})
 	}
