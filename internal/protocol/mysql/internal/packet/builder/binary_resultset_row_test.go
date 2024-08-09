@@ -1,4 +1,4 @@
-package packet
+package builder
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
+func TestBinaryResultsetRowPacket_Build(t *testing.T) {
 	t.Skip()
 	tests := []struct {
 		name          string
@@ -113,7 +113,8 @@ func TestBuildBinaryResultsetRowRespPacket(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual, err := BuildBinaryResultsetRowRespPacket(tc.values, nil)
+			b := BinaryResultSetRowPacket{values: tc.values, cols: nil}
+			actual, err := b.Build()
 			tc.assertErrFunc(t, err)
 			if err != nil {
 				return

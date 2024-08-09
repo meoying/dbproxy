@@ -1,4 +1,4 @@
-package packet
+package builder
 
 import (
 	"bytes"
@@ -13,28 +13,26 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
-// 构造返回给客户端响应的 packet
-
-type ColumnType interface {
-	Name() string
-	DatabaseTypeName() string
+type BinaryResultSetRowPacket struct {
+	values []any
+	cols   []ColumnType
 }
 
-// BuildBinaryResultsetRowRespPacket
+// Build
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
-func BuildBinaryResultsetRowRespPacket(values []any, cols []ColumnType) ([]byte, error) {
-	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", values)
+func (b *BinaryResultSetRowPacket) Build() ([]byte, error) {
+	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", b.values)
 	// Calculate the length of the NULL bitmap
-	nullBitmapLen := (len(values) + 7 + 2) / 8
+	nullBitmapLen := (len(b.values) + 7 + 2) / 8
 
 	// Initialize the NULL bitmap
 	nullBitmap := make([]byte, nullBitmapLen)
 
 	// Build the row values
 	var buf bytes.Buffer
-	for i, val := range values {
+	for i, val := range b.values {
 		//
-		ok, err := writeBinaryValue(&buf, val, cols[i])
+		ok, err := writeBinaryValue(&buf, val, b.cols[i])
 
 		if err != nil {
 			// handle error or panic

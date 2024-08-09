@@ -13,7 +13,7 @@ import (
 // BuildErr 用于构建 ERR_Packet 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html#sect_protocol_com_stmt_prepare_response_ok
 type StmtPrepareOKPacketBuilder struct {
-	*BaseBuilder
+	// *BaseBuilder
 
 	// ClientCapabilityFlags 客户端与服务端建立连接时设置的flags
 	ClientCapabilityFlags flags.CapabilityFlags
@@ -97,10 +97,10 @@ func (b *StmtPrepareOKPacketBuilder) isClientOptionalResultsetMetadataFlagSet() 
 func (b *StmtPrepareOKPacketBuilder) buildParameterDefinitionPackets() [][]byte {
 	if b.FieldNumParams > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == packet.ResultSetMetadataFull {
 
-		params := make([]packet.Column, 0, b.FieldNumParams)
+		params := make([]Column, 0, b.FieldNumParams)
 		for i := uint16(0); i < b.FieldNumParams; i++ {
 			// 伪造参数定义
-			params = append(params, packet.NewColumn("?", "BIGINT"))
+			params = append(params, NewColumn("?", "BIGINT"))
 		}
 
 		var packets [][]byte
@@ -139,9 +139,9 @@ func (b *StmtPrepareOKPacketBuilder) isClientDeprecateEOFFlagSet() bool {
 func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPackets() [][]byte {
 	if b.FieldNumColumns > 0 && !b.isClientOptionalResultsetMetadataFlagSet() || b.FieldMetadataFollows == packet.ResultSetMetadataFull {
 
-		fields := make([]packet.Column, 0, b.FieldNumColumns)
+		fields := make([]Column, 0, b.FieldNumColumns)
 		for i := uint16(0); i < b.FieldNumColumns; i++ {
-			fields = append(fields, packet.NewColumn(fmt.Sprintf("fake_field_%d", i), "INT"))
+			fields = append(fields, NewColumn(fmt.Sprintf("fake_field_%d", i), "INT"))
 		}
 
 		var packets [][]byte
@@ -156,7 +156,7 @@ func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPackets() [][]byte {
 	return nil
 }
 
-func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPacket(column packet.ColumnType) []byte {
+func (b *StmtPrepareOKPacketBuilder) buildColumnDefinitionPacket(column ColumnType) []byte {
 	bb := ColumnDefinition41Packet{
 		Catalog:      "def",
 		Schema:       "unsupported",

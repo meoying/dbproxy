@@ -10,7 +10,7 @@ type TextResultSetPacket struct {
 	// capabilities 客户端与服务端建立连接时设置的flags
 	capabilities flags.CapabilityFlags
 
-	columnTypes  []packet.ColumnType
+	columnTypes  []ColumnType
 	rows         [][]any
 	serverStatus flags.SeverStatus
 	charset      uint32
@@ -19,7 +19,7 @@ type TextResultSetPacket struct {
 	Error           error
 }
 
-func NewTextResultSetPacket(capabilities flags.CapabilityFlags, columnTypes []packet.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *TextResultSetPacket {
+func NewTextResultSetPacket(capabilities flags.CapabilityFlags, columnTypes []ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *TextResultSetPacket {
 	return &TextResultSetPacket{capabilities: capabilities, columnTypes: columnTypes, rows: rows, serverStatus: serverStatus, charset: charset}
 }
 
@@ -67,7 +67,7 @@ func (b *TextResultSetPacket) Build() [][]byte {
 
 	// One or more Text Resultset Row
 	// The row data	each Text Resultset Row contains column_count values
-	rowBuilder := TextResultSetRow{}
+	rowBuilder := TextResultSetRowPacket{}
 	for _, row := range b.rows {
 		rowBuilder.values = row
 		packets = append(packets, rowBuilder.Build())
@@ -87,7 +87,7 @@ func (b *TextResultSetPacket) Build() [][]byte {
 	return packets
 }
 
-func (b *TextResultSetPacket) buildColumnDefinitionPacket(column packet.ColumnType) []byte {
+func (b *TextResultSetPacket) buildColumnDefinitionPacket(column ColumnType) []byte {
 	bb := ColumnDefinition41Packet{
 		Catalog:      "def",
 		Schema:       "unsupported",

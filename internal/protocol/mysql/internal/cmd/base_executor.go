@@ -7,13 +7,12 @@ import (
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/connection"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/flags"
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/builder"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
 )
 
 type BaseExecutor struct {
-	*builder.BaseBuilder
+	// *builder.BaseBuilder
 }
 
 func (e *BaseExecutor) parseQuery(payload []byte) string {
@@ -55,7 +54,7 @@ func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte)
 
 // handleQuerySQLRows 处理使用非prepare语句获取到的结果集
 func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
-	return e.handleRows(rows, conn, status, func(cols []packet.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
+	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
 		textResultSet := builder.NewTextResultSetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
 		return textResultSet.Build(), nil
 	})
@@ -63,10 +62,13 @@ func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn,
 
 // handlePrepareSQLRows 处理使用prepare语句获取到的结果集
 func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
-	return e.handleRows(rows, conn, status, e.BuildBinaryResultsetRespPackets)
+	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
+		binaryResultSet := builder.NewBinaryResultSetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return binaryResultSet.Build()
+	})
 }
 
-type buildResultsetRespPacketsFunc func(cols []packet.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error)
+type buildResultsetRespPacketsFunc func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error)
 
 func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus, buildPacketsFunc buildResultsetRespPacketsFunc) error {
 	cols, err := rows.ColumnTypes()
@@ -89,7 +91,7 @@ func (e *BaseExecutor) handleRows(rows sqlx.Rows, conn *connection.Conn, status 
 		data = append(data, row)
 	}
 
-	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) packet.ColumnType {
+	columnTypes := slice.Map(cols, func(idx int, src *sql.ColumnType) builder.ColumnType {
 		return src
 	})
 
