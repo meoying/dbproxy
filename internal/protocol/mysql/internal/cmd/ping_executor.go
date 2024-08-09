@@ -20,8 +20,6 @@ func (e *PingExecutor) Exec(
 	ctx context.Context,
 	conn *connection.Conn,
 	payload []byte) error {
-	b := builder.OKOrEOFPacketBuilder{
-		StatusFlags: flags.ServerStatusAutoCommit,
-	}
-	return conn.WritePacket(b.BuildOK())
+	b := builder.NewOKPacket(conn.ClientCapabilityFlags(), flags.ServerStatusAutoCommit)
+	return conn.WritePacket(b.Build())
 }

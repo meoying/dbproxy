@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestErrorPacketBuilder_Build(t *testing.T) {
+func TestErrPacket_Build(t *testing.T) {
 	tests := []struct {
 		name                  string
 		ClientCapabilityFlags flags.CapabilityFlags
@@ -31,7 +31,7 @@ func TestErrorPacketBuilder_Build(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := NewErrorPacketBuilder(tt.ClientCapabilityFlags, tt.Error)
+			b := NewErrPacket(tt.ClientCapabilityFlags, tt.Error)
 			assert.Equal(t, tt.want, b.Build()[4:])
 		})
 	}

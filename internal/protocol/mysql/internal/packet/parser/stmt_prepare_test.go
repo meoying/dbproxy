@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrepareStmtRequestParser_Parse(t *testing.T) {
+func TestStmtPrepare_Parse(t *testing.T) {
 	tests := []struct {
 		name    string
 		payload []byte
@@ -42,7 +42,7 @@ func TestPrepareStmtRequestParser_Parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := parser.NewPrepareStmtRequestParser()
+			p := parser.NewStmtPreparePacket()
 			err := p.Parse(tt.payload)
 			tt.wantErr(t, err)
 			if err != nil {

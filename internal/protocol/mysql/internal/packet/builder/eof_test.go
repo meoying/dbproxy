@@ -7,18 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEOFPacketBuilder_Build(t *testing.T) {
+func TestEOFPacket_Build(t *testing.T) {
 	tests := []struct {
 		name    string
-		builder EOFPacketBuilder
+		builder *EOFPacket
 		want    []byte
 	}{
 		{
 			name: "正常情况",
-			builder: EOFPacketBuilder{
-				Capabilities: flags.CapabilityFlags(flags.ClientProtocol41),
-				StatusFlags:  flags.ServerStatusAutoCommit,
-			},
+			builder: func() *EOFPacket {
+				return NewEOFPacket(flags.CapabilityFlags(flags.ClientProtocol41), flags.ServerStatusAutoCommit)
+			}(),
 			want: []byte{
 				0x05, 0x00, 0x00, 0x05, // packet header
 				0xfe,       // header

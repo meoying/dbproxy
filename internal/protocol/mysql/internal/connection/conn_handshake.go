@@ -70,8 +70,6 @@ func (mc *Conn) auth() error {
 	mc.clientFlags = p.ClientFlags()
 	mc.characterSet = p.CharacterSet()
 	// 写回 OK 响应
-	b := builder.OKOrEOFPacketBuilder{
-		StatusFlags: flags.ServerStatusAutoCommit,
-	}
-	return mc.WritePacket(b.BuildOK())
+	b := builder.NewOKPacket(mc.ClientCapabilityFlags(), flags.ServerStatusAutoCommit)
+	return mc.WritePacket(b.Build())
 }

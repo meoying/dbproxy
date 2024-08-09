@@ -113,7 +113,7 @@ func TestBinaryResultsetRowPacket_Build(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			b := BinaryResultSetRowPacket{values: tc.values, cols: nil}
+			b := BinaryResultsetRowPacket{values: tc.values, cols: nil}
 			actual, err := b.Build()
 			tc.assertErrFunc(t, err)
 			if err != nil {

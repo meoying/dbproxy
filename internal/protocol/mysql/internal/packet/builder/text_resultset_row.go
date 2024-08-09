@@ -2,14 +2,14 @@ package builder
 
 import "github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 
-// TextResultSetRowPacket 文本协议结果集行构造器
-type TextResultSetRowPacket struct {
+// TextResultsetRowPacket 文本协议结果集行构造器
+type TextResultsetRowPacket struct {
 	values []any
 }
 
 // Build 构建
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-func (b *TextResultSetRowPacket) Build() []byte {
+func (b *TextResultsetRowPacket) Build() []byte {
 	// TODO 没有想到什么好的方法去判断any的类型，因为scan一定要指针，很难去转字符串
 	p := make([]byte, 4, 20)
 	for _, v := range b.values {

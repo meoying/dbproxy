@@ -6,7 +6,7 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
-type TextResultSetPacket struct {
+type TextResultsetPacket struct {
 	// capabilities 客户端与服务端建立连接时设置的flags
 	capabilities flags.CapabilityFlags
 
@@ -19,21 +19,17 @@ type TextResultSetPacket struct {
 	Error           error
 }
 
-func NewTextResultSetPacket(capabilities flags.CapabilityFlags, columnTypes []ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *TextResultSetPacket {
-	return &TextResultSetPacket{capabilities: capabilities, columnTypes: columnTypes, rows: rows, serverStatus: serverStatus, charset: charset}
+func NewTextResultsetPacket(capabilities flags.CapabilityFlags, columnTypes []ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *TextResultsetPacket {
+	return &TextResultsetPacket{capabilities: capabilities, columnTypes: columnTypes, rows: rows, serverStatus: serverStatus, charset: charset}
 }
 
 // Build 构建 text_resultset
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset.html
-func (b *TextResultSetPacket) Build() [][]byte {
+func (b *TextResultsetPacket) Build() [][]byte {
 	// resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
 	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
 
-	eofBuilder := EOFPacketBuilder{
-		Capabilities: b.capabilities,
-		StatusFlags:  b.serverStatus,
-	}
-	eofPacket := eofBuilder.Build()
+	eofPacket := NewEOFPacket(b.capabilities, b.serverStatus).Build()
 
 	var packets [][]byte
 
@@ -67,7 +63,7 @@ func (b *TextResultSetPacket) Build() [][]byte {
 
 	// One or more Text Resultset Row
 	// The row data	each Text Resultset Row contains column_count values
-	rowBuilder := TextResultSetRowPacket{}
+	rowBuilder := TextResultsetRowPacket{}
 	for _, row := range b.rows {
 		rowBuilder.values = row
 		packets = append(packets, rowBuilder.Build())
@@ -75,11 +71,11 @@ func (b *TextResultSetPacket) Build() [][]byte {
 
 	if b.Error != nil {
 		// ERR_Packet	terminator	Error details
-		packets = append(packets, NewErrorPacketBuilder(b.capabilities, NewInternalError(b.Error)).Build())
+		packets = append(packets, NewErrPacket(b.capabilities, NewInternalError(b.Error)).Build())
 	} else if b.capabilities.Has(flags.ClientDeprecateEOF) {
 		// OK_Packet	terminator	All the execution details
-		newEOF := OKOrEOFPacketBuilder{Capabilities: b.capabilities, StatusFlags: b.serverStatus}
-		packets = append(packets, newEOF.BuildEOF())
+		newEOF := NewEOFProtocol41Packet(b.capabilities, b.serverStatus)
+		packets = append(packets, newEOF.Build())
 	} else {
 		// EOF_Packet	terminator	end of resultset marker
 		packets = append(packets, eofPacket)
@@ -87,7 +83,7 @@ func (b *TextResultSetPacket) Build() [][]byte {
 	return packets
 }
 
-func (b *TextResultSetPacket) buildColumnDefinitionPacket(column ColumnType) []byte {
+func (b *TextResultsetPacket) buildColumnDefinitionPacket(column ColumnType) []byte {
 	bb := ColumnDefinition41Packet{
 		Catalog:      "def",
 		Schema:       "unsupported",

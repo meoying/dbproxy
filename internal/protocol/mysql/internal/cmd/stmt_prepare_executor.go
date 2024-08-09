@@ -68,10 +68,8 @@ func (e *StmtPrepareExecutor) generatePrepareStmtSQL(stmtId uint32, query string
 }
 
 func (e *StmtPrepareExecutor) buildRespPackets(stmtID uint32, numParams uint64, conn *connection.Conn) [][]byte {
-	b := builder.StmtPrepareOKPacketBuilder{}
-	b.FieldStatementID = stmtID
-	b.FieldNumParams = uint16(numParams)
-	b.Charset = conn.CharacterSet()
-	b.ServerStatus = e.getServerStatus(conn)
+	b := builder.NewStmtPrepareOKPacket(conn.ClientCapabilityFlags(), e.getServerStatus(conn), conn.CharacterSet())
+	b.StatementID = stmtID
+	b.NumParams = uint16(numParams)
 	return b.Build()
 }

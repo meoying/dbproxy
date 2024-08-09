@@ -52,45 +52,42 @@ func (e Error) Msg() string {
 	return e.msg
 }
 
-// ErrorPacketBuilder 错误包构建器
-type ErrorPacketBuilder struct {
-
+type ErrPacket struct {
 	// capabilities 客户端与服务端建立连接时设置的flags
-	Capabilities flags.CapabilityFlags
-
-	// Error 发生的错误
-	Error Error
+	capabilities flags.CapabilityFlags
+	// err 发生的错误
+	err Error
 }
 
-func NewErrorPacketBuilder(cap flags.CapabilityFlags, err Error) *ErrorPacketBuilder {
-	return &ErrorPacketBuilder{
-		Capabilities: cap,
-		Error:        err,
+func NewErrPacket(cap flags.CapabilityFlags, err Error) *ErrPacket {
+	return &ErrPacket{
+		capabilities: cap,
+		err:          err,
 	}
 }
 
 // Build 构造 ERR_Packet
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_err_packet.html
-func (b *ErrorPacketBuilder) Build() []byte {
+func (b *ErrPacket) Build() []byte {
 	// 头部四个字节保留
-	p := make([]byte, 4, 13+len(b.Error.Msg()))
+	p := make([]byte, 4, 13+len(b.err.Msg()))
 
 	// int<1> header 固定 0xFF 代表错误
 	p = append(p, 0xFF)
 
 	// int<2>	error_code	错误码
-	p = binary.LittleEndian.AppendUint16(p, b.Error.Code())
+	p = binary.LittleEndian.AppendUint16(p, b.err.Code())
 
-	if b.Capabilities.Has(flags.ClientProtocol41) {
+	if b.capabilities.Has(flags.ClientProtocol41) {
 		// string[1] sql_state_marker	固定的 # 作为分隔符
 		p = append(p, '#')
 
 		// string[5]  sql_state	SQL state
-		p = append(p, b.Error.SQLState()...)
+		p = append(p, b.err.SQLState()...)
 	}
 
 	// string<EOF>	error_message 人可读的错误信息
-	p = append(p, b.Error.Msg()...)
+	p = append(p, b.err.Msg()...)
 
 	return p
 }

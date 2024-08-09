@@ -102,10 +102,7 @@ func (s *Server) omCmd(ctx context.Context, conn *connection.Conn, payload []byt
 		return exec.Exec(ctx, conn, payload)
 	}
 	// 返回不支持的命令的响应
-	b := builder.ErrorPacketBuilder{
-		Capabilities: conn.ClientCapabilityFlags(),
-		Error:        builder.ER_XAER_INVAL,
-	}
+	b := builder.NewErrPacket(conn.ClientCapabilityFlags(), builder.ER_XAER_INVAL)
 	err := conn.WritePacket(b.Build())
 	return err
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
-type BinaryResultSetPacket struct {
+type BinaryResultsetPacket struct {
 	// capabilities 客户端与服务端建立连接时设置的flags
 	capabilities flags.CapabilityFlags
 
@@ -16,21 +16,17 @@ type BinaryResultSetPacket struct {
 	charset      uint32
 }
 
-func NewBinaryResultSetPacket(capabilities flags.CapabilityFlags, columnTypes []ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *BinaryResultSetPacket {
-	return &BinaryResultSetPacket{capabilities: capabilities, columnTypes: columnTypes, rows: rows, serverStatus: serverStatus, charset: charset}
+func NewBinaryResultsetPacket(capabilities flags.CapabilityFlags, columnTypes []ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) *BinaryResultsetPacket {
+	return &BinaryResultsetPacket{capabilities: capabilities, columnTypes: columnTypes, rows: rows, serverStatus: serverStatus, charset: charset}
 }
 
 // Build
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html
-func (b *BinaryResultSetPacket) Build() ([][]byte, error) {
+func (b *BinaryResultsetPacket) Build() ([][]byte, error) {
 	// resultset 由四种类型的包组成（字段数量包 + 字段描述包 + eof包 + 真实数据包）
 	// 总包结构 = 字段数量包 + 字段数 * 字段描述包 + eof包 + 字段数 * 真实数据包 + eof包
 
-	eofBuilder := EOFPacketBuilder{
-		Capabilities: b.capabilities,
-		StatusFlags:  b.serverStatus,
-	}
-	eofPacket := eofBuilder.Build()
+	eofPacket := NewEOFPacket(b.capabilities, b.serverStatus).Build()
 
 	var packets [][]byte
 
@@ -51,7 +47,7 @@ func (b *BinaryResultSetPacket) Build() ([][]byte, error) {
 	}
 
 	// None or many Binary Protocol Resultset Row
-	rowBuilder := BinaryResultSetRowPacket{}
+	rowBuilder := BinaryResultsetRowPacket{}
 	for _, row := range b.rows {
 		rowBuilder.values = row
 		rowBuilder.cols = b.columnTypes
@@ -68,7 +64,7 @@ func (b *BinaryResultSetPacket) Build() ([][]byte, error) {
 	return packets, nil
 }
 
-func (b *BinaryResultSetPacket) buildColumnDefinitionPacket(column ColumnType) []byte {
+func (b *BinaryResultsetPacket) buildColumnDefinitionPacket(column ColumnType) []byte {
 	bb := ColumnDefinition41Packet{
 		Catalog:      "def",
 		Schema:       "unsupported",

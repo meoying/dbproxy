@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExecuteStmtRequestParser_Parse(t *testing.T) {
+func TestStmtExecutePacket_Parse(t *testing.T) {
 	tests := []struct {
 		name                  string
 		payload               []byte
 		numParams             uint64
 		clientCapabilityFlags flags.CapabilityFlags
-		expected              *ExecuteStmtRequestParser
+		expected              *StmtExecutePacket
 		errAssertFunc         assert.ErrorAssertionFunc
 	}{
 		{
@@ -29,8 +29,8 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				}
 			}(),
 			numParams: 0,
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(0, 0)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(0, 0)
 				p.status = 0x17
 				p.statementID = 1
 				p.iterationCount = 1
@@ -51,15 +51,15 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				0xea, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Value (INT64): 1002
 			},
 			numParams: 1,
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(0, 1)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(0, 1)
 				p.status = 0x17
 				p.statementID = 1
 				p.iterationCount = 1
 				p.nullBitmap = []byte{0x00}
 				p.newParamsBindFlag = 0x01
 				p.parameterCount = 1
-				p.parameters = []ExecuteStmtRequestParameter{
+				p.parameters = []StmtExecuteParameter{
 					{
 						Type:  packet.MySQLTypeLongLong,
 						Value: int64(1002),
@@ -82,15 +82,15 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				0x80, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // Value (INT64): -128
 			},
 			numParams: 1,
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(0, 1)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(0, 1)
 				p.status = 0x17
 				p.statementID = 1
 				p.iterationCount = 1
 				p.nullBitmap = []byte{0x00}
 				p.newParamsBindFlag = 0x01
 				p.parameterCount = 1
-				p.parameters = []ExecuteStmtRequestParameter{
+				p.parameters = []StmtExecuteParameter{
 					{
 						Type:  packet.MySQLTypeLongLong,
 						Value: int64(-128),
@@ -113,15 +113,15 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				0x03, 0x66, 0x6f, 0x6f, // parameter_name "foo"
 			},
 			numParams: uint64(1),
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(0, 1)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(0, 1)
 				p.status = 0x17
 				p.statementID = 1
 				p.iterationCount = 1
 				p.parameterCount = 1
 				p.nullBitmap = []byte{0x00}
 				p.newParamsBindFlag = 0x01
-				p.parameters = []ExecuteStmtRequestParameter{
+				p.parameters = []StmtExecuteParameter{
 					{Type: packet.MySQLTypeVarchar, Value: "foo"},
 				}
 				return p
@@ -149,8 +149,8 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 			}(),
 			numParams:             1,
 			clientCapabilityFlags: flags.ClientQueryAttributes,
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(flags.ClientQueryAttributes, 1)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(flags.ClientQueryAttributes, 1)
 				p.status = 0x17
 				p.statementID = 1
 				p.flags = 0x00
@@ -158,7 +158,7 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				p.parameterCount = 1
 				p.nullBitmap = []byte{0x00}
 				p.newParamsBindFlag = 0x01
-				p.parameters = []ExecuteStmtRequestParameter{
+				p.parameters = []StmtExecuteParameter{
 					{
 						Type:  packet.MySQLTypeString,
 						Name:  "foo",
@@ -194,15 +194,15 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 				0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			},
 			numParams: 2,
-			expected: func() *ExecuteStmtRequestParser {
-				p := NewExecuteStmtRequestParser(0, 2)
+			expected: func() *StmtExecutePacket {
+				p := NewStmtExecutePacket(0, 2)
 				p.status = 0x17
 				p.statementID = 1
 				p.iterationCount = 1
 				p.parameterCount = uint64(2)
 				p.nullBitmap = []byte{0x00}
 				p.newParamsBindFlag = 0x01
-				p.parameters = []ExecuteStmtRequestParameter{
+				p.parameters = []StmtExecuteParameter{
 					{
 						Type:  0x08,
 						Value: int64(21),
@@ -220,21 +220,21 @@ func TestExecuteStmtRequestParser_Parse(t *testing.T) {
 			name:          "命令非法",
 			payload:       []byte{0x18, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01}, // Command is not 0x17
 			numParams:     1,
-			expected:      &ExecuteStmtRequestParser{},
+			expected:      &StmtExecutePacket{},
 			errAssertFunc: assert.Error,
 		},
 		{
 			name:          "格式错误",
 			payload:       []byte{0x17, 0x01, 0x00},
 			numParams:     1,
-			expected:      &ExecuteStmtRequestParser{},
+			expected:      &StmtExecutePacket{},
 			errAssertFunc: assert.Error,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := NewExecuteStmtRequestParser(tt.clientCapabilityFlags, tt.numParams)
+			req := NewStmtExecutePacket(tt.clientCapabilityFlags, tt.numParams)
 			err := req.Parse(tt.payload)
 			tt.errAssertFunc(t, err)
 			if err == nil {

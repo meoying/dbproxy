@@ -7,12 +7,12 @@ import (
 	"log"
 )
 
-type baseParser struct{}
+type base struct{}
 
 // ParseLengthEncodedInteger 解析 Length-Encoded Integer
 // 第二个返回值表述Integer使用n个字节来表示
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_le
-func (p *baseParser) ParseLengthEncodedInteger(buf *bytes.Buffer) (uint64, int, error) {
+func (p *base) ParseLengthEncodedInteger(buf *bytes.Buffer) (uint64, int, error) {
 	firstByte, err := buf.ReadByte()
 	if err != nil {
 		return 0, 0, err
@@ -52,7 +52,7 @@ func (p *baseParser) ParseLengthEncodedInteger(buf *bytes.Buffer) (uint64, int, 
 }
 
 // ParseLengthEncodedString 解析 Length-Encoded String
-func (p *baseParser) ParseLengthEncodedString(buf *bytes.Buffer) (string, error) {
+func (p *base) ParseLengthEncodedString(buf *bytes.Buffer) (string, error) {
 	strLength, _, err := p.ParseLengthEncodedInteger(buf)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func (p *baseParser) ParseLengthEncodedString(buf *bytes.Buffer) (string, error)
 }
 
 // ParseVariableLengthBinary 解析 Variable-Length Binary
-func (p *baseParser) ParseVariableLengthBinary(buf *bytes.Buffer) ([]byte, error) {
+func (p *base) ParseVariableLengthBinary(buf *bytes.Buffer) ([]byte, error) {
 	binLength, _, err := p.ParseLengthEncodedInteger(buf)
 	if err != nil {
 		return nil, err

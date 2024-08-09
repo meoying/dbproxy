@@ -5,8 +5,8 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
-// OKOrEOFPacketBuilder OK/EOF包构建器
-type OKOrEOFPacketBuilder struct {
+// OKPacket OK/EOF包构建器
+type OKPacket struct {
 	// Capabilities 客户端与服务端建立连接时设置的flags OK 和 EOF 包都需要设置此字段
 	Capabilities flags.CapabilityFlags
 
@@ -24,16 +24,19 @@ type OKOrEOFPacketBuilder struct {
 	// SessionStateInfo
 }
 
-// BuildOK 构造 OK_Packet
+// NewOKPacket 构造 OK_Packet
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
-func (b *OKOrEOFPacketBuilder) BuildOK() []byte {
-	b.header = 0x00
-	return b.build()
+func NewOKPacket(capabilities flags.CapabilityFlags, serverStatus flags.SeverStatus) *OKPacket {
+	return &OKPacket{
+		header:       0x00,
+		Capabilities: capabilities,
+		StatusFlags:  serverStatus,
+	}
 }
 
-// BuildEOF 构造 EOF_Packet
+// NewEOFProtocol41Packet 用 OK_Packet 包来表示 EOF_Packet 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
-func (b *OKOrEOFPacketBuilder) BuildEOF() []byte {
+func NewEOFProtocol41Packet(capabilities flags.CapabilityFlags, serverStatus flags.SeverStatus) *OKPacket {
 	/*
 			These rules distinguish whether the packet represents OK or EOF:
 				- OK: header = 0 and length of packet > 7
@@ -47,11 +50,14 @@ func (b *OKOrEOFPacketBuilder) BuildEOF() []byte {
 				- New clients advertise this flag. Old servers do not know this flag and do not send OK packets that represent EOF.
 			      New servers recognize the flag and can send OK packets that represent EOF.
 	*/
-	b.header = 0xFE
-	return b.build()
+	return &OKPacket{
+		header:       0xFE,
+		Capabilities: capabilities,
+		StatusFlags:  serverStatus,
+	}
 }
 
-func (b *OKOrEOFPacketBuilder) build() []byte {
+func (b *OKPacket) Build() []byte {
 	// 头部的四个字节保留，不需要填充
 	p := make([]byte, 4, 11)
 

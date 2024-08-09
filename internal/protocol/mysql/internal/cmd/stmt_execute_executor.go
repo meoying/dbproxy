@@ -66,12 +66,12 @@ func (e *StmtExecuteExecutor) parseArgs(clientCapabilityFlags flags.CapabilityFl
 		return nil, fmt.Errorf("failed to load num params")
 	}
 
-	req := parser.NewExecuteStmtRequestParser(clientCapabilityFlags, numParams)
-	if err := req.Parse(payload); err != nil {
+	p := parser.NewStmtExecutePacket(clientCapabilityFlags, numParams)
+	if err := p.Parse(payload); err != nil {
 		return nil, err
 	}
 
-	return slice.Map(req.Parameters(), func(idx int, src parser.ExecuteStmtRequestParameter) any {
+	return slice.Map(p.Parameters(), func(idx int, src parser.StmtExecuteParameter) any {
 		log.Printf("get execute params[%d] = %#v\n", idx, src)
 		return src.Value
 	}), nil

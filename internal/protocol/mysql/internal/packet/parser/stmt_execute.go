@@ -10,10 +10,10 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet"
 )
 
-// ExecuteStmtRequestParser 用于解析客户端发送的 COM_STMT_EXECUTE 包
+// StmtExecutePacket 用于解析客户端发送的 COM_STMT_EXECUTE 包
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
-type ExecuteStmtRequestParser struct {
-	*baseParser
+type StmtExecutePacket struct {
+	*base
 
 	// clientCapabilityFlags 客户端与服务端建立连接、握手时传递的参数,从 connection.Conn 中获取
 	// 不属于 COM_STMT_EXECUTE 包
@@ -52,10 +52,10 @@ type ExecuteStmtRequestParser struct {
 
 	// binary<var>	parameter_values	value of each parameter
 	// parameters 当 newParamsBindFlag != 0 才会解析
-	parameters []ExecuteStmtRequestParameter
+	parameters []StmtExecuteParameter
 }
 
-type ExecuteStmtRequestParameter struct {
+type StmtExecuteParameter struct {
 	// Type 当 NewParamsBindFlag != 0 才会解析
 	// 第一个字节表示类型, 第二个字节表示是有符号还是无符号
 	Type packet.MySQLType
@@ -64,15 +64,15 @@ type ExecuteStmtRequestParameter struct {
 	Value any
 }
 
-func NewExecuteStmtRequestParser(clientCapabilityFlags flags.CapabilityFlags, numParams uint64) *ExecuteStmtRequestParser {
-	return &ExecuteStmtRequestParser{
-		baseParser:            &baseParser{},
+func NewStmtExecutePacket(clientCapabilityFlags flags.CapabilityFlags, numParams uint64) *StmtExecutePacket {
+	return &StmtExecutePacket{
+		base:                  &base{},
 		clientCapabilityFlags: clientCapabilityFlags,
 		numParams:             numParams,
 	}
 }
 
-func (p *ExecuteStmtRequestParser) Parse(payload []byte) error {
+func (p *StmtExecutePacket) Parse(payload []byte) error {
 	log.Printf("pay = %#v\n", payload)
 	buf := bytes.NewBuffer(payload)
 
@@ -144,17 +144,17 @@ func (p *ExecuteStmtRequestParser) Parse(payload []byte) error {
 	return nil
 }
 
-func (p *ExecuteStmtRequestParser) isClientQueryAttributesFlagOn() bool {
+func (p *StmtExecutePacket) isClientQueryAttributesFlagOn() bool {
 	return p.clientCapabilityFlags.Has(flags.ClientQueryAttributes)
 }
 
-func (p *ExecuteStmtRequestParser) isNewParamsBindFlagOn() bool {
+func (p *StmtExecutePacket) isNewParamsBindFlagOn() bool {
 	return p.newParamsBindFlag != 0
 }
 
-func (p *ExecuteStmtRequestParser) parseParameters(buf *bytes.Buffer) error {
+func (p *StmtExecutePacket) parseParameters(buf *bytes.Buffer) error {
 
-	p.parameters = make([]ExecuteStmtRequestParameter, p.parameterCount)
+	p.parameters = make([]StmtExecuteParameter, p.parameterCount)
 
 	err2 := p.parseParametersType(buf)
 	if err2 != nil {
@@ -173,7 +173,7 @@ func (p *ExecuteStmtRequestParser) parseParameters(buf *bytes.Buffer) error {
 	return nil
 }
 
-func (p *ExecuteStmtRequestParser) parseParametersType(buf *bytes.Buffer) error {
+func (p *StmtExecutePacket) parseParametersType(buf *bytes.Buffer) error {
 	if p.isNewParamsBindFlagOn() {
 		for i := uint64(0); i < p.parameterCount; i++ {
 			if err := binary.Read(buf, binary.LittleEndian, &p.parameters[i].Type); err != nil {
@@ -184,7 +184,7 @@ func (p *ExecuteStmtRequestParser) parseParametersType(buf *bytes.Buffer) error 
 	return nil
 }
 
-func (p *ExecuteStmtRequestParser) parseParametersName(buf *bytes.Buffer) error {
+func (p *StmtExecutePacket) parseParametersName(buf *bytes.Buffer) error {
 	if p.isNewParamsBindFlagOn() && p.isClientQueryAttributesFlagOn() {
 		for i := uint64(0); i < p.parameterCount; i++ {
 			name, err := p.ParseLengthEncodedString(buf)
@@ -197,7 +197,7 @@ func (p *ExecuteStmtRequestParser) parseParametersName(buf *bytes.Buffer) error 
 	return nil
 }
 
-func (p *ExecuteStmtRequestParser) parseParametersValue(buf *bytes.Buffer) error {
+func (p *StmtExecutePacket) parseParametersValue(buf *bytes.Buffer) error {
 	for i := uint64(0); i < p.parameterCount; i++ {
 		value, err := p.parseParameterValue(buf, p.parameters[i].Type)
 		if err != nil {
@@ -209,7 +209,7 @@ func (p *ExecuteStmtRequestParser) parseParametersValue(buf *bytes.Buffer) error
 }
 
 // parseParameterValue 根据字段的类型来读取对应的字段值
-func (p *ExecuteStmtRequestParser) parseParameterValue(buf *bytes.Buffer, fieldType packet.MySQLType) (any, error) {
+func (p *StmtExecutePacket) parseParameterValue(buf *bytes.Buffer, fieldType packet.MySQLType) (any, error) {
 	switch fieldType {
 	case packet.MySQLTypeLongLong:
 		var value int64
@@ -254,6 +254,6 @@ func (p *ExecuteStmtRequestParser) parseParameterValue(buf *bytes.Buffer, fieldT
 	}
 }
 
-func (p *ExecuteStmtRequestParser) Parameters() []ExecuteStmtRequestParameter {
+func (p *StmtExecutePacket) Parameters() []StmtExecuteParameter {
 	return p.parameters
 }

@@ -13,14 +13,14 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/packet/encoding"
 )
 
-type BinaryResultSetRowPacket struct {
+type BinaryResultsetRowPacket struct {
 	values []any
 	cols   []ColumnType
 }
 
 // Build
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html#sect_protocol_binary_resultset_row
-func (b *BinaryResultSetRowPacket) Build() ([]byte, error) {
+func (b *BinaryResultsetRowPacket) Build() ([]byte, error) {
 	log.Printf("BuildBinaryResultsetRowRespPacket values = %#v\n", b.values)
 	// Calculate the length of the NULL bitmap
 	nullBitmapLen := (len(b.values) + 7 + 2) / 8

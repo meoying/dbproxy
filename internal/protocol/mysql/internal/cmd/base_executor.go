@@ -29,17 +29,14 @@ func (e *BaseExecutor) getServerStatus(conn *connection.Conn) flags.SeverStatus 
 }
 
 func (e *BaseExecutor) writeOKRespPacket(conn *connection.Conn, status flags.SeverStatus, rowsAffected, lastInsertID uint64) error {
-	b := builder.OKOrEOFPacketBuilder{
-		Capabilities: conn.ClientCapabilityFlags(),
-		AffectedRows: rowsAffected,
-		LastInsertID: lastInsertID,
-		StatusFlags:  status,
-	}
-	return conn.WritePacket(b.BuildOK())
+	b := builder.NewOKPacket(conn.ClientCapabilityFlags(), status)
+	b.AffectedRows = rowsAffected
+	b.LastInsertID = lastInsertID
+	return conn.WritePacket(b.Build())
 }
 
 func (e *BaseExecutor) writeErrRespPacket(conn *connection.Conn, err error) error {
-	return conn.WritePacket(builder.NewErrorPacketBuilder(conn.ClientCapabilityFlags(), builder.NewInternalError(err)).Build())
+	return conn.WritePacket(builder.NewErrPacket(conn.ClientCapabilityFlags(), builder.NewInternalError(err)).Build())
 }
 
 func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte) error {
@@ -55,16 +52,16 @@ func (e *BaseExecutor) writeRespPackets(conn *connection.Conn, packets [][]byte)
 // handleQuerySQLRows 处理使用非prepare语句获取到的结果集
 func (e *BaseExecutor) handleQuerySQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
 	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
-		textResultSet := builder.NewTextResultSetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
-		return textResultSet.Build(), nil
+		textResultset := builder.NewTextResultsetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return textResultset.Build(), nil
 	})
 }
 
 // handlePrepareSQLRows 处理使用prepare语句获取到的结果集
 func (e *BaseExecutor) handlePrepareSQLRows(rows sqlx.Rows, conn *connection.Conn, status flags.SeverStatus) error {
 	return e.handleRows(rows, conn, status, func(cols []builder.ColumnType, rows [][]any, serverStatus flags.SeverStatus, charset uint32) ([][]byte, error) {
-		binaryResultSet := builder.NewBinaryResultSetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
-		return binaryResultSet.Build()
+		binaryResultset := builder.NewBinaryResultsetPacket(conn.ClientCapabilityFlags(), cols, rows, serverStatus, charset)
+		return binaryResultset.Build()
 	})
 }
 
