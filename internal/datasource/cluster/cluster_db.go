@@ -79,7 +79,7 @@ func (c *clusterDB) Close() error {
 	return err
 }
 
-func (c *clusterDB) FindTgt(_ context.Context, query datasource.Query) (datasource.TxBeginner, error) {
+func (c *clusterDB) FindTgt(_ context.Context, query datasource.Query) (datasource.DataSource, error) {
 	db, err := c.getTgt(query)
 	if err != nil {
 		return nil, err

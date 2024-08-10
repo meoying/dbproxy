@@ -26,7 +26,7 @@ type TxBeginner interface {
 }
 
 type Finder interface {
-	FindTgt(ctx context.Context, query Query) (TxBeginner, error)
+	FindTgt(ctx context.Context, query Query) (DataSource, error)
 }
 
 type Tx interface {

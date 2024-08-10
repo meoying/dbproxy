@@ -41,7 +41,7 @@ type DelayTx struct {
 	finder datasource.Finder
 }
 
-func (t *DelayTx) findTgt(ctx context.Context, query datasource.Query) (datasource.TxBeginner, error) {
+func (t *DelayTx) findTgt(ctx context.Context, query datasource.Query) (datasource.DataSource, error) {
 	return t.finder.FindTgt(ctx, query)
 }
 

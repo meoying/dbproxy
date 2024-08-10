@@ -61,7 +61,7 @@ func (s *ShardingDataSource) Prepare(ctx context.Context, query datasource.Query
 	return ds.Prepare(ctx, query)
 }
 
-func (s *ShardingDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.TxBeginner, error) {
+func (s *ShardingDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.DataSource, error) {
 	ds, err := s.getTgt(query)
 	if err != nil {
 		return nil, err
