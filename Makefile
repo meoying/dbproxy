@@ -23,11 +23,13 @@ check:
 # 单元测试
 .PHONY: ut
 ut:
+	@echo "运行单元测试中......"
 	@go test -race -failfast -count=1 ./...
 
 # e2e 测试
 .PHONY: e2e
 e2e:
+	@echo "运行集成测试中......"
 	@sh ./.script/integrate_test.sh
 
 .PHONY: e2e_up
@@ -40,9 +42,7 @@ e2e_down:
 
 .PHONY: test
 test:
-	@echo "执行单元测试中......"
 	@make ut
-	@echo "执行集成测试中......"
 	@make e2e
 
 # 定义镜像变量
