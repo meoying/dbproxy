@@ -23,18 +23,18 @@ services:
     ports:
       - "13306:3306"
   dbproxy-forward:
-    image: flycash/dbproxy:dbproxy-v0.4
+    image: flycash/dbproxy:dbproxy-v0.5
     volumes:
-      - ../test/testdata/config/docker/dbproxy-forward.yaml:/app/dbproxy/config.yaml
-      - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
-      - ../test/testdata/config/docker/plugins/forward.yaml:/app/dbproxy/plugins/forward/config.yaml
+      - ../e2e/testdata/config/docker/dbproxy-forward.yaml:/app/dbproxy/config.yaml
+      - ../e2e/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
+      - ../e2e/testdata/config/docker/plugins/forward.yaml:/app/dbproxy/plugins/forward/config.yaml
     ports:
       - "8308:8308"
   dbproxy-sharding:
-    image: flycash/dbproxy:dbproxy-v0.4
+    image: flycash/dbproxy:dbproxy-v0.5
     volumes:
-      - ../test/testdata/config/docker/dbproxy-sharding.yaml:/app/dbproxy/config.yaml
-      - ../test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
-      - ../test/testdata/config/docker/plugins/sharding.yaml:/app/dbproxy/plugins/sharding/config.yaml
+      - ../e2e/testdata/config/docker/dbproxy-sharding.yaml:/app/dbproxy/config.yaml
+      - ../e2e/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml
+      - ../e2e/testdata/config/docker/plugins/sharding.yaml:/app/dbproxy/plugins/sharding/config.yaml
     ports:
       - "8309:8309"

@@ -49,7 +49,7 @@ func (h *ShardingHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) 
 	case vparser.RollbackStmt:
 		return h.handleRollbackStmt(ctx)
 	default:
-		return nil, fmt.Errorf("%w", errors.New(sqlTypeName))
+		return nil, fmt.Errorf("尚未支持的SQL特性: %w", errors.New(sqlTypeName))
 	}
 }
 

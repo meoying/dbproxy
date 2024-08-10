@@ -1,6 +1,6 @@
 //go:build e2e
 
-package test
+package e2e
 
 import (
 	"database/sql"
@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	shardingconfig "github.com/meoying/dbproxy/config/mysql/plugins/sharding"
+	"github.com/meoying/dbproxy/e2e/testsuite"
 	drviersharding "github.com/meoying/dbproxy/internal/protocol/mysql/driver/sharding"
-	"github.com/meoying/dbproxy/test/testsuite"
 	"github.com/stretchr/testify/suite"
 )
 

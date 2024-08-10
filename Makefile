@@ -1,33 +1,34 @@
-# 单元测试
-.PHONY: ut
-ut:
-	@go test -race ./... -count=1
-
 .PHONY: setup
 setup:
 	@sh ./.script/setup.sh
-
-.PHONY: lint
-lint:
-	golangci-lint run -c ./.script/.golangci.yml
-
-.PHONY: fmt
-fmt:
-	@sh ./.script/fmt.sh
 
 .PHONY: tidy
 tidy:
 	@go mod tidy -v
 
+.PHONY: fmt
+fmt:
+	@sh ./.script/fmt.sh
+
+.PHONY: lint
+lint:
+	@golangci-lint run -c ./.script/.golangci.yml
+
 .PHONY: check
 check:
-	@$(MAKE) --no-print-directory fmt
 	@$(MAKE) --no-print-directory tidy
+	@$(MAKE) --no-print-directory fmt
+	@$(MAKE) --no-print-directory lint
+
+# 单元测试
+.PHONY: ut
+ut:
+	@go test -race -failfast -count=1 ./...
 
 # e2e 测试
 .PHONY: e2e
 e2e:
-	sh ./.script/integrate_test.sh
+	@sh ./.script/integrate_test.sh
 
 .PHONY: e2e_up
 e2e_up:
@@ -37,8 +38,15 @@ e2e_up:
 e2e_down:
 	docker compose -p dbproxy -f .script/integration_test_compose.yml down -v
 
+.PHONY: test
+test:
+	@echo "执行单元测试中......"
+	@make ut
+	@echo "执行集成测试中......"
+	@make e2e
+
 # 定义镜像变量
-IMAGE_VERSION ?= v0.4
+IMAGE_VERSION ?= v0.5
 IMAGE_NAME = flycash/dbproxy:dbproxy-$(IMAGE_VERSION)
 
 .PHONY: build_docker_image
