@@ -32,6 +32,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
+	"github.com/meoying/dbproxy/internal/datasource/internal/statement"
 	"github.com/meoying/dbproxy/internal/sharding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -332,6 +333,62 @@ func (c *ShardingDataSourceSuite) TestClusterDbExec() {
 			}
 			assert.ElementsMatch(t, tc.wantRowsAffected, resAffectID)
 			assert.ElementsMatch(t, tc.wantLastInsertIds, resLastID)
+		})
+	}
+}
+
+func (c *ShardingDataSourceSuite) TestClusterDbPrepare() {
+	// 通过select不同的数据表示访问不同的db
+	c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("cluster0 master"))
+
+	testCasesQuery := []struct {
+		name     string
+		reqCnt   int
+		ctx      context.Context
+		query    sharding.Query
+		wantResp []string
+		wantErr  error
+	}{
+		{
+			name:   "cluster0 prepare use delay",
+			ctx:    statement.UsingStmtType(context.Background(), statement.Delay),
+			reqCnt: 1,
+			query: sharding.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_0",
+				Table:      "test_model",
+				Datasource: "0.db.cluster.company.com:3306",
+			},
+			wantResp: []string{"cluster0 master"},
+		},
+	}
+
+	for _, tc := range testCasesQuery {
+		c.T().Run(tc.name, func(t *testing.T) {
+			var resp []string
+			for i := 1; i <= tc.reqCnt; i++ {
+				stmt, err := c.DataSource.Prepare(tc.ctx, tc.query)
+				assert.NoError(t, err)
+				rows, queryErr := stmt.Query(tc.ctx, tc.query)
+				assert.Equal(t, queryErr, tc.wantErr)
+				if queryErr != nil {
+					return
+				}
+				assert.NotNil(t, rows)
+				ok := rows.Next()
+				assert.True(t, ok)
+
+				val := new(string)
+				err = rows.Scan(val)
+				assert.Nil(t, err)
+				if err != nil {
+					return
+				}
+				assert.NotNil(t, val)
+
+				resp = append(resp, *val)
+			}
+			assert.ElementsMatch(t, tc.wantResp, resp)
 		})
 	}
 }

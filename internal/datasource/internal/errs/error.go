@@ -28,6 +28,7 @@ func NewErrDBNotEqual(oldDB, tgtDB string) error {
 }
 
 var ErrUnsupportedDistributedTransaction = errors.New(" 不支持的分布式事务类型")
+var ErrUnsupportedDistributedPrepare = errors.New(" 不支持的分布式预处理类型")
 
 func NewFailedToGetSlavesFromDNS(err error) error {
 	return fmt.Errorf("从DNS中解析从库失败 %w", err)
