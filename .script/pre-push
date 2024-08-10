@@ -24,26 +24,26 @@ remote=$1
 url=$2
 echo >&2 "Try pushing $2 to $1"
 
-TEST="make e2e"
-LINTER="make lint"
-
-# Run test and return if failed
-printf "Running go test..."
-$TEST
-RESULT=$?
-if [ $RESULT -ne 0 ]; then
-  echo >&2 "$TEST"
-  echo >&2 "Check code to pass test."
-  exit 1
-fi
+LINTER="make check"
+TEST="make test"
 
 # Run linter and return if failed
-printf "Running go linter..."
+printf "Running make check...\n"
 $LINTER
 RESULT=$?
 if [ $RESULT -ne 0 ]; then
   echo >&2 "$LINTER"
   echo >&2 "Check code to pass linter."
+  exit 1
+fi
+
+# Run test and return if failed
+printf "Running make test...\n"
+$TEST
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+  echo >&2 "$TEST"
+  echo >&2 "Check code to pass test."
   exit 1
 fi
 

@@ -40,10 +40,10 @@ name: dbproxy
 
 ```shell
 docker run -it -p 8038:8038 \
-          -v $(pwd)/test/testdata/config/docker/dbproxy.yaml:/app/dbproxy/config.yaml \
-          -v $(pwd)/test/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml \
-          -v $(pwd)/test/testdata/config/docker/plugins/forward.yaml:/app/dbproxy/plugins/forward/config.yaml \
-          --name mydbproxy flycash/dbproxy:dbproxy-v0.3
+          -v $(pwd)/e2e/testdata/config/docker/dbproxy.yaml:/app/dbproxy/config.yaml \
+          -v $(pwd)/e2e/testdata/config/docker/plugins/log.yaml:/app/dbproxy/plugins/log/config.yaml \
+          -v $(pwd)/e2e/testdata/config/docker/plugins/forward.yaml:/app/dbproxy/plugins/forward/config.yaml \
+          --name mydbproxy flycash/dbproxy:dbproxy-v0.5
 
 # 注意:
 # 主配置文件dbproxy.yaml中开启了哪些插件,比如log、forward插件,那么就要提供log、forward插件的配置文件,并且配置文件的映射路径必须满足上方“容器内部目录说明”
