@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-sidecar
+  labels:
+    app: app-sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-sidecar
+  template:
+    metadata:
+      labels:
+        app: app-sidecar
+    spec:
+      containers:
+        - name: dbproxy-sidecar
+          image: flycash/dbproxy:dbproxy-v0.5
+          volumeMounts:
+            - name: dbproxy-config-volume
+              mountPath: /app/dbproxy/config.yaml
+              subPath: dbproxy-config.yaml
+            - name: dbproxy-log-config-volume
+              mountPath: /app/dbproxy/plugins/log/config.yaml
+              subPath: dbproxy-plugin-log-config.yaml
+            - name: dbproxy-forward-config-volume
+              mountPath: /app/dbproxy/plugins/forward/config.yaml
+              subPath: dbproxy-plugin-forward-config.yaml
+        - name: app-sidecar
+          image:  flycash/dbproxy:dbproxy-app-v0.1
+          volumeMounts:
+            - name: app-volume
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+          ## 方便测试现象
+          ports:
+            - containerPort: 8080  # 设置 app 容器的端口为 8080
+              hostPort: 8080        # 将容器端口映射到节点的 8080 端口
+      volumes:
+        - name: dbproxy-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-config.yaml
+                path: dbproxy-config.yaml
+        - name: dbproxy-log-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-plugin-log-config.yaml
+                path: dbproxy-plugin-log-config.yaml
+        - name: dbproxy-forward-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-plugin-forward-config.yaml
+                path: dbproxy-plugin-forward-config.yaml
+        - name: app-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: config.yaml
+                path: config.yaml

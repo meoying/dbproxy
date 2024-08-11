@@ -1,0 +1,2 @@
+db:
+  dsn: "root:root@tcp(localhost:8401)/?interpolateParams=true"
