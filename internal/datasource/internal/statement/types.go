@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	Delay = "delay"
+	Single = "single"
+	Delay  = "delay"
 )
 
 type StmtFactory interface {
