@@ -46,6 +46,9 @@ func (s *DelayStmt) findOrPrepare(ctx context.Context, query datasource.Query) (
 		return nil, err
 	}
 	stmt, err = ds.Prepare(ctx, query)
+	if err != nil {
+		return nil, err
+	}
 	s.stmts[key] = stmt
 	return stmt, nil
 }
