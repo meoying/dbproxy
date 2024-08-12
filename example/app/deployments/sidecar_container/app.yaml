@@ -14,10 +14,11 @@ spec:
       labels:
         app: app-sidecar
     spec:
-      # 没有特别之处,就是将两个应用部署在同一个pod中
+
       containers:
+        # 改动点1: containers 下现在只包含app的声明, 原dbproxy声明被移动到 initContainers 下
         - name: app-sidecar
-          image: flycash/dbproxy:dbproxy-app-v0.1
+          image:  flycash/dbproxy:dbproxy-app-v0.1
           workingDir: /app
           volumeMounts:
             - name: app-volume
@@ -25,8 +26,11 @@ spec:
               subPath: config.yaml
           ports:
             - containerPort: 8080  # 设置 app 容器的端口为 8080
+      initContainers:
         - name: dbproxy-sidecar
           image: flycash/dbproxy:dbproxy-v0.5
+          # 改动点2: 增加该属性/字段, 开启sidecar容器新特性
+          restartPolicy: Always
           volumeMounts:
             - name: dbproxy-config-volume
               # dbproxy主配置文件在容器内部的挂载点,固定不变且不可修改
@@ -43,13 +47,6 @@ spec:
               mountPath: /app/dbproxy/plugins/forward/config.yaml
               subPath: dbproxy-plugin-forward-config.yaml
       volumes:
-        - name: app-volume
-          configMap:
-            # app-configmap 是通过Makefile中create_cm命令来创建的
-            name: app-configmap
-            items:
-              - key: config.yaml
-                path: config.yaml
         - name: dbproxy-config-volume
           configMap:
             name: app-configmap
@@ -68,6 +65,12 @@ spec:
             items:
               - key: dbproxy-plugin-forward-config.yaml
                 path: dbproxy-plugin-forward-config.yaml
+        - name: app-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: config.yaml
+                path: config.yaml
 
 ---
 apiVersion: v1

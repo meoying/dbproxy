@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -53,9 +55,12 @@ func InitDB(configFile string) error {
 }
 
 func main() {
+	dir, _ := os.Getwd()
+	log.Printf("wroking dir: %s\n", dir)
+
 	var err error
 	// 连接 MySQL 数据库
-	err = InitDB("config.yaml")
+	err = InitDB("./config/config.yaml")
 	if err != nil {
 		panic(err)
 	}
@@ -101,11 +106,11 @@ func createOrder(c *gin.Context) {
 func getOrder(c *gin.Context) {
 	orderId, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 
-	querySQL := "SELECT order_id, user_id, content, amount FROM orders WHERE order_id = ?"
+	querySQL := "SELECT /*useMaster*/ order_id, user_id, content, amount FROM orders WHERE order_id = ?"
 	var order Order
 	err := db.QueryRow(querySQL, orderId).Scan(&order.OrderId, &order.UserId, &order.Content, &order.Amount)
 	switch {
-	case err == sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return
 	case err != nil:

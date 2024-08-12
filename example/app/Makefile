@@ -2,15 +2,6 @@
 # 引用常用kind命令
 include ../kind.mk
 
-# 定义镜像变量
-IMAGE_VERSION ?= v0.1
-IMAGE_NAME = flycash/dbproxy:dbproxy-app-$(IMAGE_VERSION)
-
-.PHONY: build_app_image
-build_app_image:
-	@docker build --progress plain -t $(IMAGE_NAME) -f ./Dockerfile .
-
-
 NAMESPACE:=sidecar
 
 # 创建命名空间
@@ -60,4 +51,4 @@ undeploy.sidecarcontainer.%:
 deploy_sidecarcontainer: create_cm deploy.sidecarcontainer.mysql deploy.sidecarcontainer.app
 
 .PHONY: undeploy_sidecarcontainer
-undeploy_sidecarcontainer: undeploy.sidecarcontainer.app undeploy.sidecarcontainer.mysql  delete_cm delete_ns
+undeploy_sidecarcontainer: undeploy.sidecarcontainer.app undeploy.sidecarcontainer.mysql delete_cm delete_ns
