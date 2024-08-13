@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -18,7 +21,7 @@ type Order struct {
 	OrderId int     `json:"orderId"`
 	UserId  int64   `json:"userId"`
 	Content string  `json:"content"`
-	Account float64 `json:"account"`
+	Amount  float64 `json:"amount"`
 }
 
 // 数据库连接全局变量
@@ -34,6 +37,7 @@ func InitDB(configFile string) error {
 
 	// 从配置文件中获取数据库连接信息
 	dsn := viper.GetString("db.dsn")
+	log.Printf("app dsn: %s\n", dsn)
 
 	// 连接 MySQL 数据库
 	var err error
@@ -51,9 +55,12 @@ func InitDB(configFile string) error {
 }
 
 func main() {
+	dir, _ := os.Getwd()
+	log.Printf("wroking dir: %s\n", dir)
+
 	var err error
 	// 连接 MySQL 数据库
-	err = InitDB("etc/config.yaml")
+	err = InitDB("./config/config.yaml")
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +75,9 @@ func main() {
 	r.DELETE("/order/:id", deleteOrder)
 
 	// 启动服务器
-	r.Run(":8080")
+	if err = r.Run(":8080"); err != nil {
+		panic(err)
+	}
 }
 
 // 创建订单处理函数
@@ -80,8 +89,8 @@ func createOrder(c *gin.Context) {
 	}
 
 	// 指定 order_id 字段的值
-	insertSQL := fmt.Sprintf("INSERT INTO orders (order_id, user_id, content, account) VALUES (%d, %d, '%s', %f)",
-		order.OrderId, order.UserId, order.Content, order.Account)
+	insertSQL := fmt.Sprintf("INSERT INTO orders (order_id, user_id, content, amount) VALUES (%d, %d, '%s', %f)",
+		order.OrderId, order.UserId, order.Content, order.Amount)
 
 	// 执行插入操作
 	_, err := db.Exec(insertSQL)
@@ -97,11 +106,11 @@ func createOrder(c *gin.Context) {
 func getOrder(c *gin.Context) {
 	orderId, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 
-	querySQL := "SELECT order_id, user_id, content, account FROM orders WHERE order_id = ?"
+	querySQL := "SELECT /*useMaster*/ order_id, user_id, content, amount FROM orders WHERE order_id = ?"
 	var order Order
-	err := db.QueryRow(querySQL, orderId).Scan(&order.OrderId, &order.UserId, &order.Content, &order.Account)
+	err := db.QueryRow(querySQL, orderId).Scan(&order.OrderId, &order.UserId, &order.Content, &order.Amount)
 	switch {
-	case err == sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 		return
 	case err != nil:
@@ -121,8 +130,8 @@ func updateOrder(c *gin.Context) {
 		return
 	}
 
-	updateSQL := fmt.Sprintf("UPDATE orders SET user_id = %d, content = '%s', account = %f WHERE order_id = %d",
-		updatedOrder.UserId, updatedOrder.Content, updatedOrder.Account, orderId)
+	updateSQL := fmt.Sprintf("UPDATE orders SET user_id = %d, content = '%s', amount = %f WHERE order_id = %d",
+		updatedOrder.UserId, updatedOrder.Content, updatedOrder.Amount, orderId)
 
 	_, err := db.Exec(updateSQL)
 	if err != nil {

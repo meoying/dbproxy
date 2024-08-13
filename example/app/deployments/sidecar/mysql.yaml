@@ -21,13 +21,13 @@ spec:
             - name: MYSQL_ROOT_PASSWORD
               value: root
           volumeMounts:
-            - name: mysql-init-script-volume
+            - name: mysql-volume
               mountPath: /docker-entrypoint-initdb.d/init.sql
               subPath: init.sql  # 指定子路径，确保正确挂载
       volumes:
-        - name: mysql-init-script-volume
+        - name: mysql-volume
           configMap:
-            name: mysql-init-script-configmap  # mysql-init-script-configmap 的名称
+            name: app-configmap
             items:
               - key: init.sql
                 path: init.sql

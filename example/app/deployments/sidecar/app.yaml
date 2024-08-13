@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-sidecar
+  labels:
+    app: app-sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-sidecar
+  template:
+    metadata:
+      labels:
+        app: app-sidecar
+    spec:
+      # 没有特别之处,就是将两个应用部署在同一个pod中
+      containers:
+        - name: app-sidecar
+          image: flycash/dbproxy:dbproxy-app-v0.1
+          workingDir: /app
+          volumeMounts:
+            - name: app-volume
+              mountPath: /app/config/config.yaml
+              subPath: config.yaml
+          ports:
+            - containerPort: 8080  # 设置 app 容器的端口为 8080
+        - name: dbproxy-sidecar
+          image: flycash/dbproxy:dbproxy-v0.5
+          volumeMounts:
+            - name: dbproxy-config-volume
+              # dbproxy主配置文件在容器内部的挂载点,固定不变且不可修改
+              mountPath: /app/dbproxy/config.yaml
+              # 用户提供的dbproxy主配置文件,名字可修改但要与dbproxy-config-volume中定义的path一致
+              subPath: dbproxy-config.yaml
+            - name: dbproxy-log-config-volume
+              # dbproxy的log插件配置文件在容器内部的挂载点,固定不变且不可修改
+              # 注意: dbproxy主配置文件开启了几个插件就要提供几个插件配置
+              mountPath: /app/dbproxy/plugins/log/config.yaml
+              subPath: dbproxy-plugin-log-config.yaml
+              # dbproxy的forward插件配置文件在容器内部的挂载点,固定不变且不可修改
+            - name: dbproxy-forward-config-volume
+              mountPath: /app/dbproxy/plugins/forward/config.yaml
+              subPath: dbproxy-plugin-forward-config.yaml
+      volumes:
+        - name: app-volume
+          configMap:
+            # app-configmap 是通过Makefile中create_cm命令来创建的
+            name: app-configmap
+            items:
+              - key: config.yaml
+                path: config.yaml
+        - name: dbproxy-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-config.yaml
+                path: dbproxy-config.yaml
+        - name: dbproxy-log-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-plugin-log-config.yaml
+                path: dbproxy-plugin-log-config.yaml
+        - name: dbproxy-forward-config-volume
+          configMap:
+            name: app-configmap
+            items:
+              - key: dbproxy-plugin-forward-config.yaml
+                path: dbproxy-plugin-forward-config.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-sidecar-service
+spec:
+  type: NodePort
+  ports:
+    - port: 8080 # 定义当前svc监听的集群内端口
+      targetPort: 8080 # 转发给目标pod的端口
+      nodePort: 30080 # 在各个集群节点上监听30080端口来接收流量
+  selector:
+    app: app-sidecar # 匹配目标pod

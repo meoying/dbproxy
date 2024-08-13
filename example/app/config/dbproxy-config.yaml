@@ -1,0 +1,6 @@
+server:
+  addr: ":8401"
+plugins:
+  items:
+    - name: "log"
+    - name: "forward"

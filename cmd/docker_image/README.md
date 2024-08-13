@@ -33,7 +33,7 @@ plugins:
 ```yaml
 # forward.yaml
 dsn: "root:root@tcp(127.0.0.1:3306)/order_db?charset=utf8mb4&parseTime=True&loc=Local"
-name: dbproxy
+name: order_db
 ``` 
 
 - 安装docker, 并执行启动容器命令

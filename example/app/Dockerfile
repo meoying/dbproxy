@@ -1,6 +1,8 @@
 # 使用官方的 Golang 基础镜像作为构建环境
 FROM golang:1.22.0-alpine AS build
 
+MAINTAINER flycash
+
 # 设置工作目录
 WORKDIR /app
 
@@ -10,9 +12,9 @@ COPY . .
 # 如果有需要，可以设置代理等环境变量
 ENV GOPROXY=https://goproxy.cn
 
-
 # 编译 Go 应用程序
-RUN  go build -o app .
+RUN go mod tidy
+RUN go build -o app .
 
 # 使用轻量的 Alpine 作为基础镜像来运行应用程序
 FROM alpine:3.20
@@ -21,11 +23,10 @@ FROM alpine:3.20
 # RUN apk --no-cache add ca-certificates
 
 # 设置工作目录
-WORKDIR /root/
+WORKDIR /app
 
 # 从构建阶段复制二进制文件到当前镜像
-COPY --from=build /app/app /root/app
-COPY --from=build /app/etc /root/etc
+COPY --from=build /app/app /app/app
+
 # 运行应用程序
-#CMD ["ls","-l"]
-CMD ["/root/app"]
+CMD ["/app/app"]

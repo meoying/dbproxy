@@ -1,0 +1,3 @@
+db:
+  # 因为app与dbproxy在同一个pod内,直接用localhost拼接dbproxy监听的端口即可
+  dsn: "root:root@tcp(localhost:8401)/?interpolateParams=true"
