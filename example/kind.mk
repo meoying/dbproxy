@@ -7,11 +7,6 @@ IMAGES := $(DBPROXY_IMAGE) $(APP_IMAGE) $(MYSQL_IMAGE)
 
 ROOTDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-.PHONY: print
-print:
-	@echo  $(lastword $(MAKEFILE_LIST))
-	@echo  $(dir $(lastword $(MAKEFILE_LIST)))
-
 # 如果你单独构建了镜像,你需要执行make k8s_up将kind节点上的老版本镜像删除
 # --progress plain
 .PHONY: build_app_image
@@ -29,12 +24,16 @@ pull_docker_images: build_app_image
 CLUSTER_NAME := dbproxy-example
 
 .PHONY: create_cluster
-create_cluster: pull_docker_images
-	@kind create cluster --name $(CLUSTER_NAME) --config $(ROOTDIR)/kind-config.yaml
+create_cluster:
+	@if ! kind get clusters 2>/dev/null | grep -q "^$(CLUSTER_NAME)$$"; then \
+		kind create cluster --name $(CLUSTER_NAME) --config $(ROOTDIR)/kind-config.yaml; \
+	fi
 
 .PHONY: delete_cluster
 delete_cluster:
-	@kind delete cluster --name $(CLUSTER_NAME)
+	@if kind get clusters 2>/dev/null | grep -q "^$(CLUSTER_NAME)$$"; then \
+		kind delete cluster --name $(CLUSTER_NAME); \
+	fi
 
 .PHONY: delete_images_from_cluster
 delete_images_from_cluster: create_cluster
@@ -63,7 +62,7 @@ load_images_into_cluster: delete_images_from_cluster
 
 .PHONY: k8s_up
 k8s_up: k8s_down load_images_into_cluster
+	@echo "\nK8s集群部署成功\n"
 
 .PHONY: k8s_down
-k8s_down:
-	@make delete_cluster
+k8s_down: delete_cluster

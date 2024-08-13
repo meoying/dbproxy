@@ -61,9 +61,9 @@ NAME                                READY   STATUS    RESTARTS      AGE
 app-sidecar-6dccfc99db-7slxm        2/2     Running   1 (13s ago)   14s
 mysql-deployment-646865fc5b-b2hb2   1/1     Running   0             14s
 
-# 查看容器运行日志
-kubectl logs app-sidecar-6dccfc99db-7slxm -n sidecar -c app-sidecar
-kubectl logs app-sidecar-6dccfc99db-7slxm -n sidecar -c dbproxy-sidecar
+# 查看容器运行日志, 注意pod名称要你当前查询到的
+kubectl logs <app-sidecar-pod-name> -n sidecar -c app-sidecar
+kubectl logs <app-sidecar-pod-name> -n sidecar -c dbproxy-sidecar
 ```
 
 参照下方[动手验证](#动手验证)小节来验证dbproxy是否正常工作
@@ -89,9 +89,9 @@ NAME                                READY   STATUS    RESTARTS      AGE
 app-sidecar-5ffd8488b7-m4gd7        2/2     Running   1 (22s ago)   23s
 mysql-deployment-646865fc5b-x5rtb   1/1     Running   0             23s
 
-# 查看容器运行日志
-kubectl logs app-sidecar-5ffd8488b7-m4gd7 -n sidecar -c app-sidecar
-kubectl logs app-sidecar-5ffd8488b7-m4gd7 -n sidecar -c dbproxy-sidecar
+# 查看容器运行日志, 注意pod名称要你当前查询到的
+kubectl logs <app-sidecar-pod-name> -n sidecar -c app-sidecar
+kubectl logs <app-sidecar-pod-name> -n sidecar -c dbproxy-sidecar
 
 ```
 
@@ -143,7 +143,7 @@ curl -X PUT http://dbproxy-example-worker:30080/order/2 \
 ```
 响应数据: `{"message":"Order updated successfully"}`
 
-再次查询数据得到响应: `{"orderId":2,"userId":1001,"content":"Updated order content","amount":199.99}`
+再次[获取数据](#获取数据)得到响应: `{"orderId":2,"userId":1001,"content":"Updated order content","amount":199.99}`
 
 ### 删除数据
 
@@ -153,4 +153,4 @@ curl -X DELETE http://dbproxy-example-worker:30080/order/2
 
 响应数据: `{"message":"Order deleted successfully"}`
 
-再次查询数据得到响应: `{"error":"Order not found"}`
+再次[获取数据](#获取数据)得到响应: `{"error":"Order not found"}`
