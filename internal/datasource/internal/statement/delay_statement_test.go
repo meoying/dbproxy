@@ -7,7 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/meoying/dbproxy/internal/datasource"
-	"github.com/meoying/dbproxy/internal/sharding"
+	"github.com/meoying/dbproxy/internal/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -54,91 +54,143 @@ func (c *MockDataSourceSuite) initMock(t *testing.T) {
 
 func (c *MockDataSourceSuite) TestClusterDbPrepare() {
 	// 通过select不同的数据表示访问不同的db
-	c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("cluster1 master"))
-	c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("cluster1 master1"))
-	c.mockMaster2.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("cluster2 master"))
-	c.mockMaster2.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows(sqlmock.NewRows([]string{"mark"}).AddRow("cluster2 master1"))
-
 	testCasesQuery := []struct {
-		name     string
-		ctx      context.Context
-		query    sharding.Query
-		wantResp []string
-		wantErr  error
+		initMockSql  func()
+		name         string
+		ctx          context.Context
+		query        query.Query
+		before       func(ctx context.Context, query query.Query) *DelayStmt
+		wantStmtsCnt int
+		wantExistKey []string
 	}{
 		{
-			name: "cluster1 prepare use delay",
+			initMockSql: func() {
+				c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows()
+			},
+			name: "insert new stmt",
 			ctx:  context.Background(),
-			query: sharding.Query{
+			query: query.Query{
 				SQL:        "SELECT `first_name` FROM `test_model`",
 				DB:         "db_0",
 				Table:      "test_model",
 				Datasource: "1.db",
 			},
-			wantResp: []string{"cluster1 master", "cluster1 master1"},
+			before: func(ctx context.Context, query query.Query) *DelayStmt {
+				stmt, err := c.DataSource.Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				return stmt.(*DelayStmt)
+			},
+			wantStmtsCnt: 1,
+			wantExistKey: []string{"1.db.db_0.test_model"},
 		},
 		{
-			name: "cluster2 prepare use delay",
+			initMockSql: func() {
+				c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows()
+			},
+			name: "use exist stmt",
 			ctx:  context.Background(),
-			query: sharding.Query{
+			query: query.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_0",
+				Table:      "test_model",
+				Datasource: "1.db",
+			},
+			before: func(ctx context.Context, query query.Query) *DelayStmt {
+				stmt, err := c.DataSource.Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				delayStmt := stmt.(*DelayStmt)
+				delayStmt.stmts["1.db.db_0.test_model"], err = c.DataSource.(*MockClusterDataSource).dss["1.db"].Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				return delayStmt
+			},
+			wantStmtsCnt: 1,
+			wantExistKey: []string{"1.db.db_0.test_model"},
+		},
+		{
+			initMockSql: func() {
+				c.mockMaster.ExpectPrepare("SELECT *")
+				c.mockMaster2.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows()
+			},
+			name: "different ds",
+			ctx:  context.Background(),
+			query: query.Query{
 				SQL:        "SELECT `first_name` FROM `test_model`",
 				DB:         "db_0",
 				Table:      "test_model",
 				Datasource: "2.db",
 			},
-			wantResp: []string{"cluster2 master", "cluster2 master1"},
+			before: func(ctx context.Context, query query.Query) *DelayStmt {
+				stmt, err := c.DataSource.Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				delayStmt := stmt.(*DelayStmt)
+				delayStmt.stmts["1.db.db_0.test_model"], err = c.DataSource.(*MockClusterDataSource).dss["1.db"].Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				return delayStmt
+			},
+			wantStmtsCnt: 2,
+			wantExistKey: []string{"1.db.db_0.test_model", "2.db.db_0.test_model"},
+		},
+		{
+			initMockSql: func() {
+				c.mockMaster.ExpectPrepare("SELECT *")
+				c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows()
+			},
+			name: "different db",
+			ctx:  context.Background(),
+			query: query.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_1",
+				Table:      "test_model",
+				Datasource: "1.db",
+			},
+			before: func(ctx context.Context, query query.Query) *DelayStmt {
+				stmt, err := c.DataSource.Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				delayStmt := stmt.(*DelayStmt)
+				delayStmt.stmts["1.db.db_0.test_model"], err = c.DataSource.(*MockClusterDataSource).dss["1.db"].Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				return delayStmt
+			},
+			wantStmtsCnt: 2,
+			wantExistKey: []string{"1.db.db_0.test_model", "1.db.db_1.test_model"},
+		},
+		{
+			initMockSql: func() {
+				c.mockMaster.ExpectPrepare("SELECT *")
+				c.mockMaster.ExpectPrepare("SELECT *").ExpectQuery().WillReturnRows()
+			},
+			name: "different table",
+			ctx:  context.Background(),
+			query: query.Query{
+				SQL:        "SELECT `first_name` FROM `test_model`",
+				DB:         "db_0",
+				Table:      "test_model_1",
+				Datasource: "1.db",
+			},
+			before: func(ctx context.Context, query query.Query) *DelayStmt {
+				stmt, err := c.DataSource.Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				delayStmt := stmt.(*DelayStmt)
+				delayStmt.stmts["1.db.db_0.test_model"], err = c.DataSource.(*MockClusterDataSource).dss["1.db"].Prepare(ctx, query)
+				assert.NoError(c.T(), err)
+				return delayStmt
+			},
+			wantStmtsCnt: 2,
+			wantExistKey: []string{"1.db.db_0.test_model", "1.db.db_0.test_model_1"},
 		},
 	}
 
 	for _, tc := range testCasesQuery {
 		c.T().Run(tc.name, func(t *testing.T) {
-			var resp []string
-			stmt, err := c.DataSource.Prepare(tc.ctx, tc.query)
-			assert.NoError(t, err)
-			assert.IsType(t, &DelayStmt{}, stmt)
-			rows, queryErr := stmt.Query(tc.ctx, tc.query)
-			assert.Equal(t, queryErr, tc.wantErr)
-			if queryErr != nil {
-				return
+			tc.initMockSql()
+			stmt := tc.before(tc.ctx, tc.query)
+			_, queryErr := stmt.Query(tc.ctx, tc.query)
+			assert.NoError(t, queryErr)
+			assert.Equal(t, len(stmt.stmts), tc.wantStmtsCnt)
+			for _, key := range tc.wantExistKey {
+				_, ok := stmt.stmts[key]
+				assert.True(t, ok, "stmts里缺少对应的key值")
 			}
-			assert.NotNil(t, rows)
-			ok := rows.Next()
-			assert.True(t, ok)
-
-			val := new(string)
-			err = rows.Scan(val)
-			assert.Nil(t, err)
-			if err != nil {
-				return
-			}
-			assert.NotNil(t, val)
-
-			resp = append(resp, *val)
-
-			delayStmt := stmt.(*DelayStmt)
-			key := tc.query.Datasource + "." + tc.query.DB + "." + tc.query.Table
-			_, exists := delayStmt.stmts[key]
-			assert.True(t, exists, "没有找到对应stmts中的数据")
-
-			rows, queryErr = stmt.Query(tc.ctx, tc.query)
-			assert.Equal(t, queryErr, tc.wantErr)
-			if queryErr != nil {
-				return
-			}
-			assert.NotNil(t, rows)
-			ok = rows.Next()
-			assert.True(t, ok)
-
-			val = new(string)
-			err = rows.Scan(val)
-			assert.Nil(t, err)
-			if err != nil {
-				return
-			}
-			assert.NotNil(t, val)
-
-			resp = append(resp, *val)
-			assert.ElementsMatch(t, tc.wantResp, resp)
 		})
 	}
 }
