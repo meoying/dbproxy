@@ -11,12 +11,6 @@ import (
 
 var _ datasource.Stmt = &DelayStmt{}
 
-type DelayStmtFactory struct{}
-
-func (DelayStmtFactory) StmtOf(_ Context, finder datasource.Finder) (datasource.Stmt, error) {
-	return NewDelayStmt(finder), nil
-}
-
 type DelayStmt struct {
 	lock   sync.RWMutex
 	stmts  map[string]datasource.Stmt

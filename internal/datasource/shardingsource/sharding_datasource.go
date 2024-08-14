@@ -54,11 +54,7 @@ func (s *ShardingDataSource) Exec(ctx context.Context, query datasource.Query) (
 }
 
 func (s *ShardingDataSource) Prepare(ctx context.Context, query datasource.Query) (datasource.Stmt, error) {
-	facade, err := statement.NewStmtFacade(ctx, s)
-	if err != nil {
-		return nil, err
-	}
-	return facade.Prepare(ctx)
+	return statement.Prepare(ctx, s)
 }
 
 func (s *ShardingDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.DataSource, error) {
