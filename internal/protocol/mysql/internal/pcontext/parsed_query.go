@@ -13,7 +13,7 @@ type ParsedQuery struct {
 	typeName string
 	// TODO: 在这里把 Hint 放好，在解析 Root 的地方就解析出来放好（这可以认为是一个统一的机制）
 	hintVisitor *vparser.HintVisitor
-	hints       []string
+	hints       map[string]vparser.HintValue
 }
 
 func NewParsedQuery(query string, hintVisitor *vparser.HintVisitor) ParsedQuery {
@@ -34,24 +34,16 @@ func (q *ParsedQuery) Type() string {
 	return q.typeName
 }
 
-func (q *ParsedQuery) Hints() []string {
+func (q *ParsedQuery) Hints() map[string]vparser.HintValue {
 	if q.hints == nil {
 		q.hints = q.parseHints()
 	}
 	return q.hints
 }
 
-func (q *ParsedQuery) parseHints() []string {
+func (q *ParsedQuery) parseHints() map[string]vparser.HintValue {
 	// 当前只有SELECT语句支持hint语法
-	if q.Type() != vparser.SelectStmt {
-		return nil
-	}
-	var hints []string
-	v := q.hintVisitor.Visit(q.root)
-	if text, ok := v.(string); ok {
-		hints = append(hints, text)
-	}
-	return hints
+	return q.hintVisitor.VisitRoot(q.root.(*parser.RootContext)).(map[string]vparser.HintValue)
 }
 
 // FirstDML 第一个 DML 语句，也就是增删改查语句。

@@ -42,11 +42,9 @@ channels {
 
 // 特殊标记的注释 TODO 写一个更加精确的正则表达式来表达这个格式，我就凑合用一下
 // 形如 @tid 12345 这种注解的形态
-fragment SPEC_MYSQL_COMMENT : '/*!' .+? '*/';
-fragment COMMENT_INPUT      : '/*' .*? '*/';
-PROXY_HINT: COMMENT_INPUT;
-
-// SKIP
+//fragment SPEC_MYSQL_COMMENT : '/*!' .+? '*/';
+COMMENT_START : '/* @proxy';
+COMMENT_END : '*/';
 
 SPACE              : [ \t\r\n]+     -> channel(HIDDEN);
 LINE_COMMENT:

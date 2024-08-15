@@ -1,7 +1,8 @@
-// Code generated from /Users/zhuwenliang/dbproxy2/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
+// Code generated from /Users/zhuyu/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
+
 
 // MySqlParserListener is a complete listener for a parse tree produced by MySqlParser.
 type MySqlParserListener interface {
@@ -795,6 +796,15 @@ type MySqlParserListener interface {
 
 	// EnterProxyHint is called when entering the proxyHint production.
 	EnterProxyHint(c *ProxyHintContext)
+
+	// EnterAnnotation is called when entering the annotation production.
+	EnterAnnotation(c *AnnotationContext)
+
+	// EnterKey is called when entering the key production.
+	EnterKey(c *KeyContext)
+
+	// EnterValue is called when entering the value production.
+	EnterValue(c *ValueContext)
 
 	// EnterQuerySpecificationNointo is called when entering the querySpecificationNointo production.
 	EnterQuerySpecificationNointo(c *QuerySpecificationNointoContext)
@@ -2652,6 +2662,15 @@ type MySqlParserListener interface {
 
 	// ExitProxyHint is called when exiting the proxyHint production.
 	ExitProxyHint(c *ProxyHintContext)
+
+	// ExitAnnotation is called when exiting the annotation production.
+	ExitAnnotation(c *AnnotationContext)
+
+	// ExitKey is called when exiting the key production.
+	ExitKey(c *KeyContext)
+
+	// ExitValue is called when exiting the value production.
+	ExitValue(c *ValueContext)
 
 	// ExitQuerySpecificationNointo is called when exiting the querySpecificationNointo production.
 	ExitQuerySpecificationNointo(c *QuerySpecificationNointoContext)

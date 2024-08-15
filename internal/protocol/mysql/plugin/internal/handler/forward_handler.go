@@ -63,6 +63,8 @@ func (h *ForwardHandler) handleCRUDStmt(ctx *pcontext.Context, sqlTypeName strin
 	var res sql.Result
 	var err error
 	if sqlTypeName == vparser.SelectStmt {
+		hintMap := ctx.ParsedQuery.Hints()
+		hintMap["useMaster"]
 		for _, hint := range ctx.ParsedQuery.Hints() {
 			if strings.Contains(hint, "useMaster") {
 				ctx.Context = masterslave.UseMaster(ctx.Context)

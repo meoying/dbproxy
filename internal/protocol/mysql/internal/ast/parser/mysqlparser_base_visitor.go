@@ -1,7 +1,8 @@
-// Code generated from /Users/zhuwenliang/dbproxy2/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
+// Code generated from /Users/zhuyu/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
+
 
 type BaseMySqlParserVisitor struct {
 	*antlr.BaseParseTreeVisitor
@@ -1056,6 +1057,18 @@ func (v *BaseMySqlParserVisitor) VisitQuerySpecification(ctx *QuerySpecification
 }
 
 func (v *BaseMySqlParserVisitor) VisitProxyHint(ctx *ProxyHintContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseMySqlParserVisitor) VisitAnnotation(ctx *AnnotationContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseMySqlParserVisitor) VisitKey(ctx *KeyContext) interface{} {
+	return v.VisitChildren(ctx)
+}
+
+func (v *BaseMySqlParserVisitor) VisitValue(ctx *ValueContext) interface{} {
 	return v.VisitChildren(ctx)
 }
 

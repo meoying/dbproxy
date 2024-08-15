@@ -1,7 +1,8 @@
-// Code generated from /Users/zhuwenliang/dbproxy2/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
+// Code generated from /Users/zhuyu/dbproxy/internal/protocol/mysql/internal/ast/MySqlParser.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
+
 
 // A complete Visitor for a parse tree produced by MySqlParser.
 type MySqlParserVisitor interface {
@@ -795,6 +796,15 @@ type MySqlParserVisitor interface {
 
 	// Visit a parse tree produced by MySqlParser#proxyHint.
 	VisitProxyHint(ctx *ProxyHintContext) interface{}
+
+	// Visit a parse tree produced by MySqlParser#annotation.
+	VisitAnnotation(ctx *AnnotationContext) interface{}
+
+	// Visit a parse tree produced by MySqlParser#key.
+	VisitKey(ctx *KeyContext) interface{}
+
+	// Visit a parse tree produced by MySqlParser#value.
+	VisitValue(ctx *ValueContext) interface{}
 
 	// Visit a parse tree produced by MySqlParser#querySpecificationNointo.
 	VisitQuerySpecificationNointo(ctx *QuerySpecificationNointoContext) interface{}
@@ -1863,4 +1873,5 @@ type MySqlParserVisitor interface {
 
 	// Visit a parse tree produced by MySqlParser#functionNameBase.
 	VisitFunctionNameBase(ctx *FunctionNameBaseContext) interface{}
+
 }
