@@ -1,0 +1,65 @@
+version: v1
+
+shardingKeys:
+  db_key:
+    template:
+      expr: "${key}/10%2"
+      placeholders:
+        key:
+          string: "user_id"
+  tab_key:
+    template:
+      expr: "${key%10}"
+      placeholders:
+        key:
+          string: "user_id"
+
+datasources:
+  mts_ds:
+    template:
+      expr: webook:webook@tcp(${region}.${role}.meoying.com:3306)
+      placeholders:
+        region:
+          enum:
+            - cn
+            - hk
+        role:
+          objects:
+          - key: master
+            notShow: true
+          - key: slave
+          - key: shadow
+
+databases:
+  user_shard:
+    template:
+      expr: "db_${key}_${region}"
+      placeholders:
+        key:
+          ref: shardingKeys.db_key
+        region:
+          enum:
+            - cn
+            - hk
+
+tables:
+  user: # 分表
+    template:
+      expr: "$database}.user_tab_${col}"
+      placeholders:
+        database:
+          ref: databases.user_shard#(region=cn,us)#
+        col:
+          ref: shardingKeys.tab_key
+  order: # 不分表
+    template:
+      expr: "${database}.order_tab"
+      placeholders:
+        database:
+          ref: databases.user_shard
+
+
+
+# 输入输出定义:
+#
+#config.yaml  —> Config 结构体  —> 调用Config上的方法, 获取生成dsn 集合, 获取生成的分表的集合, 获取生成的分库的集合,获取生成的数据源集合
