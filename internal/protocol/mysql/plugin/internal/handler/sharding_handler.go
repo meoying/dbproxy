@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -40,7 +41,7 @@ func (h *ShardingHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) 
 	// 2. 用 1 步骤的结果，调用 p.algorithm 拿到分库分表的结果
 	// 3. 调用 p.ds.Exec 或者 p.ds.Query
 	hintMap := ctx.ParsedQuery.Hints()
-	v,ok := hintMap["useMaster"]
+	v, ok := hintMap["useMaster"]
 	if ok && v.Value.(bool) {
 		ctx.Context = masterslave.UseMaster(ctx.Context)
 	}

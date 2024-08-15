@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 
 	"github.com/ecodeclub/ekit/slice"

@@ -369,34 +369,44 @@ func (s *BaseMySqlParserListener) EnterDefaultColumnConstraint(ctx *DefaultColum
 func (s *BaseMySqlParserListener) ExitDefaultColumnConstraint(ctx *DefaultColumnConstraintContext) {}
 
 // EnterVisibilityColumnConstraint is called when production visibilityColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterVisibilityColumnConstraint(ctx *VisibilityColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterVisibilityColumnConstraint(ctx *VisibilityColumnConstraintContext) {
+}
 
 // ExitVisibilityColumnConstraint is called when production visibilityColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitVisibilityColumnConstraint(ctx *VisibilityColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitVisibilityColumnConstraint(ctx *VisibilityColumnConstraintContext) {
+}
 
 // EnterInvisibilityColumnConstraint is called when production invisibilityColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterInvisibilityColumnConstraint(ctx *InvisibilityColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterInvisibilityColumnConstraint(ctx *InvisibilityColumnConstraintContext) {
+}
 
 // ExitInvisibilityColumnConstraint is called when production invisibilityColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitInvisibilityColumnConstraint(ctx *InvisibilityColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitInvisibilityColumnConstraint(ctx *InvisibilityColumnConstraintContext) {
+}
 
 // EnterAutoIncrementColumnConstraint is called when production autoIncrementColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterAutoIncrementColumnConstraint(ctx *AutoIncrementColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterAutoIncrementColumnConstraint(ctx *AutoIncrementColumnConstraintContext) {
+}
 
 // ExitAutoIncrementColumnConstraint is called when production autoIncrementColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitAutoIncrementColumnConstraint(ctx *AutoIncrementColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitAutoIncrementColumnConstraint(ctx *AutoIncrementColumnConstraintContext) {
+}
 
 // EnterPrimaryKeyColumnConstraint is called when production primaryKeyColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterPrimaryKeyColumnConstraint(ctx *PrimaryKeyColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterPrimaryKeyColumnConstraint(ctx *PrimaryKeyColumnConstraintContext) {
+}
 
 // ExitPrimaryKeyColumnConstraint is called when production primaryKeyColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitPrimaryKeyColumnConstraint(ctx *PrimaryKeyColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitPrimaryKeyColumnConstraint(ctx *PrimaryKeyColumnConstraintContext) {
+}
 
 // EnterUniqueKeyColumnConstraint is called when production uniqueKeyColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterUniqueKeyColumnConstraint(ctx *UniqueKeyColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterUniqueKeyColumnConstraint(ctx *UniqueKeyColumnConstraintContext) {
+}
 
 // ExitUniqueKeyColumnConstraint is called when production uniqueKeyColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitUniqueKeyColumnConstraint(ctx *UniqueKeyColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitUniqueKeyColumnConstraint(ctx *UniqueKeyColumnConstraintContext) {
+}
 
 // EnterCommentColumnConstraint is called when production commentColumnConstraint is entered.
 func (s *BaseMySqlParserListener) EnterCommentColumnConstraint(ctx *CommentColumnConstraintContext) {}
@@ -417,10 +427,12 @@ func (s *BaseMySqlParserListener) EnterStorageColumnConstraint(ctx *StorageColum
 func (s *BaseMySqlParserListener) ExitStorageColumnConstraint(ctx *StorageColumnConstraintContext) {}
 
 // EnterReferenceColumnConstraint is called when production referenceColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterReferenceColumnConstraint(ctx *ReferenceColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterReferenceColumnConstraint(ctx *ReferenceColumnConstraintContext) {
+}
 
 // ExitReferenceColumnConstraint is called when production referenceColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitReferenceColumnConstraint(ctx *ReferenceColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitReferenceColumnConstraint(ctx *ReferenceColumnConstraintContext) {
+}
 
 // EnterCollateColumnConstraint is called when production collateColumnConstraint is entered.
 func (s *BaseMySqlParserListener) EnterCollateColumnConstraint(ctx *CollateColumnConstraintContext) {}
@@ -429,16 +441,20 @@ func (s *BaseMySqlParserListener) EnterCollateColumnConstraint(ctx *CollateColum
 func (s *BaseMySqlParserListener) ExitCollateColumnConstraint(ctx *CollateColumnConstraintContext) {}
 
 // EnterGeneratedColumnConstraint is called when production generatedColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterGeneratedColumnConstraint(ctx *GeneratedColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterGeneratedColumnConstraint(ctx *GeneratedColumnConstraintContext) {
+}
 
 // ExitGeneratedColumnConstraint is called when production generatedColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitGeneratedColumnConstraint(ctx *GeneratedColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitGeneratedColumnConstraint(ctx *GeneratedColumnConstraintContext) {
+}
 
 // EnterSerialDefaultColumnConstraint is called when production serialDefaultColumnConstraint is entered.
-func (s *BaseMySqlParserListener) EnterSerialDefaultColumnConstraint(ctx *SerialDefaultColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterSerialDefaultColumnConstraint(ctx *SerialDefaultColumnConstraintContext) {
+}
 
 // ExitSerialDefaultColumnConstraint is called when production serialDefaultColumnConstraint is exited.
-func (s *BaseMySqlParserListener) ExitSerialDefaultColumnConstraint(ctx *SerialDefaultColumnConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitSerialDefaultColumnConstraint(ctx *SerialDefaultColumnConstraintContext) {
+}
 
 // EnterCheckColumnConstraint is called when production checkColumnConstraint is entered.
 func (s *BaseMySqlParserListener) EnterCheckColumnConstraint(ctx *CheckColumnConstraintContext) {}
@@ -447,22 +463,28 @@ func (s *BaseMySqlParserListener) EnterCheckColumnConstraint(ctx *CheckColumnCon
 func (s *BaseMySqlParserListener) ExitCheckColumnConstraint(ctx *CheckColumnConstraintContext) {}
 
 // EnterPrimaryKeyTableConstraint is called when production primaryKeyTableConstraint is entered.
-func (s *BaseMySqlParserListener) EnterPrimaryKeyTableConstraint(ctx *PrimaryKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterPrimaryKeyTableConstraint(ctx *PrimaryKeyTableConstraintContext) {
+}
 
 // ExitPrimaryKeyTableConstraint is called when production primaryKeyTableConstraint is exited.
-func (s *BaseMySqlParserListener) ExitPrimaryKeyTableConstraint(ctx *PrimaryKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitPrimaryKeyTableConstraint(ctx *PrimaryKeyTableConstraintContext) {
+}
 
 // EnterUniqueKeyTableConstraint is called when production uniqueKeyTableConstraint is entered.
-func (s *BaseMySqlParserListener) EnterUniqueKeyTableConstraint(ctx *UniqueKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterUniqueKeyTableConstraint(ctx *UniqueKeyTableConstraintContext) {
+}
 
 // ExitUniqueKeyTableConstraint is called when production uniqueKeyTableConstraint is exited.
-func (s *BaseMySqlParserListener) ExitUniqueKeyTableConstraint(ctx *UniqueKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitUniqueKeyTableConstraint(ctx *UniqueKeyTableConstraintContext) {
+}
 
 // EnterForeignKeyTableConstraint is called when production foreignKeyTableConstraint is entered.
-func (s *BaseMySqlParserListener) EnterForeignKeyTableConstraint(ctx *ForeignKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterForeignKeyTableConstraint(ctx *ForeignKeyTableConstraintContext) {
+}
 
 // ExitForeignKeyTableConstraint is called when production foreignKeyTableConstraint is exited.
-func (s *BaseMySqlParserListener) ExitForeignKeyTableConstraint(ctx *ForeignKeyTableConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitForeignKeyTableConstraint(ctx *ForeignKeyTableConstraintContext) {
+}
 
 // EnterCheckTableConstraint is called when production checkTableConstraint is entered.
 func (s *BaseMySqlParserListener) EnterCheckTableConstraint(ctx *CheckTableConstraintContext) {}
@@ -507,22 +529,28 @@ func (s *BaseMySqlParserListener) EnterTableOptionEngine(ctx *TableOptionEngineC
 func (s *BaseMySqlParserListener) ExitTableOptionEngine(ctx *TableOptionEngineContext) {}
 
 // EnterTableOptionEngineAttribute is called when production tableOptionEngineAttribute is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionEngineAttribute(ctx *TableOptionEngineAttributeContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionEngineAttribute(ctx *TableOptionEngineAttributeContext) {
+}
 
 // ExitTableOptionEngineAttribute is called when production tableOptionEngineAttribute is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionEngineAttribute(ctx *TableOptionEngineAttributeContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionEngineAttribute(ctx *TableOptionEngineAttributeContext) {
+}
 
 // EnterTableOptionAutoextendSize is called when production tableOptionAutoextendSize is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionAutoextendSize(ctx *TableOptionAutoextendSizeContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionAutoextendSize(ctx *TableOptionAutoextendSizeContext) {
+}
 
 // ExitTableOptionAutoextendSize is called when production tableOptionAutoextendSize is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionAutoextendSize(ctx *TableOptionAutoextendSizeContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionAutoextendSize(ctx *TableOptionAutoextendSizeContext) {
+}
 
 // EnterTableOptionAutoIncrement is called when production tableOptionAutoIncrement is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionAutoIncrement(ctx *TableOptionAutoIncrementContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionAutoIncrement(ctx *TableOptionAutoIncrementContext) {
+}
 
 // ExitTableOptionAutoIncrement is called when production tableOptionAutoIncrement is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionAutoIncrement(ctx *TableOptionAutoIncrementContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionAutoIncrement(ctx *TableOptionAutoIncrementContext) {
+}
 
 // EnterTableOptionAverage is called when production tableOptionAverage is entered.
 func (s *BaseMySqlParserListener) EnterTableOptionAverage(ctx *TableOptionAverageContext) {}
@@ -567,10 +595,12 @@ func (s *BaseMySqlParserListener) EnterTableOptionConnection(ctx *TableOptionCon
 func (s *BaseMySqlParserListener) ExitTableOptionConnection(ctx *TableOptionConnectionContext) {}
 
 // EnterTableOptionDataDirectory is called when production tableOptionDataDirectory is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionDataDirectory(ctx *TableOptionDataDirectoryContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionDataDirectory(ctx *TableOptionDataDirectoryContext) {
+}
 
 // ExitTableOptionDataDirectory is called when production tableOptionDataDirectory is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionDataDirectory(ctx *TableOptionDataDirectoryContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionDataDirectory(ctx *TableOptionDataDirectoryContext) {
+}
 
 // EnterTableOptionDelay is called when production tableOptionDelay is entered.
 func (s *BaseMySqlParserListener) EnterTableOptionDelay(ctx *TableOptionDelayContext) {}
@@ -585,28 +615,36 @@ func (s *BaseMySqlParserListener) EnterTableOptionEncryption(ctx *TableOptionEnc
 func (s *BaseMySqlParserListener) ExitTableOptionEncryption(ctx *TableOptionEncryptionContext) {}
 
 // EnterTableOptionPageCompressed is called when production tableOptionPageCompressed is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionPageCompressed(ctx *TableOptionPageCompressedContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionPageCompressed(ctx *TableOptionPageCompressedContext) {
+}
 
 // ExitTableOptionPageCompressed is called when production tableOptionPageCompressed is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionPageCompressed(ctx *TableOptionPageCompressedContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionPageCompressed(ctx *TableOptionPageCompressedContext) {
+}
 
 // EnterTableOptionPageCompressionLevel is called when production tableOptionPageCompressionLevel is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionPageCompressionLevel(ctx *TableOptionPageCompressionLevelContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionPageCompressionLevel(ctx *TableOptionPageCompressionLevelContext) {
+}
 
 // ExitTableOptionPageCompressionLevel is called when production tableOptionPageCompressionLevel is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionPageCompressionLevel(ctx *TableOptionPageCompressionLevelContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionPageCompressionLevel(ctx *TableOptionPageCompressionLevelContext) {
+}
 
 // EnterTableOptionEncryptionKeyId is called when production tableOptionEncryptionKeyId is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionEncryptionKeyId(ctx *TableOptionEncryptionKeyIdContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionEncryptionKeyId(ctx *TableOptionEncryptionKeyIdContext) {
+}
 
 // ExitTableOptionEncryptionKeyId is called when production tableOptionEncryptionKeyId is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionEncryptionKeyId(ctx *TableOptionEncryptionKeyIdContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionEncryptionKeyId(ctx *TableOptionEncryptionKeyIdContext) {
+}
 
 // EnterTableOptionIndexDirectory is called when production tableOptionIndexDirectory is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionIndexDirectory(ctx *TableOptionIndexDirectoryContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionIndexDirectory(ctx *TableOptionIndexDirectoryContext) {
+}
 
 // ExitTableOptionIndexDirectory is called when production tableOptionIndexDirectory is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionIndexDirectory(ctx *TableOptionIndexDirectoryContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionIndexDirectory(ctx *TableOptionIndexDirectoryContext) {
+}
 
 // EnterTableOptionInsertMethod is called when production tableOptionInsertMethod is entered.
 func (s *BaseMySqlParserListener) EnterTableOptionInsertMethod(ctx *TableOptionInsertMethodContext) {}
@@ -651,22 +689,28 @@ func (s *BaseMySqlParserListener) EnterTableOptionRowFormat(ctx *TableOptionRowF
 func (s *BaseMySqlParserListener) ExitTableOptionRowFormat(ctx *TableOptionRowFormatContext) {}
 
 // EnterTableOptionStartTransaction is called when production tableOptionStartTransaction is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionStartTransaction(ctx *TableOptionStartTransactionContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionStartTransaction(ctx *TableOptionStartTransactionContext) {
+}
 
 // ExitTableOptionStartTransaction is called when production tableOptionStartTransaction is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionStartTransaction(ctx *TableOptionStartTransactionContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionStartTransaction(ctx *TableOptionStartTransactionContext) {
+}
 
 // EnterTableOptionSecondaryEngineAttribute is called when production tableOptionSecondaryEngineAttribute is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionSecondaryEngineAttribute(ctx *TableOptionSecondaryEngineAttributeContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionSecondaryEngineAttribute(ctx *TableOptionSecondaryEngineAttributeContext) {
+}
 
 // ExitTableOptionSecondaryEngineAttribute is called when production tableOptionSecondaryEngineAttribute is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionSecondaryEngineAttribute(ctx *TableOptionSecondaryEngineAttributeContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionSecondaryEngineAttribute(ctx *TableOptionSecondaryEngineAttributeContext) {
+}
 
 // EnterTableOptionRecalculation is called when production tableOptionRecalculation is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionRecalculation(ctx *TableOptionRecalculationContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionRecalculation(ctx *TableOptionRecalculationContext) {
+}
 
 // ExitTableOptionRecalculation is called when production tableOptionRecalculation is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionRecalculation(ctx *TableOptionRecalculationContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionRecalculation(ctx *TableOptionRecalculationContext) {
+}
 
 // EnterTableOptionPersistent is called when production tableOptionPersistent is entered.
 func (s *BaseMySqlParserListener) EnterTableOptionPersistent(ctx *TableOptionPersistentContext) {}
@@ -693,10 +737,12 @@ func (s *BaseMySqlParserListener) EnterTableOptionTableType(ctx *TableOptionTabl
 func (s *BaseMySqlParserListener) ExitTableOptionTableType(ctx *TableOptionTableTypeContext) {}
 
 // EnterTableOptionTransactional is called when production tableOptionTransactional is entered.
-func (s *BaseMySqlParserListener) EnterTableOptionTransactional(ctx *TableOptionTransactionalContext) {}
+func (s *BaseMySqlParserListener) EnterTableOptionTransactional(ctx *TableOptionTransactionalContext) {
+}
 
 // ExitTableOptionTransactional is called when production tableOptionTransactional is exited.
-func (s *BaseMySqlParserListener) ExitTableOptionTransactional(ctx *TableOptionTransactionalContext) {}
+func (s *BaseMySqlParserListener) ExitTableOptionTransactional(ctx *TableOptionTransactionalContext) {
+}
 
 // EnterTableOptionUnion is called when production tableOptionUnion is entered.
 func (s *BaseMySqlParserListener) EnterTableOptionUnion(ctx *TableOptionUnionContext) {}
@@ -747,10 +793,12 @@ func (s *BaseMySqlParserListener) EnterPartitionFunctionList(ctx *PartitionFunct
 func (s *BaseMySqlParserListener) ExitPartitionFunctionList(ctx *PartitionFunctionListContext) {}
 
 // EnterSubPartitionFunctionHash is called when production subPartitionFunctionHash is entered.
-func (s *BaseMySqlParserListener) EnterSubPartitionFunctionHash(ctx *SubPartitionFunctionHashContext) {}
+func (s *BaseMySqlParserListener) EnterSubPartitionFunctionHash(ctx *SubPartitionFunctionHashContext) {
+}
 
 // ExitSubPartitionFunctionHash is called when production subPartitionFunctionHash is exited.
-func (s *BaseMySqlParserListener) ExitSubPartitionFunctionHash(ctx *SubPartitionFunctionHashContext) {}
+func (s *BaseMySqlParserListener) ExitSubPartitionFunctionHash(ctx *SubPartitionFunctionHashContext) {
+}
 
 // EnterSubPartitionFunctionKey is called when production subPartitionFunctionKey is entered.
 func (s *BaseMySqlParserListener) EnterSubPartitionFunctionKey(ctx *SubPartitionFunctionKeyContext) {}
@@ -813,16 +861,20 @@ func (s *BaseMySqlParserListener) EnterPartitionOptionComment(ctx *PartitionOpti
 func (s *BaseMySqlParserListener) ExitPartitionOptionComment(ctx *PartitionOptionCommentContext) {}
 
 // EnterPartitionOptionDataDirectory is called when production partitionOptionDataDirectory is entered.
-func (s *BaseMySqlParserListener) EnterPartitionOptionDataDirectory(ctx *PartitionOptionDataDirectoryContext) {}
+func (s *BaseMySqlParserListener) EnterPartitionOptionDataDirectory(ctx *PartitionOptionDataDirectoryContext) {
+}
 
 // ExitPartitionOptionDataDirectory is called when production partitionOptionDataDirectory is exited.
-func (s *BaseMySqlParserListener) ExitPartitionOptionDataDirectory(ctx *PartitionOptionDataDirectoryContext) {}
+func (s *BaseMySqlParserListener) ExitPartitionOptionDataDirectory(ctx *PartitionOptionDataDirectoryContext) {
+}
 
 // EnterPartitionOptionIndexDirectory is called when production partitionOptionIndexDirectory is entered.
-func (s *BaseMySqlParserListener) EnterPartitionOptionIndexDirectory(ctx *PartitionOptionIndexDirectoryContext) {}
+func (s *BaseMySqlParserListener) EnterPartitionOptionIndexDirectory(ctx *PartitionOptionIndexDirectoryContext) {
+}
 
 // ExitPartitionOptionIndexDirectory is called when production partitionOptionIndexDirectory is exited.
-func (s *BaseMySqlParserListener) ExitPartitionOptionIndexDirectory(ctx *PartitionOptionIndexDirectoryContext) {}
+func (s *BaseMySqlParserListener) ExitPartitionOptionIndexDirectory(ctx *PartitionOptionIndexDirectoryContext) {
+}
 
 // EnterPartitionOptionMaxRows is called when production partitionOptionMaxRows is entered.
 func (s *BaseMySqlParserListener) EnterPartitionOptionMaxRows(ctx *PartitionOptionMaxRowsContext) {}
@@ -837,16 +889,20 @@ func (s *BaseMySqlParserListener) EnterPartitionOptionMinRows(ctx *PartitionOpti
 func (s *BaseMySqlParserListener) ExitPartitionOptionMinRows(ctx *PartitionOptionMinRowsContext) {}
 
 // EnterPartitionOptionTablespace is called when production partitionOptionTablespace is entered.
-func (s *BaseMySqlParserListener) EnterPartitionOptionTablespace(ctx *PartitionOptionTablespaceContext) {}
+func (s *BaseMySqlParserListener) EnterPartitionOptionTablespace(ctx *PartitionOptionTablespaceContext) {
+}
 
 // ExitPartitionOptionTablespace is called when production partitionOptionTablespace is exited.
-func (s *BaseMySqlParserListener) ExitPartitionOptionTablespace(ctx *PartitionOptionTablespaceContext) {}
+func (s *BaseMySqlParserListener) ExitPartitionOptionTablespace(ctx *PartitionOptionTablespaceContext) {
+}
 
 // EnterPartitionOptionNodeGroup is called when production partitionOptionNodeGroup is entered.
-func (s *BaseMySqlParserListener) EnterPartitionOptionNodeGroup(ctx *PartitionOptionNodeGroupContext) {}
+func (s *BaseMySqlParserListener) EnterPartitionOptionNodeGroup(ctx *PartitionOptionNodeGroupContext) {
+}
 
 // ExitPartitionOptionNodeGroup is called when production partitionOptionNodeGroup is exited.
-func (s *BaseMySqlParserListener) ExitPartitionOptionNodeGroup(ctx *PartitionOptionNodeGroupContext) {}
+func (s *BaseMySqlParserListener) ExitPartitionOptionNodeGroup(ctx *PartitionOptionNodeGroupContext) {
+}
 
 // EnterAlterSimpleDatabase is called when production alterSimpleDatabase is entered.
 func (s *BaseMySqlParserListener) EnterAlterSimpleDatabase(ctx *AlterSimpleDatabaseContext) {}
@@ -963,16 +1019,20 @@ func (s *BaseMySqlParserListener) EnterAlterByAddForeignKey(ctx *AlterByAddForei
 func (s *BaseMySqlParserListener) ExitAlterByAddForeignKey(ctx *AlterByAddForeignKeyContext) {}
 
 // EnterAlterByAddCheckTableConstraint is called when production alterByAddCheckTableConstraint is entered.
-func (s *BaseMySqlParserListener) EnterAlterByAddCheckTableConstraint(ctx *AlterByAddCheckTableConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByAddCheckTableConstraint(ctx *AlterByAddCheckTableConstraintContext) {
+}
 
 // ExitAlterByAddCheckTableConstraint is called when production alterByAddCheckTableConstraint is exited.
-func (s *BaseMySqlParserListener) ExitAlterByAddCheckTableConstraint(ctx *AlterByAddCheckTableConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByAddCheckTableConstraint(ctx *AlterByAddCheckTableConstraintContext) {
+}
 
 // EnterAlterByAlterCheckTableConstraint is called when production alterByAlterCheckTableConstraint is entered.
-func (s *BaseMySqlParserListener) EnterAlterByAlterCheckTableConstraint(ctx *AlterByAlterCheckTableConstraintContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByAlterCheckTableConstraint(ctx *AlterByAlterCheckTableConstraintContext) {
+}
 
 // ExitAlterByAlterCheckTableConstraint is called when production alterByAlterCheckTableConstraint is exited.
-func (s *BaseMySqlParserListener) ExitAlterByAlterCheckTableConstraint(ctx *AlterByAlterCheckTableConstraintContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByAlterCheckTableConstraint(ctx *AlterByAlterCheckTableConstraintContext) {
+}
 
 // EnterAlterBySetAlgorithm is called when production alterBySetAlgorithm is entered.
 func (s *BaseMySqlParserListener) EnterAlterBySetAlgorithm(ctx *AlterBySetAlgorithmContext) {}
@@ -1017,10 +1077,12 @@ func (s *BaseMySqlParserListener) EnterAlterByDropColumn(ctx *AlterByDropColumnC
 func (s *BaseMySqlParserListener) ExitAlterByDropColumn(ctx *AlterByDropColumnContext) {}
 
 // EnterAlterByDropConstraintCheck is called when production alterByDropConstraintCheck is entered.
-func (s *BaseMySqlParserListener) EnterAlterByDropConstraintCheck(ctx *AlterByDropConstraintCheckContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByDropConstraintCheck(ctx *AlterByDropConstraintCheckContext) {
+}
 
 // ExitAlterByDropConstraintCheck is called when production alterByDropConstraintCheck is exited.
-func (s *BaseMySqlParserListener) ExitAlterByDropConstraintCheck(ctx *AlterByDropConstraintCheckContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByDropConstraintCheck(ctx *AlterByDropConstraintCheckContext) {
+}
 
 // EnterAlterByDropPrimaryKey is called when production alterByDropPrimaryKey is entered.
 func (s *BaseMySqlParserListener) EnterAlterByDropPrimaryKey(ctx *AlterByDropPrimaryKeyContext) {}
@@ -1041,16 +1103,20 @@ func (s *BaseMySqlParserListener) EnterAlterByRenameIndex(ctx *AlterByRenameInde
 func (s *BaseMySqlParserListener) ExitAlterByRenameIndex(ctx *AlterByRenameIndexContext) {}
 
 // EnterAlterByAlterColumnDefault is called when production alterByAlterColumnDefault is entered.
-func (s *BaseMySqlParserListener) EnterAlterByAlterColumnDefault(ctx *AlterByAlterColumnDefaultContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByAlterColumnDefault(ctx *AlterByAlterColumnDefaultContext) {
+}
 
 // ExitAlterByAlterColumnDefault is called when production alterByAlterColumnDefault is exited.
-func (s *BaseMySqlParserListener) ExitAlterByAlterColumnDefault(ctx *AlterByAlterColumnDefaultContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByAlterColumnDefault(ctx *AlterByAlterColumnDefaultContext) {
+}
 
 // EnterAlterByAlterIndexVisibility is called when production alterByAlterIndexVisibility is entered.
-func (s *BaseMySqlParserListener) EnterAlterByAlterIndexVisibility(ctx *AlterByAlterIndexVisibilityContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByAlterIndexVisibility(ctx *AlterByAlterIndexVisibilityContext) {
+}
 
 // ExitAlterByAlterIndexVisibility is called when production alterByAlterIndexVisibility is exited.
-func (s *BaseMySqlParserListener) ExitAlterByAlterIndexVisibility(ctx *AlterByAlterIndexVisibilityContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByAlterIndexVisibility(ctx *AlterByAlterIndexVisibilityContext) {
+}
 
 // EnterAlterByDropForeignKey is called when production alterByDropForeignKey is entered.
 func (s *BaseMySqlParserListener) EnterAlterByDropForeignKey(ctx *AlterByDropForeignKeyContext) {}
@@ -1095,10 +1161,12 @@ func (s *BaseMySqlParserListener) EnterAlterByDefaultCharset(ctx *AlterByDefault
 func (s *BaseMySqlParserListener) ExitAlterByDefaultCharset(ctx *AlterByDefaultCharsetContext) {}
 
 // EnterAlterByDiscardTablespace is called when production alterByDiscardTablespace is entered.
-func (s *BaseMySqlParserListener) EnterAlterByDiscardTablespace(ctx *AlterByDiscardTablespaceContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByDiscardTablespace(ctx *AlterByDiscardTablespaceContext) {
+}
 
 // ExitAlterByDiscardTablespace is called when production alterByDiscardTablespace is exited.
-func (s *BaseMySqlParserListener) ExitAlterByDiscardTablespace(ctx *AlterByDiscardTablespaceContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByDiscardTablespace(ctx *AlterByDiscardTablespaceContext) {
+}
 
 // EnterAlterByImportTablespace is called when production alterByImportTablespace is entered.
 func (s *BaseMySqlParserListener) EnterAlterByImportTablespace(ctx *AlterByImportTablespaceContext) {}
@@ -1155,28 +1223,36 @@ func (s *BaseMySqlParserListener) EnterAlterByImportPartition(ctx *AlterByImport
 func (s *BaseMySqlParserListener) ExitAlterByImportPartition(ctx *AlterByImportPartitionContext) {}
 
 // EnterAlterByTruncatePartition is called when production alterByTruncatePartition is entered.
-func (s *BaseMySqlParserListener) EnterAlterByTruncatePartition(ctx *AlterByTruncatePartitionContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByTruncatePartition(ctx *AlterByTruncatePartitionContext) {
+}
 
 // ExitAlterByTruncatePartition is called when production alterByTruncatePartition is exited.
-func (s *BaseMySqlParserListener) ExitAlterByTruncatePartition(ctx *AlterByTruncatePartitionContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByTruncatePartition(ctx *AlterByTruncatePartitionContext) {
+}
 
 // EnterAlterByCoalescePartition is called when production alterByCoalescePartition is entered.
-func (s *BaseMySqlParserListener) EnterAlterByCoalescePartition(ctx *AlterByCoalescePartitionContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByCoalescePartition(ctx *AlterByCoalescePartitionContext) {
+}
 
 // ExitAlterByCoalescePartition is called when production alterByCoalescePartition is exited.
-func (s *BaseMySqlParserListener) ExitAlterByCoalescePartition(ctx *AlterByCoalescePartitionContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByCoalescePartition(ctx *AlterByCoalescePartitionContext) {
+}
 
 // EnterAlterByReorganizePartition is called when production alterByReorganizePartition is entered.
-func (s *BaseMySqlParserListener) EnterAlterByReorganizePartition(ctx *AlterByReorganizePartitionContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByReorganizePartition(ctx *AlterByReorganizePartitionContext) {
+}
 
 // ExitAlterByReorganizePartition is called when production alterByReorganizePartition is exited.
-func (s *BaseMySqlParserListener) ExitAlterByReorganizePartition(ctx *AlterByReorganizePartitionContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByReorganizePartition(ctx *AlterByReorganizePartitionContext) {
+}
 
 // EnterAlterByExchangePartition is called when production alterByExchangePartition is entered.
-func (s *BaseMySqlParserListener) EnterAlterByExchangePartition(ctx *AlterByExchangePartitionContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByExchangePartition(ctx *AlterByExchangePartitionContext) {
+}
 
 // ExitAlterByExchangePartition is called when production alterByExchangePartition is exited.
-func (s *BaseMySqlParserListener) ExitAlterByExchangePartition(ctx *AlterByExchangePartitionContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByExchangePartition(ctx *AlterByExchangePartitionContext) {
+}
 
 // EnterAlterByAnalyzePartition is called when production alterByAnalyzePartition is entered.
 func (s *BaseMySqlParserListener) EnterAlterByAnalyzePartition(ctx *AlterByAnalyzePartitionContext) {}
@@ -1191,10 +1267,12 @@ func (s *BaseMySqlParserListener) EnterAlterByCheckPartition(ctx *AlterByCheckPa
 func (s *BaseMySqlParserListener) ExitAlterByCheckPartition(ctx *AlterByCheckPartitionContext) {}
 
 // EnterAlterByOptimizePartition is called when production alterByOptimizePartition is entered.
-func (s *BaseMySqlParserListener) EnterAlterByOptimizePartition(ctx *AlterByOptimizePartitionContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByOptimizePartition(ctx *AlterByOptimizePartitionContext) {
+}
 
 // ExitAlterByOptimizePartition is called when production alterByOptimizePartition is exited.
-func (s *BaseMySqlParserListener) ExitAlterByOptimizePartition(ctx *AlterByOptimizePartitionContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByOptimizePartition(ctx *AlterByOptimizePartitionContext) {
+}
 
 // EnterAlterByRebuildPartition is called when production alterByRebuildPartition is entered.
 func (s *BaseMySqlParserListener) EnterAlterByRebuildPartition(ctx *AlterByRebuildPartitionContext) {}
@@ -1209,16 +1287,20 @@ func (s *BaseMySqlParserListener) EnterAlterByRepairPartition(ctx *AlterByRepair
 func (s *BaseMySqlParserListener) ExitAlterByRepairPartition(ctx *AlterByRepairPartitionContext) {}
 
 // EnterAlterByRemovePartitioning is called when production alterByRemovePartitioning is entered.
-func (s *BaseMySqlParserListener) EnterAlterByRemovePartitioning(ctx *AlterByRemovePartitioningContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByRemovePartitioning(ctx *AlterByRemovePartitioningContext) {
+}
 
 // ExitAlterByRemovePartitioning is called when production alterByRemovePartitioning is exited.
-func (s *BaseMySqlParserListener) ExitAlterByRemovePartitioning(ctx *AlterByRemovePartitioningContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByRemovePartitioning(ctx *AlterByRemovePartitioningContext) {
+}
 
 // EnterAlterByUpgradePartitioning is called when production alterByUpgradePartitioning is entered.
-func (s *BaseMySqlParserListener) EnterAlterByUpgradePartitioning(ctx *AlterByUpgradePartitioningContext) {}
+func (s *BaseMySqlParserListener) EnterAlterByUpgradePartitioning(ctx *AlterByUpgradePartitioningContext) {
+}
 
 // ExitAlterByUpgradePartitioning is called when production alterByUpgradePartitioning is exited.
-func (s *BaseMySqlParserListener) ExitAlterByUpgradePartitioning(ctx *AlterByUpgradePartitioningContext) {}
+func (s *BaseMySqlParserListener) ExitAlterByUpgradePartitioning(ctx *AlterByUpgradePartitioningContext) {
+}
 
 // EnterDropDatabase is called when production dropDatabase is entered.
 func (s *BaseMySqlParserListener) EnterDropDatabase(ctx *DropDatabaseContext) {}
@@ -1449,10 +1531,12 @@ func (s *BaseMySqlParserListener) EnterHandlerOpenStatement(ctx *HandlerOpenStat
 func (s *BaseMySqlParserListener) ExitHandlerOpenStatement(ctx *HandlerOpenStatementContext) {}
 
 // EnterHandlerReadIndexStatement is called when production handlerReadIndexStatement is entered.
-func (s *BaseMySqlParserListener) EnterHandlerReadIndexStatement(ctx *HandlerReadIndexStatementContext) {}
+func (s *BaseMySqlParserListener) EnterHandlerReadIndexStatement(ctx *HandlerReadIndexStatementContext) {
+}
 
 // ExitHandlerReadIndexStatement is called when production handlerReadIndexStatement is exited.
-func (s *BaseMySqlParserListener) ExitHandlerReadIndexStatement(ctx *HandlerReadIndexStatementContext) {}
+func (s *BaseMySqlParserListener) ExitHandlerReadIndexStatement(ctx *HandlerReadIndexStatementContext) {
+}
 
 // EnterHandlerReadStatement is called when production handlerReadStatement is entered.
 func (s *BaseMySqlParserListener) EnterHandlerReadStatement(ctx *HandlerReadStatementContext) {}
@@ -1617,10 +1701,12 @@ func (s *BaseMySqlParserListener) EnterValue(ctx *ValueContext) {}
 func (s *BaseMySqlParserListener) ExitValue(ctx *ValueContext) {}
 
 // EnterQuerySpecificationNointo is called when production querySpecificationNointo is entered.
-func (s *BaseMySqlParserListener) EnterQuerySpecificationNointo(ctx *QuerySpecificationNointoContext) {}
+func (s *BaseMySqlParserListener) EnterQuerySpecificationNointo(ctx *QuerySpecificationNointoContext) {
+}
 
 // ExitQuerySpecificationNointo is called when production querySpecificationNointo is exited.
-func (s *BaseMySqlParserListener) ExitQuerySpecificationNointo(ctx *QuerySpecificationNointoContext) {}
+func (s *BaseMySqlParserListener) ExitQuerySpecificationNointo(ctx *QuerySpecificationNointoContext) {
+}
 
 // EnterUnionParenthesis is called when production unionParenthesis is entered.
 func (s *BaseMySqlParserListener) EnterUnionParenthesis(ctx *UnionParenthesisContext) {}
@@ -2013,10 +2099,12 @@ func (s *BaseMySqlParserListener) EnterWildDoTableReplication(ctx *WildDoTableRe
 func (s *BaseMySqlParserListener) ExitWildDoTableReplication(ctx *WildDoTableReplicationContext) {}
 
 // EnterWildIgnoreTableReplication is called when production wildIgnoreTableReplication is entered.
-func (s *BaseMySqlParserListener) EnterWildIgnoreTableReplication(ctx *WildIgnoreTableReplicationContext) {}
+func (s *BaseMySqlParserListener) EnterWildIgnoreTableReplication(ctx *WildIgnoreTableReplicationContext) {
+}
 
 // ExitWildIgnoreTableReplication is called when production wildIgnoreTableReplication is exited.
-func (s *BaseMySqlParserListener) ExitWildIgnoreTableReplication(ctx *WildIgnoreTableReplicationContext) {}
+func (s *BaseMySqlParserListener) ExitWildIgnoreTableReplication(ctx *WildIgnoreTableReplicationContext) {
+}
 
 // EnterRewriteDbReplication is called when production rewriteDbReplication is entered.
 func (s *BaseMySqlParserListener) EnterRewriteDbReplication(ctx *RewriteDbReplicationContext) {}
@@ -2067,22 +2155,28 @@ func (s *BaseMySqlParserListener) EnterUserConnectionOption(ctx *UserConnectionO
 func (s *BaseMySqlParserListener) ExitUserConnectionOption(ctx *UserConnectionOptionContext) {}
 
 // EnterPasswordConnectionOption is called when production passwordConnectionOption is entered.
-func (s *BaseMySqlParserListener) EnterPasswordConnectionOption(ctx *PasswordConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) EnterPasswordConnectionOption(ctx *PasswordConnectionOptionContext) {
+}
 
 // ExitPasswordConnectionOption is called when production passwordConnectionOption is exited.
-func (s *BaseMySqlParserListener) ExitPasswordConnectionOption(ctx *PasswordConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) ExitPasswordConnectionOption(ctx *PasswordConnectionOptionContext) {
+}
 
 // EnterDefaultAuthConnectionOption is called when production defaultAuthConnectionOption is entered.
-func (s *BaseMySqlParserListener) EnterDefaultAuthConnectionOption(ctx *DefaultAuthConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) EnterDefaultAuthConnectionOption(ctx *DefaultAuthConnectionOptionContext) {
+}
 
 // ExitDefaultAuthConnectionOption is called when production defaultAuthConnectionOption is exited.
-func (s *BaseMySqlParserListener) ExitDefaultAuthConnectionOption(ctx *DefaultAuthConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) ExitDefaultAuthConnectionOption(ctx *DefaultAuthConnectionOptionContext) {
+}
 
 // EnterPluginDirConnectionOption is called when production pluginDirConnectionOption is entered.
-func (s *BaseMySqlParserListener) EnterPluginDirConnectionOption(ctx *PluginDirConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) EnterPluginDirConnectionOption(ctx *PluginDirConnectionOptionContext) {
+}
 
 // ExitPluginDirConnectionOption is called when production pluginDirConnectionOption is exited.
-func (s *BaseMySqlParserListener) ExitPluginDirConnectionOption(ctx *PluginDirConnectionOptionContext) {}
+func (s *BaseMySqlParserListener) ExitPluginDirConnectionOption(ctx *PluginDirConnectionOptionContext) {
+}
 
 // EnterGtuidSet is called when production gtuidSet is entered.
 func (s *BaseMySqlParserListener) EnterGtuidSet(ctx *GtuidSetContext) {}
@@ -2271,16 +2365,20 @@ func (s *BaseMySqlParserListener) EnterHandlerConditionWarning(ctx *HandlerCondi
 func (s *BaseMySqlParserListener) ExitHandlerConditionWarning(ctx *HandlerConditionWarningContext) {}
 
 // EnterHandlerConditionNotfound is called when production handlerConditionNotfound is entered.
-func (s *BaseMySqlParserListener) EnterHandlerConditionNotfound(ctx *HandlerConditionNotfoundContext) {}
+func (s *BaseMySqlParserListener) EnterHandlerConditionNotfound(ctx *HandlerConditionNotfoundContext) {
+}
 
 // ExitHandlerConditionNotfound is called when production handlerConditionNotfound is exited.
-func (s *BaseMySqlParserListener) ExitHandlerConditionNotfound(ctx *HandlerConditionNotfoundContext) {}
+func (s *BaseMySqlParserListener) ExitHandlerConditionNotfound(ctx *HandlerConditionNotfoundContext) {
+}
 
 // EnterHandlerConditionException is called when production handlerConditionException is entered.
-func (s *BaseMySqlParserListener) EnterHandlerConditionException(ctx *HandlerConditionExceptionContext) {}
+func (s *BaseMySqlParserListener) EnterHandlerConditionException(ctx *HandlerConditionExceptionContext) {
+}
 
 // ExitHandlerConditionException is called when production handlerConditionException is exited.
-func (s *BaseMySqlParserListener) ExitHandlerConditionException(ctx *HandlerConditionExceptionContext) {}
+func (s *BaseMySqlParserListener) ExitHandlerConditionException(ctx *HandlerConditionExceptionContext) {
+}
 
 // EnterProcedureSqlStatement is called when production procedureSqlStatement is entered.
 func (s *BaseMySqlParserListener) EnterProcedureSqlStatement(ctx *ProcedureSqlStatementContext) {}
@@ -2493,16 +2591,20 @@ func (s *BaseMySqlParserListener) EnterDefiniteSchemaPrivLevel(ctx *DefiniteSche
 func (s *BaseMySqlParserListener) ExitDefiniteSchemaPrivLevel(ctx *DefiniteSchemaPrivLevelContext) {}
 
 // EnterDefiniteFullTablePrivLevel is called when production definiteFullTablePrivLevel is entered.
-func (s *BaseMySqlParserListener) EnterDefiniteFullTablePrivLevel(ctx *DefiniteFullTablePrivLevelContext) {}
+func (s *BaseMySqlParserListener) EnterDefiniteFullTablePrivLevel(ctx *DefiniteFullTablePrivLevelContext) {
+}
 
 // ExitDefiniteFullTablePrivLevel is called when production definiteFullTablePrivLevel is exited.
-func (s *BaseMySqlParserListener) ExitDefiniteFullTablePrivLevel(ctx *DefiniteFullTablePrivLevelContext) {}
+func (s *BaseMySqlParserListener) ExitDefiniteFullTablePrivLevel(ctx *DefiniteFullTablePrivLevelContext) {
+}
 
 // EnterDefiniteFullTablePrivLevel2 is called when production definiteFullTablePrivLevel2 is entered.
-func (s *BaseMySqlParserListener) EnterDefiniteFullTablePrivLevel2(ctx *DefiniteFullTablePrivLevel2Context) {}
+func (s *BaseMySqlParserListener) EnterDefiniteFullTablePrivLevel2(ctx *DefiniteFullTablePrivLevel2Context) {
+}
 
 // ExitDefiniteFullTablePrivLevel2 is called when production definiteFullTablePrivLevel2 is exited.
-func (s *BaseMySqlParserListener) ExitDefiniteFullTablePrivLevel2(ctx *DefiniteFullTablePrivLevel2Context) {}
+func (s *BaseMySqlParserListener) ExitDefiniteFullTablePrivLevel2(ctx *DefiniteFullTablePrivLevel2Context) {
+}
 
 // EnterDefiniteTablePrivLevel is called when production definiteTablePrivLevel is entered.
 func (s *BaseMySqlParserListener) EnterDefiniteTablePrivLevel(ctx *DefiniteTablePrivLevelContext) {}
@@ -2607,10 +2709,12 @@ func (s *BaseMySqlParserListener) EnterSetAutocommit(ctx *SetAutocommitContext) 
 func (s *BaseMySqlParserListener) ExitSetAutocommit(ctx *SetAutocommitContext) {}
 
 // EnterSetNewValueInsideTrigger is called when production setNewValueInsideTrigger is entered.
-func (s *BaseMySqlParserListener) EnterSetNewValueInsideTrigger(ctx *SetNewValueInsideTriggerContext) {}
+func (s *BaseMySqlParserListener) EnterSetNewValueInsideTrigger(ctx *SetNewValueInsideTriggerContext) {
+}
 
 // ExitSetNewValueInsideTrigger is called when production setNewValueInsideTrigger is exited.
-func (s *BaseMySqlParserListener) ExitSetNewValueInsideTrigger(ctx *SetNewValueInsideTriggerContext) {}
+func (s *BaseMySqlParserListener) ExitSetNewValueInsideTrigger(ctx *SetNewValueInsideTriggerContext) {
+}
 
 // EnterShowMasterLogs is called when production showMasterLogs is entered.
 func (s *BaseMySqlParserListener) EnterShowMasterLogs(ctx *ShowMasterLogsContext) {}
@@ -2871,10 +2975,12 @@ func (s *BaseMySqlParserListener) EnterResignalStatement(ctx *ResignalStatementC
 func (s *BaseMySqlParserListener) ExitResignalStatement(ctx *ResignalStatementContext) {}
 
 // EnterSignalConditionInformation is called when production signalConditionInformation is entered.
-func (s *BaseMySqlParserListener) EnterSignalConditionInformation(ctx *SignalConditionInformationContext) {}
+func (s *BaseMySqlParserListener) EnterSignalConditionInformation(ctx *SignalConditionInformationContext) {
+}
 
 // ExitSignalConditionInformation is called when production signalConditionInformation is exited.
-func (s *BaseMySqlParserListener) ExitSignalConditionInformation(ctx *SignalConditionInformationContext) {}
+func (s *BaseMySqlParserListener) ExitSignalConditionInformation(ctx *SignalConditionInformationContext) {
+}
 
 // EnterWithStatement is called when production withStatement is entered.
 func (s *BaseMySqlParserListener) EnterWithStatement(ctx *WithStatementContext) {}
@@ -2895,10 +3001,12 @@ func (s *BaseMySqlParserListener) EnterDiagnosticsStatement(ctx *DiagnosticsStat
 func (s *BaseMySqlParserListener) ExitDiagnosticsStatement(ctx *DiagnosticsStatementContext) {}
 
 // EnterDiagnosticsConditionInformationName is called when production diagnosticsConditionInformationName is entered.
-func (s *BaseMySqlParserListener) EnterDiagnosticsConditionInformationName(ctx *DiagnosticsConditionInformationNameContext) {}
+func (s *BaseMySqlParserListener) EnterDiagnosticsConditionInformationName(ctx *DiagnosticsConditionInformationNameContext) {
+}
 
 // ExitDiagnosticsConditionInformationName is called when production diagnosticsConditionInformationName is exited.
-func (s *BaseMySqlParserListener) ExitDiagnosticsConditionInformationName(ctx *DiagnosticsConditionInformationNameContext) {}
+func (s *BaseMySqlParserListener) ExitDiagnosticsConditionInformationName(ctx *DiagnosticsConditionInformationNameContext) {
+}
 
 // EnterDescribeStatements is called when production describeStatements is entered.
 func (s *BaseMySqlParserListener) EnterDescribeStatements(ctx *DescribeStatementsContext) {}
@@ -3081,10 +3189,12 @@ func (s *BaseMySqlParserListener) EnterStringDataType(ctx *StringDataTypeContext
 func (s *BaseMySqlParserListener) ExitStringDataType(ctx *StringDataTypeContext) {}
 
 // EnterNationalVaryingStringDataType is called when production nationalVaryingStringDataType is entered.
-func (s *BaseMySqlParserListener) EnterNationalVaryingStringDataType(ctx *NationalVaryingStringDataTypeContext) {}
+func (s *BaseMySqlParserListener) EnterNationalVaryingStringDataType(ctx *NationalVaryingStringDataTypeContext) {
+}
 
 // ExitNationalVaryingStringDataType is called when production nationalVaryingStringDataType is exited.
-func (s *BaseMySqlParserListener) ExitNationalVaryingStringDataType(ctx *NationalVaryingStringDataTypeContext) {}
+func (s *BaseMySqlParserListener) ExitNationalVaryingStringDataType(ctx *NationalVaryingStringDataTypeContext) {
+}
 
 // EnterNationalStringDataType is called when production nationalStringDataType is entered.
 func (s *BaseMySqlParserListener) EnterNationalStringDataType(ctx *NationalStringDataTypeContext) {}
@@ -3153,10 +3263,12 @@ func (s *BaseMySqlParserListener) EnterLengthTwoDimension(ctx *LengthTwoDimensio
 func (s *BaseMySqlParserListener) ExitLengthTwoDimension(ctx *LengthTwoDimensionContext) {}
 
 // EnterLengthTwoOptionalDimension is called when production lengthTwoOptionalDimension is entered.
-func (s *BaseMySqlParserListener) EnterLengthTwoOptionalDimension(ctx *LengthTwoOptionalDimensionContext) {}
+func (s *BaseMySqlParserListener) EnterLengthTwoOptionalDimension(ctx *LengthTwoOptionalDimensionContext) {
+}
 
 // ExitLengthTwoOptionalDimension is called when production lengthTwoOptionalDimension is exited.
-func (s *BaseMySqlParserListener) ExitLengthTwoOptionalDimension(ctx *LengthTwoOptionalDimensionContext) {}
+func (s *BaseMySqlParserListener) ExitLengthTwoOptionalDimension(ctx *LengthTwoOptionalDimensionContext) {
+}
 
 // EnterUidList is called when production uidList is entered.
 func (s *BaseMySqlParserListener) EnterUidList(ctx *UidListContext) {}
@@ -3267,10 +3379,12 @@ func (s *BaseMySqlParserListener) EnterAggregateFunctionCall(ctx *AggregateFunct
 func (s *BaseMySqlParserListener) ExitAggregateFunctionCall(ctx *AggregateFunctionCallContext) {}
 
 // EnterNonAggregateFunctionCall is called when production nonAggregateFunctionCall is entered.
-func (s *BaseMySqlParserListener) EnterNonAggregateFunctionCall(ctx *NonAggregateFunctionCallContext) {}
+func (s *BaseMySqlParserListener) EnterNonAggregateFunctionCall(ctx *NonAggregateFunctionCallContext) {
+}
 
 // ExitNonAggregateFunctionCall is called when production nonAggregateFunctionCall is exited.
-func (s *BaseMySqlParserListener) ExitNonAggregateFunctionCall(ctx *NonAggregateFunctionCallContext) {}
+func (s *BaseMySqlParserListener) ExitNonAggregateFunctionCall(ctx *NonAggregateFunctionCallContext) {
+}
 
 // EnterScalarFunctionCall is called when production scalarFunctionCall is entered.
 func (s *BaseMySqlParserListener) EnterScalarFunctionCall(ctx *ScalarFunctionCallContext) {}
@@ -3315,10 +3429,12 @@ func (s *BaseMySqlParserListener) EnterValuesFunctionCall(ctx *ValuesFunctionCal
 func (s *BaseMySqlParserListener) ExitValuesFunctionCall(ctx *ValuesFunctionCallContext) {}
 
 // EnterCaseExpressionFunctionCall is called when production caseExpressionFunctionCall is entered.
-func (s *BaseMySqlParserListener) EnterCaseExpressionFunctionCall(ctx *CaseExpressionFunctionCallContext) {}
+func (s *BaseMySqlParserListener) EnterCaseExpressionFunctionCall(ctx *CaseExpressionFunctionCallContext) {
+}
 
 // ExitCaseExpressionFunctionCall is called when production caseExpressionFunctionCall is exited.
-func (s *BaseMySqlParserListener) ExitCaseExpressionFunctionCall(ctx *CaseExpressionFunctionCallContext) {}
+func (s *BaseMySqlParserListener) ExitCaseExpressionFunctionCall(ctx *CaseExpressionFunctionCallContext) {
+}
 
 // EnterCaseFunctionCall is called when production caseFunctionCall is entered.
 func (s *BaseMySqlParserListener) EnterCaseFunctionCall(ctx *CaseFunctionCallContext) {}
@@ -3393,22 +3509,28 @@ func (s *BaseMySqlParserListener) EnterLevelWeightRange(ctx *LevelWeightRangeCon
 func (s *BaseMySqlParserListener) ExitLevelWeightRange(ctx *LevelWeightRangeContext) {}
 
 // EnterLevelInWeightListElement is called when production levelInWeightListElement is entered.
-func (s *BaseMySqlParserListener) EnterLevelInWeightListElement(ctx *LevelInWeightListElementContext) {}
+func (s *BaseMySqlParserListener) EnterLevelInWeightListElement(ctx *LevelInWeightListElementContext) {
+}
 
 // ExitLevelInWeightListElement is called when production levelInWeightListElement is exited.
-func (s *BaseMySqlParserListener) ExitLevelInWeightListElement(ctx *LevelInWeightListElementContext) {}
+func (s *BaseMySqlParserListener) ExitLevelInWeightListElement(ctx *LevelInWeightListElementContext) {
+}
 
 // EnterAggregateWindowedFunction is called when production aggregateWindowedFunction is entered.
-func (s *BaseMySqlParserListener) EnterAggregateWindowedFunction(ctx *AggregateWindowedFunctionContext) {}
+func (s *BaseMySqlParserListener) EnterAggregateWindowedFunction(ctx *AggregateWindowedFunctionContext) {
+}
 
 // ExitAggregateWindowedFunction is called when production aggregateWindowedFunction is exited.
-func (s *BaseMySqlParserListener) ExitAggregateWindowedFunction(ctx *AggregateWindowedFunctionContext) {}
+func (s *BaseMySqlParserListener) ExitAggregateWindowedFunction(ctx *AggregateWindowedFunctionContext) {
+}
 
 // EnterNonAggregateWindowedFunction is called when production nonAggregateWindowedFunction is entered.
-func (s *BaseMySqlParserListener) EnterNonAggregateWindowedFunction(ctx *NonAggregateWindowedFunctionContext) {}
+func (s *BaseMySqlParserListener) EnterNonAggregateWindowedFunction(ctx *NonAggregateWindowedFunctionContext) {
+}
 
 // ExitNonAggregateWindowedFunction is called when production nonAggregateWindowedFunction is exited.
-func (s *BaseMySqlParserListener) ExitNonAggregateWindowedFunction(ctx *NonAggregateWindowedFunctionContext) {}
+func (s *BaseMySqlParserListener) ExitNonAggregateWindowedFunction(ctx *NonAggregateWindowedFunctionContext) {
+}
 
 // EnterOverClause is called when production overClause is entered.
 func (s *BaseMySqlParserListener) EnterOverClause(ctx *OverClauseContext) {}
@@ -3525,10 +3647,12 @@ func (s *BaseMySqlParserListener) EnterExpressionAtomPredicate(ctx *ExpressionAt
 func (s *BaseMySqlParserListener) ExitExpressionAtomPredicate(ctx *ExpressionAtomPredicateContext) {}
 
 // EnterSubqueryComparisonPredicate is called when production subqueryComparisonPredicate is entered.
-func (s *BaseMySqlParserListener) EnterSubqueryComparisonPredicate(ctx *SubqueryComparisonPredicateContext) {}
+func (s *BaseMySqlParserListener) EnterSubqueryComparisonPredicate(ctx *SubqueryComparisonPredicateContext) {
+}
 
 // ExitSubqueryComparisonPredicate is called when production subqueryComparisonPredicate is exited.
-func (s *BaseMySqlParserListener) ExitSubqueryComparisonPredicate(ctx *SubqueryComparisonPredicateContext) {}
+func (s *BaseMySqlParserListener) ExitSubqueryComparisonPredicate(ctx *SubqueryComparisonPredicateContext) {
+}
 
 // EnterJsonMemberOfPredicate is called when production jsonMemberOfPredicate is entered.
 func (s *BaseMySqlParserListener) EnterJsonMemberOfPredicate(ctx *JsonMemberOfPredicateContext) {}
@@ -3537,10 +3661,12 @@ func (s *BaseMySqlParserListener) EnterJsonMemberOfPredicate(ctx *JsonMemberOfPr
 func (s *BaseMySqlParserListener) ExitJsonMemberOfPredicate(ctx *JsonMemberOfPredicateContext) {}
 
 // EnterBinaryComparisonPredicate is called when production binaryComparisonPredicate is entered.
-func (s *BaseMySqlParserListener) EnterBinaryComparisonPredicate(ctx *BinaryComparisonPredicateContext) {}
+func (s *BaseMySqlParserListener) EnterBinaryComparisonPredicate(ctx *BinaryComparisonPredicateContext) {
+}
 
 // ExitBinaryComparisonPredicate is called when production binaryComparisonPredicate is exited.
-func (s *BaseMySqlParserListener) ExitBinaryComparisonPredicate(ctx *BinaryComparisonPredicateContext) {}
+func (s *BaseMySqlParserListener) ExitBinaryComparisonPredicate(ctx *BinaryComparisonPredicateContext) {
+}
 
 // EnterInPredicate is called when production inPredicate is entered.
 func (s *BaseMySqlParserListener) EnterInPredicate(ctx *InPredicateContext) {}
@@ -3585,16 +3711,20 @@ func (s *BaseMySqlParserListener) EnterCollateExpressionAtom(ctx *CollateExpress
 func (s *BaseMySqlParserListener) ExitCollateExpressionAtom(ctx *CollateExpressionAtomContext) {}
 
 // EnterVariableAssignExpressionAtom is called when production variableAssignExpressionAtom is entered.
-func (s *BaseMySqlParserListener) EnterVariableAssignExpressionAtom(ctx *VariableAssignExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) EnterVariableAssignExpressionAtom(ctx *VariableAssignExpressionAtomContext) {
+}
 
 // ExitVariableAssignExpressionAtom is called when production variableAssignExpressionAtom is exited.
-func (s *BaseMySqlParserListener) ExitVariableAssignExpressionAtom(ctx *VariableAssignExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) ExitVariableAssignExpressionAtom(ctx *VariableAssignExpressionAtomContext) {
+}
 
 // EnterMysqlVariableExpressionAtom is called when production mysqlVariableExpressionAtom is entered.
-func (s *BaseMySqlParserListener) EnterMysqlVariableExpressionAtom(ctx *MysqlVariableExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) EnterMysqlVariableExpressionAtom(ctx *MysqlVariableExpressionAtomContext) {
+}
 
 // ExitMysqlVariableExpressionAtom is called when production mysqlVariableExpressionAtom is exited.
-func (s *BaseMySqlParserListener) ExitMysqlVariableExpressionAtom(ctx *MysqlVariableExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) ExitMysqlVariableExpressionAtom(ctx *MysqlVariableExpressionAtomContext) {
+}
 
 // EnterNestedExpressionAtom is called when production nestedExpressionAtom is entered.
 func (s *BaseMySqlParserListener) EnterNestedExpressionAtom(ctx *NestedExpressionAtomContext) {}
@@ -3645,10 +3775,12 @@ func (s *BaseMySqlParserListener) EnterConstantExpressionAtom(ctx *ConstantExpre
 func (s *BaseMySqlParserListener) ExitConstantExpressionAtom(ctx *ConstantExpressionAtomContext) {}
 
 // EnterFunctionCallExpressionAtom is called when production functionCallExpressionAtom is entered.
-func (s *BaseMySqlParserListener) EnterFunctionCallExpressionAtom(ctx *FunctionCallExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) EnterFunctionCallExpressionAtom(ctx *FunctionCallExpressionAtomContext) {
+}
 
 // ExitFunctionCallExpressionAtom is called when production functionCallExpressionAtom is exited.
-func (s *BaseMySqlParserListener) ExitFunctionCallExpressionAtom(ctx *FunctionCallExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) ExitFunctionCallExpressionAtom(ctx *FunctionCallExpressionAtomContext) {
+}
 
 // EnterBinaryExpressionAtom is called when production binaryExpressionAtom is entered.
 func (s *BaseMySqlParserListener) EnterBinaryExpressionAtom(ctx *BinaryExpressionAtomContext) {}
@@ -3657,10 +3789,12 @@ func (s *BaseMySqlParserListener) EnterBinaryExpressionAtom(ctx *BinaryExpressio
 func (s *BaseMySqlParserListener) ExitBinaryExpressionAtom(ctx *BinaryExpressionAtomContext) {}
 
 // EnterFullColumnNameExpressionAtom is called when production fullColumnNameExpressionAtom is entered.
-func (s *BaseMySqlParserListener) EnterFullColumnNameExpressionAtom(ctx *FullColumnNameExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) EnterFullColumnNameExpressionAtom(ctx *FullColumnNameExpressionAtomContext) {
+}
 
 // ExitFullColumnNameExpressionAtom is called when production fullColumnNameExpressionAtom is exited.
-func (s *BaseMySqlParserListener) ExitFullColumnNameExpressionAtom(ctx *FullColumnNameExpressionAtomContext) {}
+func (s *BaseMySqlParserListener) ExitFullColumnNameExpressionAtom(ctx *FullColumnNameExpressionAtomContext) {
+}
 
 // EnterBitExpressionAtom is called when production bitExpressionAtom is entered.
 func (s *BaseMySqlParserListener) EnterBitExpressionAtom(ctx *BitExpressionAtomContext) {}
