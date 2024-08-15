@@ -39,25 +39,25 @@ func (s *DataTypeTestSuite) TestIntTypes() {
 		{
 			name: "随意整数",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_int_type WHERE id = 1",
 			},
 		},
 		{
 			name: "最大整数",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_int_type WHERE id = 2",
 			},
 		},
 		{
 			name: "最小整数",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 3",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_int_type WHERE id = 3",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_int_type WHERE id = 4",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_int_type WHERE id = 4",
 			},
 		},
 	}
@@ -98,13 +98,13 @@ func (s *DataTypeTestSuite) TestFloatTypes() {
 		{
 			name: "随意浮点数",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_float_type WHERE id = 1",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_float_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_float_type WHERE id = 2",
 			},
 		},
 	}
@@ -145,13 +145,13 @@ func (s *DataTypeTestSuite) TestStringTypes() {
 		{
 			name: "随意字符串",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_string_type WHERE id = 1",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_string_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_string_type WHERE id = 2",
 			},
 		},
 	}
@@ -192,13 +192,13 @@ func (s *DataTypeTestSuite) TestDateTypes() {
 		{
 			name: "随意日期",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_date_type WHERE id = 1",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_date_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_date_type WHERE id = 2",
 			},
 		},
 	}
@@ -239,13 +239,13 @@ func (s *DataTypeTestSuite) TestGeographyTypes() {
 		{
 			name: "随意地理位置",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_geography_type WHERE id = 1",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_geography_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_geography_type WHERE id = 2",
 			},
 		},
 	}
@@ -286,13 +286,13 @@ func (s *DataTypeTestSuite) TestFilePathTypes() {
 		{
 			name: "随意字符串",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 1",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_file_path_type WHERE id = 1",
 			},
 		},
 		{
 			name: "NULL值",
 			info: sqlInfo{
-				query: "SELECT /*useMaster*/ * FROM test_file_path_type WHERE id = 2",
+				query: "SELECT /* @proxy useMaster=true; */ * FROM test_file_path_type WHERE id = 2",
 			},
 		},
 	}

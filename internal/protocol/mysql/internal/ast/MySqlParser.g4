@@ -1041,17 +1041,7 @@ key
     ;
 
 // 匹配值部分，不允许包含空格
-value
-    : ID
-    | charsetNameBase
-    | transactionLevelBase
-    | engineNameBase
-    | privilegesBase
-    | intervalTypeBase
-    | dataTypeBase
-    | keywordsCanBeId
-    | scalarFunctionName
-    ;
+value:constant | fullColumnName;
 
 querySpecificationNointo
     : SELECT selectSpec* selectElements fromClause groupByClause? havingClause? windowClause? orderByClause? limitClause? unionStatement?

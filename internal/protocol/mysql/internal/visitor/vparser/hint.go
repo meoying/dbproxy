@@ -7,8 +7,9 @@ import (
 
 type HintValue struct {
 	Key   string
-	Value string
+	Value any
 }
+
 func (s *HintVisitor) Name() string {
 	return "HintVisitor"
 }
@@ -18,7 +19,9 @@ type HintVisitor struct {
 }
 
 func NewHintVisitor() *HintVisitor {
-	return &HintVisitor{}
+	return &HintVisitor{
+		BaseVisitor: &BaseVisitor{},
+	}
 }
 
 func (s *HintVisitor) Visit(tree antlr.ParseTree) any {
@@ -33,13 +36,13 @@ func (s *HintVisitor) VisitRoot(ctx *parser.RootContext) any {
 }
 
 func (s *HintVisitor) VisitSqlStatement(ctx *parser.SqlStatementContext) any {
-	 switch v := ctx.GetChild(0).(type) {
-	 case *parser.DmlStatementContext:
-		return  s.VisitDmlStatement(v)
-	 case *parser.TransactionStatementContext:
-		return  s.VisitTransactionStatement(v)
-	 }
-	 return map[string]HintValue{}
+	switch v := ctx.GetChild(0).(type) {
+	case *parser.DmlStatementContext:
+		return s.VisitDmlStatement(v)
+	case *parser.TransactionStatementContext:
+		return s.VisitTransactionStatement(v)
+	}
+	return map[string]HintValue{}
 }
 
 func (s *HintVisitor) VisitTransactionStatement(ctx *parser.TransactionStatementContext) any {
@@ -47,15 +50,14 @@ func (s *HintVisitor) VisitTransactionStatement(ctx *parser.TransactionStatement
 	case *parser.BeginWorkContext:
 		return s.VisitBeginWork(v)
 	case *parser.CommitWorkContext:
-		return  s.VisitCommitWork(v)
+		return s.VisitCommitWork(v)
 	case *parser.RollbackWorkContext:
 		return s.VisitRollbackWork(v)
 	}
 	return map[string]HintValue{}
 }
 
-
-func (s *HintVisitor) VisitBeginWork(ctx *parser.BeginWorkContext) any{
+func (s *HintVisitor) VisitBeginWork(ctx *parser.BeginWorkContext) any {
 	if ctx.ProxyHint() != nil {
 		return s.VisitProxyHint(ctx.ProxyHint().(*parser.ProxyHintContext))
 	}
@@ -155,7 +157,8 @@ func (s *HintVisitor) VisitProxyHint(ctx *parser.ProxyHintContext) any {
 
 func (s *HintVisitor) VisitAnnotation(ctx *parser.AnnotationContext) any {
 	key := ctx.Key().GetText()
-	val := ctx.Value().GetText()
+	constantCtx := ctx.Value().Constant().(*parser.ConstantContext)
+	val := s.VisitConstant(constantCtx)
 	return HintValue{Key: key, Value: val}
 }
 

@@ -107,7 +107,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d;",
+					query: fmt.Sprintf("SELECT /* @proxy useMaster=true; */ `content` FROM `order` WHERE `user_id` = %d;",
 						s.getUserID(50002)),
 				},
 			},
@@ -148,7 +148,7 @@ func (s *DistributeTXTestSuite) TestDelayTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewDelayTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` = %d", s.getUserID(60002)),
+					query: fmt.Sprintf("SELECT /* @proxy useMaster=true; */ `content` FROM `order` WHERE `user_id` = %d", s.getUserID(60002)),
 				},
 			},
 			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {

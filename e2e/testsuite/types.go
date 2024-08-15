@@ -124,7 +124,7 @@ func getRowsFromTable(t *testing.T, db *sql.DB, ids []int64) *sql.Rows {
 	for _, id := range ids {
 		idStr = append(idStr, strconv.FormatInt(id, 10))
 	}
-	query := fmt.Sprintf("SELECT /*useMaster*/ `user_id`, `order_id`, `content`, `amount` FROM `order` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
+	query := fmt.Sprintf("SELECT /* @proxy useMaster=true; */ `user_id`, `order_id`, `content`, `amount` FROM `order` WHERE `user_id` in (%s)", strings.Join(idStr, ","))
 	rows, err := db.Query(query)
 	require.NoError(t, err)
 	return rows

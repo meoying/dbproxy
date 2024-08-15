@@ -14,19 +14,25 @@ func TestParsedQuery(t *testing.T) {
 		name  string
 		query string
 
-		wantHints []string
+		wantHints map[string]vparser.HintValue
 		wantType  string
 	}{
 		{
-			name:      "查询语句",
-			query:     "SELECT /*useMaster*/ * FROM mytable",
-			wantHints: []string{"/*useMaster*/"},
-			wantType:  vparser.SelectStmt,
+			name:  "查询语句",
+			query: "SELECT /* @proxy useMaster=true; */* FROM mytable",
+			wantHints: map[string]vparser.HintValue{
+				"useMaster": {
+					Key:   "useMaster",
+					Value: true,
+				},
+			},
+			wantType: vparser.SelectStmt,
 		},
 		{
-			name:     "插入语句",
-			query:    "INSERT INTO mytable VALUES (1)",
-			wantType: vparser.InsertStmt,
+			name:      "插入语句",
+			query:     "INSERT INTO mytable VALUES (1)",
+			wantHints: map[string]vparser.HintValue{},
+			wantType:  vparser.InsertStmt,
 		},
 	}
 	for _, tc := range testcases {

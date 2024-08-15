@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/internal/datasource"
@@ -59,6 +60,11 @@ func (c *connection) queryOrExec(ctx context.Context, query string, args []drive
 		Args: slice.Map(args, func(idx int, src driver.NamedValue) any {
 			return src
 		}),
+	}
+	hintMap := pctx.ParsedQuery.Hints()
+	v, ok := hintMap["useMaster"]
+	if ok && v.Value.(bool) {
+		pctx.Context = masterslave.UseMaster(pctx.Context)
 	}
 	handler, err := c.getShardingHandler(pctx)
 	if err != nil {

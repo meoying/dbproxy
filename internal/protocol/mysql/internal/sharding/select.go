@@ -3,13 +3,13 @@ package sharding
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/ecodeclub/ekit/list"
 	"github.com/ecodeclub/ekit/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/meoying/dbproxy/internal/datasource"
-	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 	"github.com/meoying/dbproxy/internal/merger"
 	"github.com/meoying/dbproxy/internal/merger/factory"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
@@ -239,11 +239,6 @@ func (s *SelectHandler) newGroupBy() ([]merger.ColumnInfo, []merger.ColumnInfo, 
 
 func NewSelectHandler(a sharding.Algorithm, db datasource.DataSource, ctx *pcontext.Context) (ShardingHandler, error) {
 	selectVisitor := vparser.NewsSelectVisitor()
-	hintVisitor := vparser.NewHintVisitor()
-	hint := hintVisitor.Visit(ctx.ParsedQuery.Root())
-	if strings.Contains(hint.(string), "useMaster") {
-		ctx.Context = masterslave.UseMaster(ctx.Context)
-	}
 	resp := selectVisitor.Parse(ctx.ParsedQuery.Root())
 	baseVal := resp.(vparser.BaseVal)
 	if baseVal.Err != nil {
@@ -300,6 +295,8 @@ func (s *SelectHandler) queryMulti(ctx context.Context, qs []sharding.Query) (li
 		List: list.NewArrayList[sqlx.Rows](len(qs)),
 	}
 	var eg errgroup.Group
+	v := ctx.Value("useMaster")
+	log.Println("xxxxxxxxx", v)
 	for _, query := range qs {
 		q := query
 		eg.Go(func() error {

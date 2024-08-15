@@ -1,4 +1,4 @@
-// Code generated from /Users/zhuyu/dbproxy/internal/protocol/mysql/internal/ast/MySqlLexer.g4 by ANTLR 4.13.1. DO NOT EDIT.
+// Code generated from /Users/zhuwenliang/w/dbproxy/internal/protocol/mysql/internal/ast/MySqlLexer.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser
 import (
