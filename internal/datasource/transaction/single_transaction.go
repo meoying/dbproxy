@@ -42,7 +42,7 @@ type SingleTx struct {
 	finder datasource.Finder
 }
 
-func (t *SingleTx) findTgt(ctx context.Context, query datasource.Query) (datasource.TxBeginner, error) {
+func (t *SingleTx) findTgt(ctx context.Context, query datasource.Query) (datasource.DataSource, error) {
 	return t.finder.FindTgt(ctx, query)
 }
 
