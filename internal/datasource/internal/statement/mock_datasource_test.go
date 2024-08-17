@@ -3,12 +3,14 @@ package statement
 import (
 	"context"
 	"database/sql"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/internal/errs"
 )
 
 type MockClusterDataSource struct {
-	dss map[string]*MockSingleDataSource
+	mockDss map[string]sqlmock.Sqlmock
+	dss     map[string]*MockSingleDataSource
 }
 
 func (m *MockClusterDataSource) FindTgt(ctx context.Context, query datasource.Query) (datasource.DataSource, error) {
@@ -43,10 +45,27 @@ func (m *MockClusterDataSource) Close() error {
 	panic("implement me")
 }
 
-func NewMockClusterDataSource(dss map[string]*MockSingleDataSource) *MockClusterDataSource {
-	return &MockClusterDataSource{
-		dss: dss,
+func NewMockClusterDataSource() (*MockClusterDataSource, error) {
+	mockMaster1DB, mockMaster, err := sqlmock.New()
+	if err != nil {
+		return nil, err
 	}
+
+	mockMaster2DB, mockMaster2, err := sqlmock.New()
+	if err != nil {
+		return nil, err
+	}
+
+	return &MockClusterDataSource{
+		mockDss: map[string]sqlmock.Sqlmock{
+			"1.db": mockMaster,
+			"2.db": mockMaster2,
+		},
+		dss: map[string]*MockSingleDataSource{
+			"1.db": NewMockSingleDataSource(mockMaster1DB),
+			"2.db": NewMockSingleDataSource(mockMaster2DB),
+		},
+	}, nil
 }
 
 type MockSingleDataSource struct {
