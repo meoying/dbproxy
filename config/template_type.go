@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -26,59 +27,73 @@ func (t *TemplateType) Evaluate() ([]string, error) {
 	return t.EvaluateWith(nil)
 }
 
-func (t *TemplateType) EvaluateWith(partialPlaceholders map[string]string) ([]string, error) {
+// EvaluateWith 方法接受部分占位符值，允许更灵活的使用
+func (t *TemplateType) EvaluateWith(partialPlaceholders map[string][]interface{}) ([]string, error) {
 	var results []string
 	err := t.evaluate(t.Expr, t.Placeholders, partialPlaceholders, &results)
 	return results, err
 }
 
-func (t *TemplateType) evaluate(expr string, placeholders map[string]Placeholder, partialPlaceholders map[string]string, results *[]string) error {
-	if len(placeholders) == 0 {
+func (t *TemplateType) evaluate(expr string, placeholders map[string]Placeholder, partialPlaceholders map[string][]interface{}, results *[]string) error {
+	re := regexp.MustCompile(`\$\{([^}]+)\}`)
+	matches := re.FindAllStringSubmatch(expr, -1)
+
+	if len(matches) == 0 {
 		*results = append(*results, expr)
 		return nil
 	}
 
-	for key, placeholder := range placeholders {
-		if value, ok := partialPlaceholders[key]; ok {
-			newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
-			newPlaceholders := make(map[string]Placeholder)
-			for k, v := range placeholders {
-				if k != key {
-					newPlaceholders[k] = v
-				}
-			}
-			return t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results)
-		}
+	for _, match := range matches {
+		fullMatch := match[0]
+		innerExpr := match[1]
+		placeholderName := strings.TrimSpace(innerExpr)
+		placeholderName = strings.TrimRight(placeholderName, ".")
 
-		if len(placeholder.Enum) > 0 {
-			for _, value := range placeholder.Enum {
-				newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
-				newPlaceholders := make(map[string]Placeholder)
-				for k, v := range placeholders {
-					if k != key {
-						newPlaceholders[k] = v
+		if placeholder, ok := placeholders[placeholderName]; ok {
+			var values []interface{}
+
+			// 首先检查是否有部分占位符值
+			if partialValues, exists := partialPlaceholders[placeholderName]; exists && len(partialValues) > 0 {
+				values = partialValues
+			} else {
+				// 如果没有部分占位符值，则使用完整的占位符定义
+				if placeholder.String != "" {
+					values = []interface{}{placeholder.String}
+				} else if len(placeholder.Enum) > 0 {
+					for _, v := range placeholder.Enum {
+						values = append(values, v)
+					}
+				} else if len(placeholder.Objects) > 0 {
+					for _, obj := range placeholder.Objects {
+						values = append(values, obj.Key)
 					}
 				}
-				if err := t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results); err != nil {
-					return err
-				}
 			}
-			return nil
-		} else if len(placeholder.Objects) > 0 {
-			for _, obj := range placeholder.Objects {
-				value := obj.Key
-				if value == "" {
-					value = ""
+
+			if len(values) == 0 {
+				values = []interface{}{""}
+			}
+
+			for _, value := range values {
+				newExpr := expr
+				strValue := fmt.Sprintf("%v", value)
+				if strValue == "" {
+					newExpr = strings.Replace(newExpr, fullMatch, strings.TrimLeft(innerExpr, placeholderName), 1)
 				} else {
-					value = value + "."
+					replacement := strValue
+					if strings.HasSuffix(innerExpr, ".") && strValue != "" {
+						replacement += "."
+					}
+					newExpr = strings.Replace(newExpr, fullMatch, replacement, 1)
 				}
-				newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
+
 				newPlaceholders := make(map[string]Placeholder)
 				for k, v := range placeholders {
-					if k != key {
+					if k != placeholderName {
 						newPlaceholders[k] = v
 					}
 				}
+
 				if err := t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results); err != nil {
 					return err
 				}
@@ -86,65 +101,18 @@ func (t *TemplateType) evaluate(expr string, placeholders map[string]Placeholder
 			return nil
 		}
 	}
-	return fmt.Errorf("no valid placeholders found for expression: %s", expr)
-}
 
-// func (t *TemplateType) evaluate(expr string, placeholders map[string]Placeholder, partialPlaceholders map[string]string, results *[]string) error {
-// 	if len(placeholders) == 0 {
-// 		*results = append(*results, expr)
-// 		return nil
-// 	}
-//
-// 	for key, placeholder := range placeholders {
-// 		if value, ok := partialPlaceholders[key]; ok {
-// 			newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
-// 			newPlaceholders := make(map[string]Placeholder)
-// 			for k, v := range placeholders {
-// 				if k != key {
-// 					newPlaceholders[k] = v
-// 				}
-// 			}
-// 			t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results)
-// 			return nil
-// 		}
-//
-// 		if len(placeholder.Enum) > 0 {
-// 			for _, value := range placeholder.Enum {
-// 				newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
-// 				newPlaceholders := make(map[string]Placeholder)
-// 				for k, v := range placeholders {
-// 					if k != key {
-// 						newPlaceholders[k] = v
-// 					}
-// 				}
-// 				t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results)
-// 			}
-// 		} else if len(placeholder.Objects) > 0 {
-// 			for _, obj := range placeholder.Objects {
-// 				value := obj.Key
-// 				if value == "" {
-// 					value = ""
-// 				} else {
-// 					value = value + "."
-// 				}
-// 				newExpr := strings.Replace(expr, "${"+key+"}", value, -1)
-// 				newPlaceholders := make(map[string]Placeholder)
-// 				for k, v := range placeholders {
-// 					if k != key {
-// 						newPlaceholders[k] = v
-// 					}
-// 				}
-// 				t.evaluate(newExpr, newPlaceholders, partialPlaceholders, results)
-// 			}
-// 		}
-// 		return nil
-// 	}
-// 	return fmt.Errorf("no valid placeholders found")
-// }
-
-func (t *TemplateType) Search(placeholders map[string]string) ([]string, error) {
-	if len(placeholders) == 0 {
-		return t.Evaluate()
+	if re.MatchString(expr) {
+		return fmt.Errorf("未解析的占位符在表达式中: %s", expr)
 	}
-	return t.EvaluateWith(placeholders)
+
+	*results = append(*results, expr)
+	return nil
 }
+
+// func (t *TemplateType) Search(placeholders map[string]string) ([]string, error) {
+// 	if len(placeholders) == 0 {
+// 		return t.Evaluate()
+// 	}
+// 	return t.EvaluateWith(placeholders)
+// }

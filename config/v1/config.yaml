@@ -1,6 +1,6 @@
 version: v1
 
-values: # 定义
+variables: # 定义
   region1: # 枚举类型,值为cn,hk
     - cn
     - hk
@@ -36,7 +36,6 @@ values: # 定义
       key: user_id
       base: 32
 
-
 # 定义数据库名生成规则
 databases:
   user_shard:
@@ -45,7 +44,7 @@ databases:
       placeholders:
         key:
           ref:
-           - values.db_key
+            - values.db_key
   order_shard:
     template:
       expr: "order_db_${key}"
@@ -57,21 +56,16 @@ databases:
 
 # 定义数据源名生成规则
 datasources:
-  mts_ds: # 生成规则名称, 可以有多个datasource定义, 每个datasource中可选存在master,slave,shadow
-    - master:
-        address: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True #字符串类型
-        parameters:
-          - charset=utf8mb4
-          - parseTime=True
-      slave:
-        address:
+  mts_ds:
+    - datasource:
+        master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+        slave:
           template:
-            expr: webook:webook@tcp(${region}.slave.meoying.com:3306)
+            expr: webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
             placeholders:
               region:
                 ref:
                   - values.region2
-        # parameters 参数可选
   cos_ds:
     master:
       ref:
@@ -124,16 +118,5 @@ tables: # 定义数据库表生成规则
           expr: "user_tab_${col}"
           placeholders:
             col:
-              ref: values.tab_key
-  order: # 不分表
-    template:
-      expr: "${database}.order_tab"
-      placeholders:
-        database:
-          ref: databases.user_shard
-
-
-
-# 输入输出定义:
-#
-#config.yaml  —> Config 结构体  —> 调用Config上的方法, 获取生成dsn 集合, 获取生成的分表的集合, 获取生成的分库的集合,获取生成的数据源集合
+              ref:
+                - values.tab_key
