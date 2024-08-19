@@ -818,8 +818,8 @@ type Table struct {
 
 func (t *Table) UnmarshalYAML(value *yaml.Node) error {
 
-	type rawTable struct {
-	}
+	// type rawTable struct {
+	// }
 
 	return nil
 }
