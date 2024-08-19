@@ -388,7 +388,7 @@ variables:
 			expectedValues := tt.getWantValue(t, &config)
 
 			for i, varName := range tt.varNames {
-				actual, err := config.GetVariableByName(varName)
+				actual, err := config.VariableByName(varName)
 				tt.assertError(t, err)
 				if err != nil {
 					return
@@ -656,7 +656,7 @@ databases:
 			expectedValues := tt.getWantValue(t, &config)
 
 			for i, varName := range tt.varNames {
-				actual, err := config.GetDatabaseByName(varName)
+				actual, err := config.DatabaseByName(varName)
 				tt.assertError(t, err)
 				if err != nil {
 					return
@@ -691,6 +691,46 @@ func TestConfig_GetDatasourceByName(t *testing.T) {
 		// 				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
 		// 			},
 		// 		},
+		{
+			name: "反序列化成功_master字符串类型_无slave",
+			yamlData: `
+datasources:
+  dbproxy_ds:
+    master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True`,
+			varNames: []string{"dbproxy_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
+				t.Helper()
+				return []Datasource{
+					{
+						varName: "dbproxy_ds",
+						Master:  "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						config:  config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "反序列化成功_master字符串类型_slave字符串类型",
+			yamlData: `
+datasources:
+  dbproxy_ds:
+    master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+    slave: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True`,
+			varNames: []string{"dbproxy_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
+				t.Helper()
+				return []Datasource{
+					{
+						varName: "dbproxy_ds",
+						Master:  "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						Slave:   String("webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True"),
+						config:  config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
 		{
 			name: "反序列化成功_master字符串类型_slave模版类型",
 			yamlData: `
@@ -940,7 +980,105 @@ datasources:
 			expectedValues := tt.getWantValue(t, &config)
 
 			for i, varName := range tt.varNames {
-				actual, err := config.GetDatasourceByName(varName)
+				actual, err := config.DatasourceByName(varName)
+				tt.assertError(t, err)
+				if err != nil {
+					return
+				}
+				assert.Equal(t, expectedValues[i], actual)
+			}
+
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["password"], actual.(*Datasource).Slave.(*Template).Placeholders["password"])
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["region"], actual.(*Datasource).Slave.(*Template).Placeholders["region"])
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["type"], actual.(*Datasource).Slave.(*Template).Placeholders["type"])
+		})
+	}
+}
+
+func TestConfig_GetTableByName(t *testing.T) {
+	t.Skip()
+	tests := []struct {
+		name         string
+		yamlData     string
+		varNames     []string
+		getWantValue func(t *testing.T, config *Config) []Table
+		assertError  assert.ErrorAssertionFunc
+	}{
+		{
+			name: "直接定义",
+			yamlData: `
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        order_db:
+          template:
+            expr: "local_sharding_plugin_db_${key}"
+            placeholders:
+              key:
+                hash:
+                  key: user_id
+                  base: 3
+      table: order_tab
+`,
+			varNames: []string{"order"},
+			getWantValue: func(t *testing.T, config *Config) []Table {
+				return []Table{
+					{
+						varName: "order",
+						varType: DataTypeSharding,
+						config:  config,
+						Sharding: Sharding{
+							varName: "order",
+							config:  config,
+							Datasource: Datasource{
+								varName: "order",
+								Master:  "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+								Slave:   String("root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"),
+								config:  config,
+							},
+							Database: Database{
+								varName: "order",
+								varType: DataTypeTemplate,
+								Value: any(Template{
+									varName: "order",
+									Expr:    "local_sharding_plugin_db_${key}",
+									Placeholders: map[string]any{
+										"key": Hash{varName: "key", Key: "user_id", Base: 3},
+									},
+									config: config,
+								}),
+								config: config,
+							},
+							Table: Variable{
+								varName: "order",
+								varType: DataTypeString,
+								Value:   String("order_tab"),
+								config:  config,
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config Config
+			err := yaml.Unmarshal([]byte(tt.yamlData), &config)
+			require.NoError(t, err)
+
+			assert.Subset(t, config.TableNames(), tt.varNames)
+
+			expectedValues := tt.getWantValue(t, &config)
+
+			for i, varName := range tt.varNames {
+				actual, err := config.TableByName(varName)
 				tt.assertError(t, err)
 				if err != nil {
 					return

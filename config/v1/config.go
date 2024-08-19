@@ -27,6 +27,7 @@ const (
 	DataTypeDatabase   = "database"
 	DataTypeDatasource = "datasource"
 	DataTypeTable      = "table"
+	DataTypeSharding   = "sharding"
 )
 
 var (
@@ -47,9 +48,9 @@ type (
 
 // Config 配置结构体
 type Config struct {
-	Variables   map[string]any `yaml:"variables"`
-	Databases   map[string]any `yaml:"databases"`
-	Datasources map[string]any `yaml:"datasources"`
+	Variables   map[string]any `yaml:"variables,omitempty"`
+	Databases   map[string]any `yaml:"databases,omitempty"`
+	Datasources map[string]any `yaml:"datasources,omitempty"`
 	Tables      map[string]any `yaml:"tables"`
 }
 
@@ -215,7 +216,7 @@ func (c *Config) VariableNames() []string {
 	return keys
 }
 
-func (c *Config) GetVariableByName(name string) (any, error) {
+func (c *Config) VariableByName(name string) (any, error) {
 	if v, ok := c.Variables[name]; ok {
 		return v, nil
 	}
@@ -230,7 +231,7 @@ func (c *Config) DatasourceNames() []string {
 	return keys
 }
 
-func (c *Config) GetDatasourceByName(name string) (any, error) {
+func (c *Config) DatasourceByName(name string) (any, error) {
 	if v, ok := c.Datasources[name]; ok {
 		return v, nil
 	}
@@ -245,8 +246,23 @@ func (c *Config) DatabaseNames() []string {
 	return keys
 }
 
-func (c *Config) GetDatabaseByName(name string) (any, error) {
+func (c *Config) DatabaseByName(name string) (any, error) {
 	if v, ok := c.Databases[name]; ok {
+		return v, nil
+	}
+	return nil, fmt.Errorf("%w: %q", ErrVariableNameNotFound, name)
+}
+
+func (c *Config) TableNames() []string {
+	var keys []string
+	for k := range c.Tables {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func (c *Config) TableByName(name string) (any, error) {
+	if v, ok := c.Tables[name]; ok {
 		return v, nil
 	}
 	return nil, fmt.Errorf("%w: %q", ErrVariableNameNotFound, name)
@@ -575,6 +591,11 @@ type Variable struct {
 	config  *Config
 }
 
+func (v *Variable) isZeroValue() bool {
+	var zero any
+	return v.Value == zero
+}
+
 func (v *Variable) UnmarshalYAML(value *yaml.Node) error {
 	type rawVariable struct {
 		Str  string    `yaml:"string,omitempty"`
@@ -632,6 +653,11 @@ type Database struct {
 	config  *Config
 }
 
+func (d *Database) isZeroValue() bool {
+	var zero any
+	return d.Value == zero
+}
+
 func (d *Database) UnmarshalYAML(value *yaml.Node) error {
 	type rawDatabase struct {
 		Tmpl *Template `yaml:"template,omitempty"`
@@ -678,16 +704,21 @@ func (d *Database) UnmarshalYAML(value *yaml.Node) error {
 // Datasource 数据源类型
 type Datasource struct {
 	varName string
-	Master  string `yaml:"master"`
+	Master  String `yaml:"master"`
 	Slave   any    `yaml:"slave"`
 	config  *Config
 }
 
+func (d *Datasource) isZeroValue() bool {
+	var zero any
+	return d.Master == "" && d.Slave == zero
+}
+
 func (d *Datasource) UnmarshalYAML(value *yaml.Node) error {
 	type rawDatasource struct {
-		Master string         `yaml:"master"`
-		Slave  map[string]any `yaml:"slave"`
-		Ref    *Ref           `yaml:"ref,omitempty"`
+		Master string `yaml:"master"`
+		Slave  any    `yaml:"slave,omitempty"`
+		Ref    *Ref   `yaml:"ref,omitempty"`
 	}
 	raw := &rawDatasource{
 		Ref: &Ref{varName: d.varName, config: d.config},
@@ -697,25 +728,32 @@ func (d *Datasource) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	log.Printf("raw.Datasource = %#v\n", raw)
-
+	var zero any
 	if raw.Master == "" && raw.Ref.isZeroValue() {
 		return fmt.Errorf("%w: master = %q", ErrUnmarshalVariableFieldFailed, raw.Master)
-	} else if len(raw.Slave) == 0 && raw.Ref.isZeroValue() {
+	} else if raw.Master == "" && raw.Slave == zero && raw.Ref.isZeroValue() {
 		return fmt.Errorf("%w: slave = %+v", ErrUnmarshalVariableFieldFailed, raw.Slave)
-	} else if raw.Master != "" && !raw.Ref.isZeroValue() || len(raw.Slave) != 0 && !raw.Ref.isZeroValue() {
+	} else if raw.Master != "" && !raw.Ref.isZeroValue() || raw.Slave != zero && !raw.Ref.isZeroValue() {
 		return fmt.Errorf("ref属性不可与Master/Slave属性组合使用")
 	}
 
-	d.Master = raw.Master
+	d.Master = String(raw.Master)
 
-	if len(raw.Slave) > 0 {
-		log.Printf("准备反序列化slave raw.Slave = %#v", raw.Slave)
-		dataType, err := unmarshalDataType(d.config, "slave", raw.Slave)
-		if err != nil {
-			return err
+	if raw.Slave != zero {
+		switch slave := raw.Slave.(type) {
+		case string:
+			d.Slave = String(slave)
+		case map[string]any:
+			log.Printf("准备反序列化slave raw.Slave = %#v", raw.Slave)
+			dataType, err := unmarshalDataType(d.config, "slave", slave)
+			if err != nil {
+				return err
+			}
+			log.Printf("获取到的%s, slave = %#v\n", d.varName, dataType)
+			d.Slave = dataType
+		default:
+			return fmt.Errorf("未支持的slave类型 %t\n", slave)
 		}
-		log.Printf("获取到的%s, slave = %#v\n", d.varName, dataType)
-		d.Slave = dataType
 	}
 
 	if !raw.Ref.isZeroValue() {
@@ -730,5 +768,58 @@ func (d *Datasource) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+type Sharding struct {
+	varName    string
+	config     *Config
+	Datasource Datasource `yaml:"datasource"`
+	Database   Database   `yaml:"database"`
+	Table      Variable   `yaml:"table"`
+}
+
+func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
+	type rawSharding struct {
+		Datasource *Datasource `yaml:"datasource"`
+		Database   *Database   `yaml:"database"`
+		Table      *Variable   `yaml:"table"`
+	}
+
+	raw := &rawSharding{
+		Datasource: &Datasource{varName: s.varName, config: s.config},
+		Database:   &Database{varName: s.varName, config: s.config},
+		Table:      &Variable{varName: s.varName, config: s.config},
+	}
+	if err := value.Decode(raw); err != nil {
+		return err
+	}
+
+	if raw.Datasource.isZeroValue() {
+		return fmt.Errorf("%w: %s.sharding.datasource", ErrUnmarshalVariableFieldFailed, s.varName)
+	}
+
+	if raw.Database.isZeroValue() {
+		return fmt.Errorf("%w: %s.sharding.database", ErrUnmarshalVariableFieldFailed, s.varName)
+	}
+
+	if raw.Table.isZeroValue() {
+		return fmt.Errorf("%w: %s.sharding.table", ErrUnmarshalVariableFieldFailed, s.varName)
+	}
+
+	log.Printf("raw.Sharding = %#v\n", raw)
+
+	return nil
+}
+
 type Table struct {
+	varName  string
+	varType  string
+	config   *Config
+	Sharding Sharding `yaml:"sharding"`
+}
+
+func (t *Table) UnmarshalYAML(value *yaml.Node) error {
+
+	type rawTable struct {
+	}
+
+	return nil
 }

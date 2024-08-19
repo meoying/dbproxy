@@ -103,19 +103,18 @@ datasources:
                 - databases.order_shard
 
 tables: # 定义数据库表生成规则
-  user: # 逻辑表名
+  order: # 逻辑表名
     sharding:
       datasource:
-        ref:
-          - datasources.mts_ds
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
       database:
-        # 引用已有的
-        ref:
-          - databases.user_shard
-      table:
-        template:
-          expr: "user_tab_${col}"
-          placeholders:
-            col:
-              ref:
-                - values.tab_key
+        order_db:
+          template:
+            expr: "local_sharding_plugin_db_${key}"
+            placeholders:
+              key:
+                hash:
+                  key: user_id
+                  base: 3
+      table: order_tab
