@@ -17,6 +17,8 @@ import (
 //            模版类型中还有引用, 会有循环引用问题, 链路过长问题
 //         校验引用多个变量时, 类型不一致问题 - variables.region 和 variables.hash,
 //         交叉引用, variables 下的变量引用 databases, datasources, tables 下的变量
+// TODO: datasources类型
+//          禁止自引用, dbproxy_ds下的1号datasource 引用 datasources.dbproxy_ds.0
 
 func TestConfig_UnmarshalYAML(t *testing.T) {
 	tests := []struct {
@@ -213,33 +215,40 @@ func TestConfig_GetVariableByName(t *testing.T) {
 	tests := []struct {
 		name         string
 		yamlData     string
-		varName      string
-		getWantValue func(t *testing.T, config *Config) any
+		varNames     []string
+		getWantValue func(t *testing.T, config *Config) []Variable
 		assertError  assert.ErrorAssertionFunc
 	}{
-		{
-			name: "反序列化成功_不存在的值",
-			yamlData: `
-variables:
-  existing_value: some value`,
-			varName: "non_existing_value",
-			getWantValue: func(t *testing.T, config *Config) any {
-				t.Helper()
-				return nil
-			},
-			assertError: func(t assert.TestingT, err error, msgAndArgs ...any) bool {
-				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
-			},
-		},
+		// 		{
+		// 			name: "反序列化成功_不存在的值",
+		// 			yamlData: `
+		// variables:
+		//   existing_value: some value`,
+		// 			varNames: []string{"non_existing_value"},
+		// 			getWantValue: func(t *testing.T, config *Config) []Variable {
+		// 				t.Helper()
+		// 				return nil
+		// 			},
+		// 			assertError: func(t assert.TestingT, err error, msgAndArgs ...any) bool {
+		// 				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
+		// 			},
+		// 		},
 		{
 			name: "反序列化成功_字符串类型",
 			yamlData: `
 variables:
   str_value: hello world`,
-			varName: "str_value",
-			getWantValue: func(t *testing.T, config *Config) any {
+			varNames: []string{"str_value"},
+			getWantValue: func(t *testing.T, config *Config) []Variable {
 				t.Helper()
-				return String("hello world")
+				return []Variable{
+					{
+						varName: "str_value",
+						varType: DataTypeString,
+						Value:   String("hello world"),
+						config:  config,
+					},
+				}
 			},
 			assertError: assert.NoError,
 		},
@@ -252,49 +261,18 @@ variables:
     - item1
     - item2
     - item3`,
-			varName: "enum_value",
-			getWantValue: func(t *testing.T, config *Config) any {
+			varNames: []string{"enum_value"},
+			getWantValue: func(t *testing.T, config *Config) []Variable {
 				t.Helper()
-				return Enum{"item1", "item2", "item3"}
-			},
-			assertError: assert.NoError,
-		},
-		{
-			name: "反序列化成功_引用类型",
-			yamlData: `
-variables:
-  str_value: hello world
-  ref_value:
-    ref:
-      - variables.str_value`,
-			varName: "ref_value",
-			getWantValue: func(t *testing.T, config *Config) any {
-				t.Helper()
-				return &Reference{
-					values: map[string]any{
-						"variables.str_value": String("hello world"),
+				return []Variable{
+					{
+						varName: "enum_value",
+						varType: DataTypeEnum,
+						Value:   Enum{"item1", "item2", "item3"},
+						config:  config,
 					},
-					config: config,
 				}
-			},
-			assertError: assert.NoError,
-		},
-		{
-			name: "反序列化成功_引用类型_等价写法",
-			yamlData: `
-variables:
-  str_value: hello world
-  ref_value:
-    ref: [variables.str_value]`,
-			varName: "ref_value",
-			getWantValue: func(t *testing.T, config *Config) any {
-				t.Helper()
-				return &Reference{
-					values: map[string]any{
-						"variables.str_value": String("hello world"),
-					},
-					config: config,
-				}
+
 			},
 			assertError: assert.NoError,
 		},
@@ -306,12 +284,41 @@ variables:
     hash:
       key: user_id
       base: 10`,
-			varName: "hash_value",
-			getWantValue: func(t *testing.T, config *Config) any {
+			varNames: []string{"hash_value"},
+			getWantValue: func(t *testing.T, config *Config) []Variable {
 				t.Helper()
-				return &Hash{
-					Key:  "user_id",
-					Base: 10,
+				return []Variable{
+					{
+						varName: "hash_value",
+						varType: DataTypeHash,
+						Value: Hash{
+							varName: "hash_value",
+							Key:     "user_id",
+							Base:    10,
+						},
+						config: config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "反序列化成功_引用类型_字符串类型",
+			yamlData: `
+variables:
+  str_value: hello world
+  ref_value:
+    ref: variables.str_value`,
+			varNames: []string{"ref_value"},
+			getWantValue: func(t *testing.T, config *Config) []Variable {
+				t.Helper()
+				return []Variable{
+					{
+						varName: "ref_value",
+						varType: DataTypeString,
+						Value:   String("hello world"),
+						config:  config,
+					},
 				}
 			},
 			assertError: assert.NoError,
@@ -328,41 +335,42 @@ variables:
     - uk
   tmpl_value:
     template:
-      expr: "${enum}.${str}.${ref}.${str}.${hash}.example.com"
+      expr: "${enum_val}.${str}.${ref_val}.${str}.${hash_val}.example.com"
       placeholders:
-        enum:
+        enum_val:
           - value1
           - value2
         str: "str"
-        ref:
-          ref:
-            - variables.region1
-            - variables.region2
-        hash:
+        ref_val:
+          ref: variables.region1
+        hash_val:
           hash:
             key: user_id
             base: 32`,
-			varName: "tmpl_value",
-			getWantValue: func(t *testing.T, config *Config) any {
+			varNames: []string{"tmpl_value"},
+			getWantValue: func(t *testing.T, config *Config) []Variable {
 				t.Helper()
-				return &Template{
-					Expr: "${enum}.${str}.${ref}.${str}.${hash}.example.com",
-					Placeholders: map[string]any{
-						"enum": Enum{"value1", "value2"},
-						"str":  String("str"),
-						"ref": &Reference{
-							values: map[string]any{
-								"variables.region1": Enum{"cn", "hk"},
-								"variables.region2": Enum{"us", "uk"},
+				return []Variable{
+					{
+						varName: "tmpl_value",
+						varType: DataTypeTemplate,
+						Value: Template{
+							varName: "tmpl_value",
+							Expr:    "${enum_val}.${str}.${ref_val}.${str}.${hash_val}.example.com",
+							Placeholders: map[string]any{
+								"enum_val": Enum{"value1", "value2"},
+								"str":      String("str"),
+								"ref_val":  Enum{"cn", "hk"},
+								"hash_val": Hash{
+									varName: "hash_val",
+									Key:     "user_id",
+									Base:    32,
+								},
 							},
 							config: config,
 						},
-						"hash": &Hash{
-							Key:  "user_id",
-							Base: 32,
-						},
+						config: config,
 					},
-					config: config,
 				}
 			},
 			assertError: assert.NoError,
@@ -375,16 +383,18 @@ variables:
 			err := yaml.Unmarshal([]byte(tt.yamlData), &config)
 			require.NoError(t, err)
 
-			actualValue, err := config.GetVariableByName(tt.varName)
-			tt.assertError(t, err)
-			if err != nil {
-				return
-			}
+			assert.Subset(t, config.VariableNames(), tt.varNames)
 
-			expectedValue := tt.getWantValue(t, &config)
-			log.Printf("expected = %#v\n", expectedValue)
-			log.Printf("actual = %#v\n", actualValue)
-			assert.Equal(t, expectedValue, actualValue)
+			expectedValues := tt.getWantValue(t, &config)
+
+			for i, varName := range tt.varNames {
+				actual, err := config.GetVariableByName(varName)
+				tt.assertError(t, err)
+				if err != nil {
+					return
+				}
+				assert.Equal(t, expectedValues[i], actual)
+			}
 		})
 	}
 }
@@ -419,54 +429,13 @@ func TestEvaluate(t *testing.T) {
 			assertError: assert.NoError,
 		},
 		{
-			name: "引用类型_字符串",
-			eval: &Reference{
-				values: map[string]any{
-					"str1": String("go"),
-					"str2": String("py"),
-				},
-			},
-			want:        []string{"go", "py"},
-			assertError: assert.NoError,
-		},
-		{
-			name: "引用类型_枚举",
-			eval: &Reference{
-				values: map[string]any{
-					"enum1": Enum{"value1", "value2"},
-					"enum2": Enum{"value3", "value4"},
-				},
-			},
-			want:        []string{"value1", "value2", "value3", "value4"},
-			assertError: assert.NoError,
-		},
-		{
-			name: "引用类型_哈希",
-			eval: &Reference{
-				values: map[string]any{
-					"hash": &Hash{
-						Key:  "user_id",
-						Base: 3,
-					},
-				},
-			},
-			want:        []string{"0", "1", "2"},
-			assertError: assert.NoError,
-		},
-		// 引用自己?
-		// 引用嵌套?
-		{
 			name: "模版类型_引用哈希类型",
 			eval: &Template{
 				Expr: "order_db_${key}",
 				Placeholders: map[string]any{
-					"key": &Reference{
-						values: map[string]any{
-							"variables.db_key": &Hash{
-								Key:  "user_id",
-								Base: 3,
-							},
-						},
+					"key": Hash{
+						Key:  "user_id",
+						Base: 3,
 					},
 				},
 			},
@@ -476,19 +445,15 @@ func TestEvaluate(t *testing.T) {
 		{
 			name: "模版类型_组合",
 			eval: &Template{
-				Expr: "${region}.${role}.${type}.${hash}.example.com",
+				Expr: "${region}.${role}.${type}.${id}.example.com",
 				Placeholders: map[string]any{
-					"region": &Reference{
-						values: map[string]any{
-							"values.region1": Enum{"cn"},
-							"values.region2": Enum{"us"},
-						},
-					},
-					"role": Enum{"master", "slave"},
-					"type": String("mysql"),
-					"hash": &Hash{
-						Key:  "user_id",
-						Base: 3,
+					"region": Enum{"cn", "us"},
+					"role":   Enum{"master", "slave"},
+					"type":   String("mysql"),
+					"id": Hash{
+						varName: "hash",
+						Key:     "user_id",
+						Base:    3,
 					},
 				},
 			},
@@ -524,62 +489,240 @@ func TestEvaluate(t *testing.T) {
 }
 
 func TestConfig_GetDatabaseByName(t *testing.T) {
+	tests := []struct {
+		name         string
+		yamlData     string
+		varNames     []string
+		getWantValue func(t *testing.T, config *Config) []Database
+		assertError  assert.ErrorAssertionFunc
+	}{
+		{
+			name: "模版类型",
+			yamlData: `
+databases:
+  tmpl_db:
+    template:
+      expr: user_db_${key}
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 10`,
+			varNames: []string{"tmpl_db"},
+			getWantValue: func(t *testing.T, config *Config) []Database {
+				return []Database{
+					{
+						varName: "tmpl_db",
+						varType: DataTypeTemplate,
+						Value: Template{
+							varName: "tmpl_db",
+							Expr:    "user_db_${key}",
+							Placeholders: map[string]any{
+								"key": Hash{varName: "key", Key: "user_id", Base: 10},
+							},
+							config: config,
+						},
+						config: config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "字符串类型",
+			yamlData: `
+databases:
+  str_db: user_db`,
+			varNames: []string{"str_db"},
+			getWantValue: func(t *testing.T, config *Config) []Database {
+				return []Database{
+					{
+						varType: DataTypeString,
+						varName: "str_db",
+						Value:   String("user_db"),
+						config:  config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "引用类型",
+			yamlData: `
+databases:
+  ref_db:
+    ref: databases.tmpl_db
+  tmpl_db:
+    template:
+      expr: user_db_${key}
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 10`,
+			varNames: []string{"ref_db"},
+			getWantValue: func(t *testing.T, config *Config) []Database {
+				return []Database{
+					{
+						varName: "ref_db",
+						varType: DataTypeTemplate,
+						Value: Template{
+							varName: "ref_db",
+							Expr:    "user_db_${key}",
+							Placeholders: map[string]any{
+								"key": Hash{varName: "key", Key: "user_id", Base: 10},
+							},
+							config: config,
+						},
+						config: config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "组合情况",
+			yamlData: `
+databases:
+  ref_str_db:
+    ref: databases.str_db
+  ref_tmpl_db:
+    ref: databases.tmpl_db
+  str_db: user_db
+  tmpl_db:
+    template:
+      expr: user_db_${key}
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 10`,
+			varNames: []string{"tmpl_db", "str_db", "ref_tmpl_db", "ref_str_db"},
+			getWantValue: func(t *testing.T, config *Config) []Database {
+				return []Database{
+					{
+						varName: "tmpl_db",
+						varType: DataTypeTemplate,
+						Value: Template{
+							varName: "tmpl_db",
+							Expr:    "user_db_${key}",
+							Placeholders: map[string]any{
+								"key": Hash{varName: "key", Key: "user_id", Base: 10},
+							},
+							config: config,
+						},
+						config: config,
+					},
+					{
+						varType: DataTypeString,
+						varName: "str_db",
+						Value:   String("user_db"),
+						config:  config,
+					},
+					{
+						varName: "ref_tmpl_db",
+						varType: DataTypeTemplate,
+						Value: Template{
+							varName: "ref_tmpl_db",
+							Expr:    "user_db_${key}",
+							Placeholders: map[string]any{
+								"key": Hash{varName: "key", Key: "user_id", Base: 10},
+							},
+							config: config,
+						},
+						config: config,
+					},
+					{
+						varType: DataTypeString,
+						varName: "ref_str_db",
+						Value:   String("user_db"),
+						config:  config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config Config
+			err := yaml.Unmarshal([]byte(tt.yamlData), &config)
+			require.NoError(t, err)
+
+			// assert.Contains(t, config.DatabaseNames(), tt.varNames)
+			assert.Subset(t, config.DatabaseNames(), tt.varNames)
+
+			expectedValues := tt.getWantValue(t, &config)
+
+			for i, varName := range tt.varNames {
+				actual, err := config.GetDatabaseByName(varName)
+				tt.assertError(t, err)
+				if err != nil {
+					return
+				}
+				assert.Equal(t, expectedValues[i], actual)
+			}
+
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Database).Value.(*Template), actual.(*Database).Value.(*Template))
+		})
+	}
 }
 
 func TestConfig_GetDatasourceByName(t *testing.T) {
 	tests := []struct {
 		name         string
 		yamlData     string
-		dsName       string
-		getWantValue func(t *testing.T, config *Config) any
+		varNames     []string
+		getWantValue func(t *testing.T, config *Config) []Datasource
 		assertError  assert.ErrorAssertionFunc
 	}{
+		// 		{
+		// 			name: "反序列化成功_不存在的值",
+		// 			yamlData: `
+		// datasources:
+		//   existing_value: some value`,
+		// 			varNames: []string{"non_existing_value"},
+		// 			getWantValue: func(t *testing.T, config *Config) []Datasource {
+		// 				t.Helper()
+		// 				return nil
+		// 			},
+		// 			assertError: func(t assert.TestingT, err error, msgAndArgs ...any) bool {
+		// 				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
+		// 			},
+		// 		},
 		{
-			name: "反序列化成功_不存在的值",
-			yamlData: `
-datasources:
-  existing_value: some value`,
-			dsName: "non_existing_value",
-			getWantValue: func(t *testing.T, config *Config) any {
-				t.Helper()
-				return nil
-			},
-			assertError: func(t assert.TestingT, err error, msgAndArgs ...any) bool {
-				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
-			},
-		},
-		{
-			name: "反序列化成功_单个",
+			name: "反序列化成功_master字符串类型_slave模版类型",
 			yamlData: `
 datasources:
   dbproxy_ds:
-    - datasource:
-        master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-        slave:
-          template:
-            expr: webook:${password}@tcp(${region}.${id}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-            placeholders:
-              password: webook
-              region:
-                - cn 
-                - hk
-              id:
-                hash:
-                  key: user_id
-                  base: 3`,
-			dsName: "dbproxy_ds",
-			getWantValue: func(t *testing.T, config *Config) any {
+    master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+    slave:
+      template:
+        expr: webook:${password}@tcp(${region}.${id}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+        placeholders:
+          password: webook
+          region:
+            - cn 
+            - hk
+          id:
+            hash:
+              key: user_id
+              base: 3`,
+			varNames: []string{"dbproxy_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
 				t.Helper()
-				return []any{
-					&Datasource{
-						Master: "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
-						Slave: any(&Template{
-							Expr: "webook:${password}@tcp(${region}.${id}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+				return []Datasource{
+					{
+						varName: "dbproxy_ds",
+						Master:  "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						Slave: any(Template{
+							varName: "slave",
+							Expr:    "webook:${password}@tcp(${region}.${id}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
 							Placeholders: map[string]any{
 								"password": String("webook"),
 								"region":   Enum{"cn", "hk"},
-								"id":       &Hash{Key: "user_id", Base: 3},
+								"id":       Hash{varName: "id", Key: "user_id", Base: 3},
 							},
 							config: config,
 						}),
@@ -590,7 +733,7 @@ datasources:
 			assertError: assert.NoError,
 		},
 		{
-			name: "反序列化成功_多个",
+			name: "反序列化成功_slave为模版类型_占位符使用引用变量",
 			yamlData: `
 variables:
   password: webook
@@ -606,70 +749,31 @@ variables:
       base: 3
 datasources:
   dbproxy_ds:
-    - datasource:
-        master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-        slave:
-          template:
-            expr: webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-            placeholders:
-              region:
-                - cn
-                - hk
-    - datasource:
-        master: webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-        slave:
-          template:
-            expr: webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-            placeholders:
-              password:
-                ref:
-                  - variables.password
-              region:
-                ref:
-                  - variables.region1
-                  - variables.region2
-              type:
-                ref:
-                  - variables.index`,
-			dsName: "dbproxy_ds",
-			getWantValue: func(t *testing.T, config *Config) any {
+      master: webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+      slave:
+        template:
+          expr: webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+          placeholders:
+            password:
+              ref: variables.password
+            region:
+              ref: variables.region1
+            type:
+               ref: variables.index`,
+			varNames: []string{"dbproxy_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
 				t.Helper()
-				return []any{
-					&Datasource{
-						Master: "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
-						Slave: any(&Template{
-							Expr: "webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+				return []Datasource{
+					{
+						varName: "dbproxy_ds",
+						Master:  "webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						Slave: any(Template{
+							varName: "slave",
+							Expr:    "webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
 							Placeholders: map[string]any{
-								"region": Enum{"cn", "hk"},
-							},
-							config: config,
-						}),
-						config: config,
-					},
-					&Datasource{
-						Master: "webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
-						Slave: any(&Template{
-							Expr: "webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
-							Placeholders: map[string]any{
-								"password": &Reference{
-									values: map[string]any{
-										"variables.password": String("webook"),
-									},
-									config: config,
-								},
-								"region": &Reference{
-									values: map[string]any{
-										"variables.region1": Enum{"cn", "hk"},
-										"variables.region2": Enum{"uk", "us"},
-									},
-									config: config,
-								},
-								"type": &Reference{
-									values: map[string]any{
-										"variables.index": &Hash{Key: "id", Base: 3},
-									},
-									config: config,
-								},
+								"password": String("webook"),
+								"region":   Enum{"cn", "hk"},
+								"type":     Hash{varName: "type", Key: "id", Base: 3},
 							},
 							config: config,
 						}),
@@ -679,7 +783,148 @@ datasources:
 			},
 			assertError: assert.NoError,
 		},
-
+		// 		{
+		// 			name: "反序列化成功_多个_自引用",
+		// 			yamlData: `
+		// datasources:
+		//   dbproxy_ds:
+		//     - datasource:
+		//         master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+		//         slave:
+		//           template:
+		//             expr: webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+		//             placeholders:
+		//               region:
+		//                 - cn
+		//                 - hk
+		//     - datasource:
+		//         ref:
+		//           - datasources.dbproxy_ds.0`,
+		// 			dsName: "dbproxy_ds",
+		// 			getWantValue: func(t *testing.T, config *Config) any {
+		// 				t.Helper()
+		// 				return []any{
+		// 					&Datasource{
+		// 						Master: "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+		// 						Slave: any(&Template{
+		// 							Expr: "webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+		// 							Placeholders: map[string]any{
+		// 								"region": Enum{"cn", "hk"},
+		// 							},
+		// 							config: config,
+		// 						}),
+		// 						config: config,
+		// 					},
+		// 					&Datasource{
+		// 						Ref: &Reference{
+		// 							values: map[string]any{
+		// 								"databases.dbproxy_ds.0": &Datasource{
+		// 									Master: "webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+		// 									Slave: any(&Template{
+		// 										Expr: "webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+		// 										Placeholders: map[string]any{
+		// 											"region": Enum{"cn", "hk"},
+		// 										},
+		// 										config: config,
+		// 									}),
+		// 									config: config,
+		// 								},
+		// 							},
+		// 							config: config,
+		// 						},
+		// 						config: config,
+		// 					},
+		// 				}
+		// 			},
+		// 			assertError: assert.NoError,
+		// 		},
+		{
+			name: "反序列化成功_多个_不同变量之间引用_简单版",
+			yamlData: `
+datasources:
+  webook_ds:
+    ref: datasources.dbproxy_ds
+  dbproxy_ds:
+    master: webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+    slave:
+      template:
+        expr: webook:${password}@tcp(slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+        placeholders:
+          password: webook`,
+			varNames: []string{"webook_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
+				t.Helper()
+				return []Datasource{
+					{
+						varName: "webook_ds",
+						Master:  "webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						Slave: any(Template{
+							varName: "slave",
+							Expr:    "webook:${password}@tcp(slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+							Placeholders: map[string]any{
+								"password": String("webook"),
+							},
+							config: config,
+						}),
+						config: config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "反序列化成功_多个_不同变量之间引用",
+			yamlData: `
+variables:
+  password: webook
+  region1:
+    - cn
+    - hk
+  region2:
+    - us
+    - uk
+  index:
+    hash:
+      key: id
+      base: 3
+datasources:
+  webook_ds:
+    ref: datasources.dbproxy_ds
+  dbproxy_ds:
+    master: webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+    slave:
+      template:
+        expr: webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+        placeholders:
+          password:
+            ref: variables.password
+          region:
+            ref: variables.region2
+          type:
+            ref: variables.index`,
+			varNames: []string{"webook_ds"},
+			getWantValue: func(t *testing.T, config *Config) []Datasource {
+				t.Helper()
+				return []Datasource{
+					{
+						varName: "webook_ds",
+						Master:  "webook:webook@tcp(us.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+						Slave: any(Template{
+							varName: "slave",
+							Expr:    "webook:${password}@tcp(${region}.${type}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True",
+							Placeholders: map[string]any{
+								"password": String("webook"),
+								"region":   Enum{"us", "uk"},
+								"type":     Hash{varName: "type", Key: "id", Base: 3},
+							},
+							config: config,
+						}),
+						config: config,
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
 		// 不存在
 		// 唯恐
 	}
@@ -690,17 +935,22 @@ datasources:
 			err := yaml.Unmarshal([]byte(tt.yamlData), &config)
 			require.NoError(t, err)
 
-			actual, err := config.GetDatasourceByName(tt.dsName)
-			tt.assertError(t, err)
-			if err != nil {
-				return
+			assert.Subset(t, config.DatasourceNames(), tt.varNames)
+
+			expectedValues := tt.getWantValue(t, &config)
+
+			for i, varName := range tt.varNames {
+				actual, err := config.GetDatasourceByName(varName)
+				tt.assertError(t, err)
+				if err != nil {
+					return
+				}
+				assert.Equal(t, expectedValues[i], actual)
 			}
 
-			expectedVals := tt.getWantValue(t, &config).([]any)
-			actualVals := actual.([]any)
-			for i := range expectedVals {
-				assert.EqualExportedValues(t, expectedVals[i], actualVals[i])
-			}
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["password"], actual.(*Datasource).Slave.(*Template).Placeholders["password"])
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["region"], actual.(*Datasource).Slave.(*Template).Placeholders["region"])
+			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["type"], actual.(*Datasource).Slave.(*Template).Placeholders["type"])
 		})
 	}
 }

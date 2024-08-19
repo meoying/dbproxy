@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -16,17 +17,32 @@ const (
 	ConfigFieldDatasources = "datasources"
 	ConfigFieldTables      = "tables"
 
-	DataTypeTemplate   = "template"
-	DataTypeReference  = "ref"
-	DataTypeHash       = "hash"
+	DataTypeString    = "string"
+	DataTypeEnum      = "enum"
+	DataTypeHash      = "hash"
+	DataTypeTemplate  = "template"
+	DataTypeReference = "ref"
+
+	DataTypeVariable   = "variable"
+	DataTypeDatabase   = "database"
 	DataTypeDatasource = "datasource"
+	DataTypeTable      = "table"
 )
 
 var (
-	ErrVariableNameNotFound         = errors.New("变量名称找不到")
-	ErrVariableTypeInvalid          = errors.New("变量类型非法")
-	ErrUnmarshalVariableFieldFailed = errors.New("反序列化类型属性失败")
-	ErrVariableTypeNotEvaluable     = errors.New("变量类型不可求值")
+	ErrVariableNameNotFound          = errors.New("变量名称找不到")
+	ErrVariableTypeInvalid           = errors.New("变量类型非法")
+	ErrUnmarshalVariableFieldFailed  = errors.New("反序列化类型属性失败")
+	ErrUnmarshalVariableFailed       = errors.New("反序列化变量失败")
+	ErrVariableTypeNotEvaluable      = errors.New("变量类型不可求值")
+	ErrReferencedVariableTypeInvalid = errors.New("引用的变量类型非法")
+	ErrReferencePathInvalid          = errors.New("引用路径非法")
+)
+
+type (
+	stringEvaluator interface {
+		Evaluate() ([]string, error)
+	}
 )
 
 // Config 配置结构体
@@ -50,93 +66,122 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	c.Variables = raw.Variables
-	err := unmarshal(c, c.Variables)
-	if err != nil {
-		return err
-	}
-
 	c.Databases = raw.Databases
-	err = unmarshal(c, c.Databases)
-	if err != nil {
-		return err
-	}
-
 	c.Datasources = raw.Datasources
-	err = unmarshal(c, c.Datasources)
-	if err != nil {
-		return err
-	}
-
 	c.Tables = raw.Tables
-	err = unmarshal(c, c.Tables)
-	if err != nil {
-		return err
+
+	for typ, section := range map[string]map[string]any{
+		DataTypeVariable:   c.Variables,
+		DataTypeDatabase:   c.Databases,
+		DataTypeDatasource: c.Datasources,
+		ConfigFieldTables:  c.Tables,
+	} {
+		err := unmarshal(c, typ, section)
+		if err != nil {
+			return err
+		}
 	}
 	log.Printf("config.Datasources: %#v\n", c.Datasources)
 	return nil
 }
 
-func unmarshal(c *Config, values map[string]any) error {
-	for k, v := range values {
-		switch val := v.(type) {
-		case map[string]any:
-			vv, err := unmarshalDataType(c, k, val)
-			if err != nil {
-				return err
+func unmarshal(c *Config, typ string, variables map[string]any) error {
+	for name, value := range variables {
+		variable, err := unmarshalUntypedVariable(c, typ, name, value)
+		if err != nil {
+			return err
+		}
+		variables[name] = variable
+	}
+
+	return nil
+}
+
+// unmarshalUntypedVariable 反序列化未类型化的变量
+func unmarshalUntypedVariable(c *Config, dataType, name string, value any) (any, error) {
+	log.Printf("unmarshalUntypedVariable type = %s, name = %s, value = %#v\n", dataType, name, value)
+	var untypedVal map[string]any
+	switch val := value.(type) {
+	case String, Enum, Hash, Template, Ref, Variable, Database, Datasource, Table:
+		return value, nil
+	case map[string]any:
+		if dataType != "" {
+			untypedVal = map[string]any{
+				dataType: val,
 			}
-			values[k] = vv
-		case []any:
-			// Check if the elements are []string or []map[string]any
-			if len(val) == 0 {
-				values[k] = val
-				return nil
+		} else {
+			untypedVal = val
+		}
+	case []any:
+		vv, elemType, err := convertArrayValues(val)
+		if err != nil {
+			return nil, err
+		}
+		if dataType != "" {
+			untypedVal = map[string]any{
+				dataType: map[string]any{
+					elemType: vv,
+				},
 			}
-			switch val[0].(type) {
-			case string:
-				strs := make(Enum, len(val))
-				for i := range val {
-					strs[i] = val[i].(string)
-				}
-				values[k] = strs
-			case map[string]any:
-				typedVals := make([]any, len(val))
-				log.Printf("handle val = %#v, k = %s\n", val, k)
-				for i := range val {
-					mapVal := val[i].(map[string]any)
-					log.Printf("handle val[i] = %#v, k = %s\n", mapVal, k)
-					typedVal, err := unmarshalDataType(c, k, mapVal)
-					if err != nil {
-						return err
-					}
-					log.Printf("handle typedVal = %#v\n", typedVal)
-					typedVals[i] = typedVal
-				}
-				var vv any
-				vv = typedVals
-				values[k] = vv
-				log.Printf("post := %#v\n", values[k])
-			default:
-				// Handle unexpected types
-				return errors.New("unexpected type in array")
+		} else {
+			return vv, nil
+		}
+	case string:
+		if dataType != "" {
+			untypedVal = map[string]any{
+				dataType: map[string]any{
+					DataTypeString: val,
+				},
 			}
-		case string:
-			values[k] = String(val)
+		} else {
+			return String(val), nil
 		}
 	}
-	return nil
+	log.Printf("unmarshalUntypedVariable() untypedVal = %#v\n", untypedVal)
+	typedVal, err := unmarshalDataType(c, name, untypedVal)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("unmarshalUntypedVariable(%s) = %#v\n", name, typedVal)
+	return typedVal, nil
+}
+
+func convertArrayValues(val []any) (any, string, error) {
+	switch val[0].(type) {
+	case string:
+		strs := make(Enum, len(val))
+		for i := range val {
+			strs[i] = val[i].(string)
+		}
+		return strs, DataTypeEnum, nil
+	default:
+		return nil, "unknown", fmt.Errorf("未知的数组元素类型: %t", val[0])
+	}
 }
 
 func unmarshalDataType(c *Config, name string, rawVal map[string]any) (any, error) {
 	dataTypes := map[string]yaml.Unmarshaler{
 		DataTypeTemplate: &Template{
-			config: c,
+			varName: name,
+			config:  c,
 		},
-		DataTypeReference: &Reference{
-			values: make(map[string]any),
-			config: c,
+		DataTypeReference: &Ref{
+			varName: name,
+			config:  c,
 		},
-		DataTypeHash:       &Hash{},
-		DataTypeDatasource: &Datasource{config: c},
+		DataTypeHash: &Hash{varName: name},
+
+		DataTypeVariable: &Variable{
+			varName: name,
+			config:  c,
+		},
+		DataTypeDatabase: &Database{
+			varName: name,
+			config:  c,
+		},
+		DataTypeDatasource: &Datasource{
+			varName: name,
+			config:  c},
 	}
 	for key, typ := range dataTypes {
 		if r, ok := rawVal[key]; ok {
@@ -144,13 +189,14 @@ func unmarshalDataType(c *Config, name string, rawVal map[string]any) (any, erro
 			if err != nil {
 				return nil, fmt.Errorf("%w: %q: %s", ErrVariableTypeInvalid, name, err)
 			}
-			return typ, nil
+			return reflect.ValueOf(typ).Elem().Interface(), nil
 		}
 	}
 	return nil, fmt.Errorf("%w: %q", ErrVariableTypeInvalid, name)
 }
 
 func unmarshalDataTypeValue(rawVal any, typ yaml.Unmarshaler) error {
+	log.Printf("rawVal = %#v\n", rawVal)
 	node := &yaml.Node{}
 	if err := node.Encode(rawVal); err != nil {
 		return err
@@ -219,77 +265,15 @@ func (e Enum) Evaluate() ([]string, error) {
 	return e, nil
 }
 
-// Reference 引用类型
-type Reference struct {
-	values map[string]any
-	config *Config
-}
-
-func (r *Reference) UnmarshalYAML(value *yaml.Node) error {
-	var paths []string
-	if err := value.Decode(&paths); err != nil {
-		return err
-	}
-	for _, path := range paths {
-		val, err := find(r.config, strings.Split(path, "."))
-		if err != nil {
-			return err
-		}
-		r.values[path] = val
-	}
-	return unmarshal(r.config, r.values)
-}
-
-func find(config *Config, paths []string) (any, error) {
-	var values map[string]any
-
-	switch paths[0] {
-	case ConfigFieldVariables:
-		log.Printf("config.Variables = %#v\n", config.Variables)
-		values = config.Variables
-	case ConfigFieldDatabases:
-		log.Printf("config.Databases = %#v\n", config.Databases)
-		values = config.Databases
-	case ConfigFieldDatasources:
-		log.Printf("config.Datasources = %#v\n", config.Datasources)
-		values = config.Datasources
-	default:
-		return nil, fmt.Errorf("%w: %s", ErrVariableNameNotFound, paths[0])
-	}
-	var val any
-	for i, path := range paths[1:] {
-		val = values[path]
-		if len(paths[1:])-1 != i {
-			values = val.(map[string]any)
-		}
-	}
-	return val, nil
-}
-
-type stringEvaluator interface {
-	Evaluate() ([]string, error)
-}
-
-func (r *Reference) Evaluate() ([]string, error) {
-	var results []string
-	for k, v := range r.values {
-		evaluator, ok := v.(stringEvaluator)
-		if !ok {
-			return nil, fmt.Errorf("%w: %q", ErrVariableTypeNotEvaluable, k)
-		}
-		values, err := evaluator.Evaluate()
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, values...)
-	}
-	return results, nil
-}
-
 // Hash 类型
 type Hash struct {
-	Key  string `yaml:"key"`
-	Base int    `yaml:"base"`
+	varName string
+	Key     string `yaml:"key"`
+	Base    int    `yaml:"base"`
+}
+
+func (h *Hash) isZeroValue() bool {
+	return h.Key == "" && h.Base == 0
 }
 
 func (h *Hash) UnmarshalYAML(value *yaml.Node) error {
@@ -322,15 +306,20 @@ func (h *Hash) Evaluate() ([]string, error) {
 
 // Template 模版类型
 type Template struct {
-	Expr         string                 `yaml:"expr"`
-	Placeholders map[string]interface{} `yaml:"placeholders"`
+	varName      string
+	Expr         string         `yaml:"expr"`
+	Placeholders map[string]any `yaml:"placeholders"`
 	config       *Config
+}
+
+func (t *Template) isZeroValue() bool {
+	return t.Expr == "" && len(t.Placeholders) == 0
 }
 
 func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 	type rawTemplate struct {
-		Expr         string                 `yaml:"expr"`
-		Placeholders map[string]interface{} `yaml:"placeholders"`
+		Expr         string         `yaml:"expr"`
+		Placeholders map[string]any `yaml:"placeholders"`
 	}
 	var raw rawTemplate
 	if err := value.Decode(&raw); err != nil {
@@ -355,7 +344,19 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 		}
 	}
 
-	return unmarshal(t.config, t.Placeholders)
+	err := unmarshal(t.config, "", t.Placeholders)
+	if err != nil {
+		return err
+	}
+
+	for varName := range t.Placeholders {
+		ref, ok := t.Placeholders[varName].(Ref)
+		if !ok {
+			continue
+		}
+		t.Placeholders[varName] = ref.Value
+	}
+	return nil
 }
 
 func (t *Template) extractPlaceholders() []string {
@@ -373,66 +374,361 @@ func (t *Template) extractPlaceholders() []string {
 func (t *Template) Evaluate() ([]string, error) {
 
 	var results []string
-	var evaluateFunc func(expr string, placeholders []string) error
 
-	evaluateFunc = func(expr string, placeholders []string) error {
-		if len(placeholders) == 0 {
-			results = append(results, expr)
-			return nil
-		}
+	// var evaluateFunc func(expr string, placeholders []string) error
+	//
+	// evaluateFunc = func(expr string, placeholders []string) error {
+	// 	if len(placeholders) == 0 {
+	// 		results = append(results, expr)
+	// 		return nil
+	// 	}
+	//
+	// 	i := 0
+	// 	ph := placeholders[i]
+	// 	expr = strings.Replace(expr, "${"+ph+"}", "%s", 1)
+	//
+	// 	evaluator, err := t.getStringEvaluator(ph)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	//
+	// 	values, err := evaluator.Evaluate()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	//
+	// 	for _, v := range values {
+	// 		err = evaluateFunc(fmt.Sprintf(expr, v), placeholders[i+1:])
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// 	return nil
+	// }
 
-		i := 0
-		ph := placeholders[i]
-		expr = strings.Replace(expr, "${"+ph+"}", "%s", 1)
-
-		evaluator, ok := t.Placeholders[ph].(stringEvaluator)
-		if !ok {
-			return fmt.Errorf("%w: %q", ErrVariableTypeNotEvaluable, ph)
-		}
-
-		values, err := evaluator.Evaluate()
-		if err != nil {
-			return err
-		}
-
-		for _, v := range values {
-			err = evaluateFunc(fmt.Sprintf(expr, v), placeholders[i+1:])
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	if err := evaluateFunc(t.Expr, t.extractPlaceholders()); err != nil {
+	if err := t.evaluate(&results, t.Expr, t.extractPlaceholders()); err != nil {
 		return nil, err
 	}
 
 	return results, nil
 }
 
+func (t *Template) evaluate(results *[]string, expr string, placeholders []string) error {
+	if len(placeholders) == 0 {
+		*results = append(*results, expr)
+		return nil
+	}
+
+	i := 0
+	ph := placeholders[i]
+	expr = strings.Replace(expr, "${"+ph+"}", "%s", 1)
+
+	evaluator, err := t.getStringEvaluator(ph)
+	if err != nil {
+		return err
+	}
+
+	values, err := evaluator.Evaluate()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range values {
+		err = t.evaluate(results, fmt.Sprintf(expr, v), placeholders[i+1:])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Template) getStringEvaluator(ph string) (stringEvaluator, error) {
+	value := t.Placeholders[ph]
+	switch v := value.(type) {
+	case String:
+		return v, nil
+	case Enum:
+		return v, nil
+	case Hash:
+		return &v, nil
+	default:
+		return nil, fmt.Errorf("%w: %q", ErrVariableTypeNotEvaluable, ph)
+	}
+}
+
+type Ref struct {
+	varName string
+	varType string
+	path    string
+	Value   any
+	config  *Config
+}
+
+func (r *Ref) isZeroValue() bool {
+	var zero any
+	return r.Value == zero
+}
+
+func (r *Ref) UnmarshalYAML(value *yaml.Node) error {
+	var path string
+	if err := value.Decode(&path); err != nil {
+		return err
+	}
+	if path == "" {
+		return fmt.Errorf("%w: %q", ErrUnmarshalVariableFailed, r.varName)
+	}
+	log.Printf("引用地址 path = %#v\n", path)
+	v, t, err := unmarshalReferencedVariable(r.config, strings.Split(path, "."))
+	if err != nil {
+		return err
+	}
+	log.Printf("获取到的引用类型 v = %#v, t = %s", v, t)
+
+	// TODO: 再这里解包,还是到具体的类型中?
+	for range strings.Split(path, ".") {
+		switch t {
+		case DataTypeVariable:
+			vv := v.(Variable)
+			t = vv.varType
+			v = vv.Value
+		case DataTypeDatabase:
+			vv := v.(Database)
+			t = vv.varType
+			v = vv.Value
+		case DataTypeHash:
+			vv := v.(Hash)
+			vv.varName = r.varName
+			v = vv
+		case DataTypeTemplate:
+			vv := v.(Template)
+			vv.varName = r.varName
+			v = vv
+		default:
+			continue
+		}
+	}
+	log.Printf("准备填入ref v = %#v, t = %s", v, t)
+	// var refVal any
+	// switch t {
+	// case DataTypeHash:
+	// 	vv := v.(Hash)
+	// 	vv.varName = r.varName
+	// 	refVal = vv
+	// case DataTypeTemplate:
+	// 	vv := v.(Template)
+	// 	vv.varName = r.varName
+	// }
+	// r.Value = refVal
+	r.varType = t
+	r.path = path
+	r.Value = v
+	log.Printf("最终的引用类型 ref = %#v\n", r)
+	return nil
+}
+
+func unmarshalReferencedVariable(config *Config, paths []string) (any, string, error) {
+	var values map[string]any
+	var varType string
+
+	switch paths[0] {
+	case ConfigFieldVariables:
+		log.Printf("config.Variables = %#v\n", config.Variables)
+		values = config.Variables
+		varType = DataTypeVariable
+	case ConfigFieldDatabases:
+		log.Printf("config.Databases = %#v\n", config.Databases)
+		values = config.Databases
+		varType = DataTypeDatabase
+	case ConfigFieldDatasources:
+		log.Printf("config.Datasources = %#v\n", config.Datasources)
+		values = config.Datasources
+		varType = DataTypeDatasource
+	default:
+		return nil, fmt.Sprintf("unknow pathType - %s", paths[0]), fmt.Errorf("%w: %s", ErrVariableNameNotFound, paths[0])
+	}
+
+	if len(paths) != 2 {
+		return nil, "", fmt.Errorf("%w: %s", ErrReferencePathInvalid, strings.Join(paths, "."))
+	}
+
+	varName := paths[1]
+	// 变量名存在
+	v, ok := values[varName]
+	if !ok {
+		return nil, varType, fmt.Errorf("%w: %s", ErrReferencePathInvalid, strings.Join(paths, "."))
+	}
+
+	value, err := unmarshalUntypedVariable(config, varType, varName, v)
+	if err != nil {
+		return nil, varType, err
+	}
+	values[varName] = value
+
+	return value, varType, nil
+}
+
+// Variable 变量类型
+type Variable struct {
+	varName string
+	varType string
+	Value   any
+	config  *Config
+}
+
+func (v *Variable) UnmarshalYAML(value *yaml.Node) error {
+	type rawVariable struct {
+		Str  string    `yaml:"string,omitempty"`
+		Enum []string  `yaml:"enum,omitempty"`
+		Hash *Hash     `yaml:"hash,omitempty"`
+		Tmpl *Template `yaml:"template,omitempty"`
+		Ref  *Ref      `yaml:"ref,omitempty"`
+	}
+
+	raw := &rawVariable{
+		Tmpl: &Template{varName: v.varName, config: v.config},
+		Ref:  &Ref{varName: v.varName, config: v.config},
+		Hash: &Hash{varName: v.varName},
+	}
+	if err := value.Decode(raw); err != nil {
+		return err
+	}
+
+	log.Printf("raw.Variables = %#v\n", raw)
+
+	if raw.Str == "" && len(raw.Enum) == 0 &&
+		raw.Hash.isZeroValue() && raw.Tmpl.isZeroValue() && raw.Ref.isZeroValue() {
+		return fmt.Errorf("%w: variables.%s", ErrUnmarshalVariableFailed, v.varName)
+	}
+
+	if raw.Str != "" {
+		v.varType = DataTypeString
+		v.Value = String(raw.Str)
+	} else if len(raw.Enum) > 0 {
+		v.varType = DataTypeEnum
+		v.Value = Enum(raw.Enum)
+	} else if !raw.Hash.isZeroValue() {
+		hash := *raw.Hash
+		hash.varName = v.varName
+		v.varType = DataTypeHash
+		v.Value = hash
+	} else if !raw.Tmpl.isZeroValue() {
+		tmpl := *raw.Tmpl
+		tmpl.varName = v.varName
+		v.varType = DataTypeTemplate
+		v.Value = tmpl
+	} else if !raw.Ref.isZeroValue() {
+		log.Printf("Variable 中 解析到的 ref = %#v\n", raw.Ref)
+		v.varType = raw.Ref.varType
+		v.Value = raw.Ref.Value
+	}
+	return nil
+}
+
+// Database 数据库类型
+type Database struct {
+	varName string
+	varType string
+	Value   any
+	config  *Config
+}
+
+func (d *Database) UnmarshalYAML(value *yaml.Node) error {
+	type rawDatabase struct {
+		Tmpl *Template `yaml:"template,omitempty"`
+		Str  string    `yaml:"string,omitempty"`
+		Ref  *Ref      `yaml:"ref,omitempty"`
+	}
+	raw := &rawDatabase{
+		Tmpl: &Template{varName: d.varName, config: d.config},
+		Ref:  &Ref{varName: d.varName, config: d.config},
+	}
+	if err := value.Decode(raw); err != nil {
+		return err
+	}
+	log.Printf("raw.Database = %#v\n", raw)
+
+	if raw.Str == "" && raw.Tmpl.isZeroValue() && raw.Ref.isZeroValue() {
+		return fmt.Errorf("%w: %s.%s", ErrUnmarshalVariableFailed, ConfigFieldDatabases, d.varName)
+	}
+
+	if raw.Str != "" {
+		d.varType = DataTypeString
+		d.Value = String(raw.Str)
+	}
+
+	if !raw.Tmpl.isZeroValue() {
+		tmpl := *raw.Tmpl
+		tmpl.varName = d.varName
+		tmpl.config = d.config
+		d.varType = DataTypeTemplate
+		d.Value = tmpl
+	}
+
+	if !raw.Ref.isZeroValue() {
+		log.Printf("Database 中 解析到的 ref = %#v\n", raw.Ref)
+		d.varType = raw.Ref.varType
+		d.Value = raw.Ref.Value
+	}
+
+	log.Printf("Databases ===...var = %s, %#v\n", d.varName, d.config.Databases)
+
+	return nil
+}
+
 // Datasource 数据源类型
 type Datasource struct {
-	Master string `yaml:"master"`
-	Slave  any    `yaml:"slave"`
-	config *Config
+	varName string
+	Master  string `yaml:"master"`
+	Slave   any    `yaml:"slave"`
+	config  *Config
 }
 
 func (d *Datasource) UnmarshalYAML(value *yaml.Node) error {
 	type rawDatasource struct {
 		Master string         `yaml:"master"`
 		Slave  map[string]any `yaml:"slave"`
+		Ref    *Ref           `yaml:"ref,omitempty"`
 	}
-	var raw rawDatasource
-	if err := value.Decode(&raw); err != nil {
+	raw := &rawDatasource{
+		Ref: &Ref{varName: d.varName, config: d.config},
+	}
+	if err := value.Decode(raw); err != nil {
 		return err
 	}
-	log.Printf("rawDatasource = %#v\n", raw)
+
+	log.Printf("raw.Datasource = %#v\n", raw)
+
+	if raw.Master == "" && raw.Ref.isZeroValue() {
+		return fmt.Errorf("%w: master = %q", ErrUnmarshalVariableFieldFailed, raw.Master)
+	} else if len(raw.Slave) == 0 && raw.Ref.isZeroValue() {
+		return fmt.Errorf("%w: slave = %+v", ErrUnmarshalVariableFieldFailed, raw.Slave)
+	} else if raw.Master != "" && !raw.Ref.isZeroValue() || len(raw.Slave) != 0 && !raw.Ref.isZeroValue() {
+		return fmt.Errorf("ref属性不可与Master/Slave属性组合使用")
+	}
+
 	d.Master = raw.Master
-	dataType, err := unmarshalDataType(d.config, "slave", raw.Slave)
-	if err != nil {
-		return err
+
+	if len(raw.Slave) > 0 {
+		log.Printf("准备反序列化slave raw.Slave = %#v", raw.Slave)
+		dataType, err := unmarshalDataType(d.config, "slave", raw.Slave)
+		if err != nil {
+			return err
+		}
+		log.Printf("获取到的%s, slave = %#v\n", d.varName, dataType)
+		d.Slave = dataType
 	}
-	d.Slave = dataType
+
+	if !raw.Ref.isZeroValue() {
+		log.Printf("数据源获取到的 ref = %#v\n", raw.Ref)
+		ds, ok := raw.Ref.Value.(Datasource)
+		if !ok {
+			return fmt.Errorf("%w: %s", ErrReferencedVariableTypeInvalid, d.varName)
+		}
+		d.Master = ds.Master
+		d.Slave = ds.Slave
+	}
 	return nil
+}
+
+type Table struct {
 }

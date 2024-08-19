@@ -54,18 +54,17 @@ databases:
             - values.db_key
   payment: payment_db # 字符串类型
 
-# 定义数据源名生成规则
+# 定义数据源名生成规则、
 datasources:
   mts_ds:
-    - datasource:
-        master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-        slave:
-          template:
-            expr: webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
-            placeholders:
-              region:
-                ref:
-                  - values.region2
+    master: webook:134root@tcp(cn.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+    slave:
+      template:
+        expr: webook:webook@tcp(${region}.slave.meoying.com:3306)/?charset=utf8mb4&parseTime=True
+        placeholders:
+        region:
+          ref:
+            - values.region2
   cos_ds:
     master:
       ref:
