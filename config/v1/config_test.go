@@ -996,7 +996,7 @@ datasources:
 }
 
 func TestConfig_GetTableByName(t *testing.T) {
-	t.Skip()
+
 	tests := []struct {
 		name         string
 		yamlData     string
@@ -1041,10 +1041,10 @@ tables:
 								config:  config,
 							},
 							Database: Database{
-								varName: "order",
+								varName: "order_db",
 								varType: DataTypeTemplate,
 								Value: any(Template{
-									varName: "order",
+									varName: "order_db",
 									Expr:    "local_sharding_plugin_db_${key}",
 									Placeholders: map[string]any{
 										"key": Hash{varName: "key", Key: "user_id", Base: 3},
