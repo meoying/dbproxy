@@ -87,6 +87,7 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 }
 
 func unmarshal(c *Config, typ string, variables map[string]any) error {
+	log.Printf("unmarshal typ = %s, variables = %#v\n", typ, variables)
 	for name, value := range variables {
 		variable, err := unmarshalUntypedVariable(c, typ, name, value)
 		if err != nil {
@@ -806,15 +807,25 @@ func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
 	if len(raw.Database) != 1 {
 		return fmt.Errorf("%w: %s.sharding.database", ErrUnmarshalVariableFieldFailed, s.varName)
 	}
-	err = unmarshal(s.config, DataTypeDatabase, raw.Database)
+
+	// 将匿名引用调整到可以解析的程度,使用引用路径作为变量名
+	mp := make(map[string]any)
+	for k, v := range raw.Database {
+		if k == "ref" {
+			mp[v.(string)] = map[string]any{k: v}
+			continue
+		}
+		mp[k] = v
+	}
+	err = unmarshal(s.config, DataTypeDatabase, mp)
 	if err != nil {
 		return err
 	}
 	var varName string
-	for key := range raw.Database {
+	for key := range mp {
 		varName = key
 	}
-	db := raw.Database[varName].(Database)
+	db := mp[varName].(Database)
 	db.varName = varName
 	s.Database = db
 	log.Printf("解析db成功! = %#v\n", s.Database)
@@ -826,18 +837,6 @@ func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
 	tb := v.(Variable)
 	s.Table = tb
 	log.Printf("解析tb成功! = %#v\n", s.Table)
-	// if raw.Datasource.isZeroValue() {
-	// 	return fmt.Errorf("%w: %s.sharding.datasource", ErrUnmarshalVariableFieldFailed, s.varName)
-	// }
-	//
-	// if raw.Database.isZeroValue() {
-	// 	return fmt.Errorf("%w: %s.sharding.database", ErrUnmarshalVariableFieldFailed, s.varName)
-	// }
-	//
-	// if raw.Table.isZeroValue() {
-	// 	return fmt.Errorf("%w: %s.sharding.table", ErrUnmarshalVariableFieldFailed, s.varName)
-	// }
-
 	return nil
 }
 
@@ -863,4 +862,97 @@ func (t *Table) UnmarshalYAML(value *yaml.Node) error {
 	t.Sharding = *raw.Sharding
 	t.varType = DataTypeSharding
 	return nil
+}
+
+func (t *Table) AlgorithmInfo() map[string]map[string]any {
+	mp := make(map[string]map[string]any)
+	t.setDatabaseAlgorithmInfo(mp)
+	t.setDatasourceAlgorithmInfo(mp)
+	t.setTableAlgorithmInfo(mp)
+	return mp
+}
+
+func (t *Table) setDatabaseAlgorithmInfo(mp map[string]map[string]any) {
+	mp["database"] = map[string]any{
+		"key":         "",
+		"expr":        "",
+		"base":        32,
+		"notSharding": true,
+	}
+}
+
+func (t *Table) setDatasourceAlgorithmInfo(mp map[string]map[string]any) {
+	mp["datasource"] = map[string]any{
+		"key":         "",
+		"expr":        "",
+		"base":        32,
+		"notSharding": true,
+	}
+}
+
+func (t *Table) setTableAlgorithmInfo(mp map[string]map[string]any) {
+	// value := t.Sharding.Table.Value
+
+	mp["table"] = map[string]any{
+		"key":         "",
+		"expr":        "",
+		"base":        32,
+		"notSharding": true,
+	}
+}
+
+func (t *Table) DSNInfo() map[string][]string {
+
+	mp := make(map[string][]string)
+
+	t.setDSNInfoMaster2Slave(mp)
+	t.setDSNInfoDBName2Master(mp)
+	t.setDSNInfoDs2DBs(mp)
+
+	return mp
+}
+
+func (t *Table) setDSNInfoDs2DBs(mp map[string][]string) {
+	mp["ds2db"] = []string{}
+}
+
+func (t *Table) setDSNInfoMaster2Slave(mp map[string][]string) {
+	mp["master2Salve"] = []string{}
+}
+
+func (t *Table) setDSNInfoDBName2Master(mp map[string][]string) {
+	mp["db2master"] = []string{}
+}
+
+func (t *Table) MasterDSN() string {
+	return string(t.Sharding.Datasource.Master)
+}
+
+func (t *Table) SlaveDSN() ([]string, error) {
+	r, err := t.evaluate(t.Sharding.Datasource.Slave)
+	if err != nil {
+		return nil, fmt.Errorf("获取从库DSN集合失败: %w", err)
+	}
+	return r, nil
+}
+
+func (t *Table) evaluate(value any) ([]string, error) {
+	switch val := value.(type) {
+	case String:
+		return []string{string(val)}, nil
+	case Enum:
+		return val, nil
+	case Template:
+		return val.Evaluate()
+	default:
+		return []string{}, fmt.Errorf("未支持的类型 %t", val)
+	}
+}
+
+func (t *Table) DatabaseNames() ([]string, error) {
+	r, err := t.evaluate(t.Sharding.Database.Value)
+	if err != nil {
+		return nil, fmt.Errorf("获取数据库名称集合失败: %w", err)
+	}
+	return r, nil
 }

@@ -43,8 +43,8 @@ databases:
       expr: "user_db_${key}"
       placeholders:
         key:
-          ref:
-            - values.db_key
+          ref: values.db_key
+
   order_shard:
     template:
       expr: "order_db_${key}"

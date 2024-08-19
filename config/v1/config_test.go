@@ -1065,6 +1065,68 @@ tables:
 			},
 			assertError: assert.NoError,
 		},
+		{
+			name: "引用databases定义",
+			yamlData: `
+databases:
+  order_db:
+    template:
+      expr: "local_sharding_plugin_db_${key}"
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 3
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        ref: databases.order_db
+      table: order_tab`,
+			varNames: []string{"order"},
+			getWantValue: func(t *testing.T, config *Config) []Table {
+				return []Table{
+					{
+						varName: "order",
+						varType: DataTypeSharding,
+						config:  config,
+						Sharding: Sharding{
+							varName: "order",
+							config:  config,
+							Datasource: Datasource{
+								varName: "order",
+								Master:  "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+								Slave:   String("root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"),
+								config:  config,
+							},
+							Database: Database{
+								varName: "databases.order_db",
+								varType: DataTypeTemplate,
+								Value: any(Template{
+									varName: "databases.order_db",
+									Expr:    "local_sharding_plugin_db_${key}",
+									Placeholders: map[string]any{
+										"key": Hash{varName: "key", Key: "user_id", Base: 3},
+									},
+									config: config,
+								}),
+								config: config,
+							},
+							Table: Variable{
+								varName: "order",
+								varType: DataTypeString,
+								Value:   String("order_tab"),
+								config:  config,
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1089,6 +1151,103 @@ tables:
 			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["password"], actual.(*Datasource).Slave.(*Template).Placeholders["password"])
 			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["region"], actual.(*Datasource).Slave.(*Template).Placeholders["region"])
 			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["type"], actual.(*Datasource).Slave.(*Template).Placeholders["type"])
+		})
+	}
+}
+
+func TestTableInfo(t *testing.T) {
+	tests := []struct {
+		name     string
+		yamlData string
+		varName  string
+
+		wantMaser         string
+		wantSlave         []string
+		wantDatabaseNames []string
+		assertError       assert.ErrorAssertionFunc
+	}{
+		{
+			name: "正常值",
+			yamlData: `
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        order_db:
+          template:
+            expr: "local_sharding_plugin_db_${key}"
+            placeholders:
+              key:
+                hash:
+                  key: user_id
+                  base: 3
+      table: order_tab
+`,
+			varName:           "order",
+			wantMaser:         "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+			wantSlave:         []string{"root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"},
+			wantDatabaseNames: []string{"local_sharding_plugin_db_0", "local_sharding_plugin_db_1", "local_sharding_plugin_db_2"},
+			assertError:       assert.NoError,
+		},
+		{
+			name: "引用值",
+			yamlData: `
+databases:
+  order_db:
+    template:
+      expr: "local_sharding_plugin_db_${key}"
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 3
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        ref: databases.order_db
+      table: order_tab
+`,
+			varName:           "order",
+			wantMaser:         "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+			wantSlave:         []string{"root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"},
+			wantDatabaseNames: []string{"local_sharding_plugin_db_0", "local_sharding_plugin_db_1", "local_sharding_plugin_db_2"},
+			assertError:       assert.NoError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var config Config
+			err := yaml.Unmarshal([]byte(tt.yamlData), &config)
+			require.NoError(t, err)
+
+			assert.Contains(t, config.TableNames(), tt.varName)
+
+			actual, err := config.TableByName(tt.varName)
+			tt.assertError(t, err)
+			if err != nil {
+				return
+			}
+			tb, ok := actual.(Table)
+			require.True(t, ok)
+
+			assert.Equal(t, tt.wantMaser, tb.MasterDSN())
+
+			slave, err := tb.SlaveDSN()
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantSlave, slave)
+
+			names, err := tb.DatabaseNames()
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantDatabaseNames, names)
 		})
 	}
 }
