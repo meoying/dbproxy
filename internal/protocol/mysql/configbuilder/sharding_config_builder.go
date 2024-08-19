@@ -11,7 +11,6 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/cluster"
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
-	"github.com/meoying/dbproxy/internal/datasource/masterslave/slaves/roundrobin"
 	"github.com/meoying/dbproxy/internal/datasource/shardingsource"
 	logdriver "github.com/meoying/dbproxy/internal/protocol/mysql/driver/log"
 	"github.com/meoying/dbproxy/internal/sharding"
@@ -72,12 +71,6 @@ func (s *ShardingConfigBuilder) checkConfig() error {
 	return nil
 }
 
-/*
-master:
-
-	cn.meoying.com:3306
-	hk.meoying.com:3306
-*/
 func (s *ShardingConfigBuilder) BuildDatasource() (datasource.DataSource, error) {
 	if err := s.checkConfig(); err != nil {
 		return nil, err
@@ -90,15 +83,8 @@ func (s *ShardingConfigBuilder) BuildDatasource() (datasource.DataSource, error)
 			if err != nil {
 				return nil, err
 			}
-
-			slaves, err := roundrobin.NewSlaves(db)
-			if err != nil {
-				return nil, err
-			}
-
 			// TODO: 初始化从节点
-			clusterNodes[node.Master.Name] = masterslave.NewMasterSlavesDB(db, masterslave.MasterSlavesWithSlaves(slaves))
-
+			clusterNodes[node.Master.Name] = masterslave.NewMasterSlavesDB(db)
 		}
 		clusters[clusterCfg.Address] = cluster.NewClusterDB(clusterNodes)
 	}
