@@ -777,12 +777,7 @@ func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
 		Database   map[string]any `yaml:"database"`
 		Table      any            `yaml:"table"`
 	}
-	log.Printf("sharding raw之前的原始值 = %#v\n", s)
-	// raw := &rawSharding{
-	// 	Datasource: &Datasource{varName: s.varName, config: s.config},
-	// 	Database:   &Database{varName: s.varName, config: s.config},
-	// 	Table:      &Variable{varName: s.varName, config: s.config},
-	// }
+	log.Printf("解析前 raw.sharding 前 sharding 自身 = %#v\n", s)
 	var raw rawSharding
 	if err := value.Decode(&raw); err != nil {
 		return err
@@ -793,44 +788,23 @@ func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
 	log.Printf("before db = %#v\n", raw.Database)
 	log.Printf("before tb = %#v\n", raw.Table)
 
-	if len(raw.Datasource) == 0 {
-		return fmt.Errorf("%w: %s.sharding.datasource", ErrUnmarshalVariableFieldFailed, s.varName)
-	}
-	v, err := unmarshalUntypedVariable(s.config, DataTypeDatasource, s.varName, raw.Datasource)
+	ds, err := unmarshalShardingFieldVariable[Datasource](s.config, ConfigFieldDatasources,
+		DataTypeDatasource, s.varName, raw.Datasource)
 	if err != nil {
 		return err
 	}
-	ds := v.(Datasource)
 	s.Datasource = ds
 	log.Printf("解析ds成功! = %#v\n", s.Datasource)
 
-	if len(raw.Database) != 1 {
-		return fmt.Errorf("%w: %s.sharding.database", ErrUnmarshalVariableFieldFailed, s.varName)
-	}
-
-	// 将匿名引用调整到可以解析的程度,使用引用路径作为变量名
-	mp := make(map[string]any)
-	for k, v := range raw.Database {
-		if k == "ref" {
-			mp[v.(string)] = map[string]any{k: v}
-			continue
-		}
-		mp[k] = v
-	}
-	err = unmarshal(s.config, DataTypeDatabase, mp)
+	db, err := unmarshalShardingFieldVariable[Database](s.config, ConfigFieldDatabases,
+		DataTypeDatabase, s.varName, raw.Database)
 	if err != nil {
 		return err
 	}
-	var varName string
-	for key := range mp {
-		varName = key
-	}
-	db := mp[varName].(Database)
-	db.varName = varName
 	s.Database = db
 	log.Printf("解析db成功! = %#v\n", s.Database)
 
-	v, err = unmarshalUntypedVariable(s.config, DataTypeVariable, s.varName, raw.Table)
+	v, err := unmarshalUntypedVariable(s.config, DataTypeVariable, s.varName, raw.Table)
 	if err != nil {
 		return err
 	}
@@ -838,6 +812,28 @@ func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
 	s.Table = tb
 	log.Printf("解析tb成功! = %#v\n", s.Table)
 	return nil
+}
+
+func unmarshalShardingFieldVariable[T Database | Datasource](config *Config, fieldType, varType, varName string, variables map[string]any) (T, error) {
+	var zero T
+	if len(variables) == 0 {
+		return zero, fmt.Errorf("%w: %s.sharding.%s", ErrUnmarshalVariableFieldFailed, varName, varType)
+	}
+	var chosenVarName string
+	if p, ok := variables[DataTypeReference]; ok {
+		refPath := p.(string)
+		if !strings.HasPrefix(refPath, fieldType) {
+			return zero, fmt.Errorf("%w: %s", ErrReferencePathInvalid, refPath)
+		}
+		chosenVarName = refPath
+	} else {
+		chosenVarName = varName
+	}
+	v, err := unmarshalUntypedVariable(config, varType, chosenVarName, variables)
+	if err != nil {
+		return zero, err
+	}
+	return v.(T), nil
 }
 
 type Table struct {

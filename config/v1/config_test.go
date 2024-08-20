@@ -19,6 +19,7 @@ import (
 //         交叉引用, variables 下的变量引用 databases, datasources, tables 下的变量
 // TODO: datasources类型
 //          禁止自引用, dbproxy_ds下的1号datasource 引用 datasources.dbproxy_ds.0
+// TODO: ref: database.order_ds (map) 与 ref:database.order_ds (str) 是不一样的
 
 func TestConfig_UnmarshalYAML(t *testing.T) {
 	tests := []struct {
@@ -987,10 +988,6 @@ datasources:
 				}
 				assert.Equal(t, expectedValues[i], actual)
 			}
-
-			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["password"], actual.(*Datasource).Slave.(*Template).Placeholders["password"])
-			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["region"], actual.(*Datasource).Slave.(*Template).Placeholders["region"])
-			// assert.Equal(t, tt.getWantValue(t, &config).(*Datasource).Slave.(*Template).Placeholders["type"], actual.(*Datasource).Slave.(*Template).Placeholders["type"])
 		})
 	}
 }
@@ -1005,7 +1002,7 @@ func TestConfig_GetTableByName(t *testing.T) {
 		assertError  assert.ErrorAssertionFunc
 	}{
 		{
-			name: "直接定义",
+			name: "基本类型",
 			yamlData: `
 tables:
   order:
@@ -1014,7 +1011,6 @@ tables:
         master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
         slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
       database:
-        order_db:
           template:
             expr: "local_sharding_plugin_db_${key}"
             placeholders:
@@ -1041,10 +1037,10 @@ tables:
 								config:  config,
 							},
 							Database: Database{
-								varName: "order_db",
+								varName: "order",
 								varType: DataTypeTemplate,
 								Value: any(Template{
-									varName: "order_db",
+									varName: "order",
 									Expr:    "local_sharding_plugin_db_${key}",
 									Placeholders: map[string]any{
 										"key": Hash{varName: "key", Key: "user_id", Base: 3},
@@ -1066,7 +1062,70 @@ tables:
 			assertError: assert.NoError,
 		},
 		{
-			name: "引用databases定义",
+			name: "引用类型_引用datasources下变量",
+			yamlData: `
+datasources:
+  order_ds:
+    master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+    slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+tables:
+  order:
+    sharding:
+      datasource:
+        ref: datasources.order_ds
+      database:
+        template:
+          expr: "local_sharding_plugin_db_${key}"
+          placeholders:
+            key:
+              hash:
+                key: user_id
+                base: 3
+      table: order_tab
+`,
+			varNames: []string{"order"},
+			getWantValue: func(t *testing.T, config *Config) []Table {
+				return []Table{
+					{
+						varName: "order",
+						varType: DataTypeSharding,
+						config:  config,
+						Sharding: Sharding{
+							varName: "order",
+							config:  config,
+							Datasource: Datasource{
+								varName: "datasources.order_ds",
+								Master:  "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+								Slave:   String("root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"),
+								config:  config,
+							},
+							Database: Database{
+								varName: "order",
+								varType: DataTypeTemplate,
+								Value: any(Template{
+									varName: "order",
+									Expr:    "local_sharding_plugin_db_${key}",
+									Placeholders: map[string]any{
+										"key": Hash{varName: "key", Key: "user_id", Base: 3},
+									},
+									config: config,
+								}),
+								config: config,
+							},
+							Table: Variable{
+								varName: "order",
+								varType: DataTypeString,
+								Value:   String("order_tab"),
+								config:  config,
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "引用类型_引用databases下变量",
 			yamlData: `
 databases:
   order_db:
@@ -1098,6 +1157,71 @@ tables:
 							config:  config,
 							Datasource: Datasource{
 								varName: "order",
+								Master:  "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
+								Slave:   String("root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"),
+								config:  config,
+							},
+							Database: Database{
+								varName: "databases.order_db",
+								varType: DataTypeTemplate,
+								Value: any(Template{
+									varName: "databases.order_db",
+									Expr:    "local_sharding_plugin_db_${key}",
+									Placeholders: map[string]any{
+										"key": Hash{varName: "key", Key: "user_id", Base: 3},
+									},
+									config: config,
+								}),
+								config: config,
+							},
+							Table: Variable{
+								varName: "order",
+								varType: DataTypeString,
+								Value:   String("order_tab"),
+								config:  config,
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			name: "引用类型_引用datasources和databases下变量",
+			yamlData: `
+datasources:
+  order_ds:
+    master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+    slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+databases:
+  order_db:
+    template:
+      expr: "local_sharding_plugin_db_${key}"
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 3
+tables:
+  order:
+    sharding:
+      datasource:
+        ref: datasources.order_ds
+      database:
+        ref: databases.order_db
+      table: order_tab`,
+			varNames: []string{"order"},
+			getWantValue: func(t *testing.T, config *Config) []Table {
+				return []Table{
+					{
+						varName: "order",
+						varType: DataTypeSharding,
+						config:  config,
+						Sharding: Sharding{
+							varName: "order",
+							config:  config,
+							Datasource: Datasource{
+								varName: "datasources.order_ds",
 								Master:  "root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local",
 								Slave:   String("root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local"),
 								config:  config,
@@ -1167,7 +1291,7 @@ func TestTableInfo(t *testing.T) {
 		assertError       assert.ErrorAssertionFunc
 	}{
 		{
-			name: "正常值",
+			name: "基本类型",
 			yamlData: `
 tables:
   order:
@@ -1176,8 +1300,7 @@ tables:
         master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
         slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
       database:
-        order_db:
-          template:
+        template:
             expr: "local_sharding_plugin_db_${key}"
             placeholders:
               key:
@@ -1193,7 +1316,7 @@ tables:
 			assertError:       assert.NoError,
 		},
 		{
-			name: "引用值",
+			name: "引用类型",
 			yamlData: `
 databases:
   order_db:
