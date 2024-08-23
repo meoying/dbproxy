@@ -31,6 +31,7 @@ const (
 )
 
 var (
+	ErrMissingConfigField            = errors.New("缺少配置字段")
 	ErrVariableNameNotFound          = errors.New("变量名称找不到")
 	ErrVariableTypeInvalid           = errors.New("变量类型非法")
 	ErrUnmarshalVariableFieldFailed  = errors.New("反序列化类型属性失败")
@@ -71,6 +72,11 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	c.Datasources = raw.Datasources
 	c.Tables = raw.Tables
 
+	// if len(raw.Tables) == 0 {
+	// 	return fmt.Errorf("%w: 必备字段: %s, 可选字段: %s", ErrMissingConfigField, ConfigFieldTables,
+	// 		strings.Join([]string{ConfigFieldVariables, ConfigFieldDatasources, ConfigFieldDatabases}, ", "))
+	// }
+
 	for typ, section := range map[string]map[string]any{
 		DataTypeVariable:   c.Variables,
 		DataTypeDatabase:   c.Databases,
@@ -82,7 +88,7 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 			return err
 		}
 	}
-	log.Printf("config.Datasources: %#v\n", c.Datasources)
+	log.Printf("config: %#v\n", c)
 	return nil
 }
 
@@ -161,49 +167,49 @@ func convertArrayValues(val []any) (any, string, error) {
 	}
 }
 
-func unmarshalDataType(c *Config, name string, rawVal map[string]any) (any, error) {
+func unmarshalDataType(c *Config, varName string, untypedVal map[string]any) (any, error) {
 	dataTypes := map[string]yaml.Unmarshaler{
 		DataTypeTemplate: &Template{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 		DataTypeReference: &Ref{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
-		DataTypeHash: &Hash{varName: name},
+		DataTypeHash: &Hash{varName: varName},
 
 		DataTypeVariable: &Variable{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 		DataTypeDatabase: &Database{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 		DataTypeDatasource: &Datasource{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 		DataTypeTable: &Table{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 		DataTypeSharding: &Sharding{
-			varName: name,
+			varName: varName,
 			config:  c,
 		},
 	}
 	for key, typ := range dataTypes {
-		if r, ok := rawVal[key]; ok {
+		if r, ok := untypedVal[key]; ok {
 			err := unmarshalDataTypeValue(r, typ)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %q: %s", ErrVariableTypeInvalid, name, err)
+				return nil, fmt.Errorf("%w: %q[%s类型]: %w", ErrVariableTypeInvalid, varName, strings.Trim(key, "_"), err)
 			}
 			return reflect.ValueOf(typ).Elem().Interface(), nil
 		}
 	}
-	return nil, fmt.Errorf("%w: %q", ErrVariableTypeInvalid, name)
+	return nil, fmt.Errorf("%w: %q", ErrVariableTypeInvalid, varName)
 }
 
 func unmarshalDataTypeValue(rawVal any, typ yaml.Unmarshaler) error {
@@ -569,8 +575,10 @@ func unmarshalReferencedVariable(config *Config, paths []string) (any, string, e
 		log.Printf("config.Datasources = %#v\n", config.Datasources)
 		values = config.Datasources
 		varType = DataTypeDatasource
+	case ConfigFieldTables:
+		return nil, "", fmt.Errorf("%w: 暂不支持对tables的引用", ErrReferencePathInvalid)
 	default:
-		return nil, fmt.Sprintf("unknow pathType - %s", paths[0]), fmt.Errorf("%w: %s", ErrVariableNameNotFound, paths[0])
+		return nil, "", fmt.Errorf("%w: 未知的小节%s", ErrReferencePathInvalid, paths[0])
 	}
 
 	if len(paths) != 2 {

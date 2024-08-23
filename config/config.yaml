@@ -1,0 +1,19 @@
+tables:
+  user:
+    sharding:
+      datasources:
+        - master:
+          slave:
+        - master:
+          slave:
+          shadow:
+  order:
+    single: "webook:webook@tcp(cn.master.meoying.com:3306)/order_db?xxxx"
+
+
+
+#      master: webook:webook@tcp(cn.master.meoying.com:3306)/?xxx=
+#      slave:
+#        - webook:webook@tcp(0.cn.slave.master.meoying.com:3306)/?xxxx
+#        - webook:webook@tcp(1.cn.slave.master.meoying.com:3306)/?xxxx
+   data

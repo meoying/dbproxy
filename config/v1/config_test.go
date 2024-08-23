@@ -19,9 +19,8 @@ import (
 //         交叉引用, variables 下的变量引用 databases, datasources, tables 下的变量
 // TODO: datasources类型
 //          禁止自引用, dbproxy_ds下的1号datasource 引用 datasources.dbproxy_ds.0
-// TODO: ref: database.order_ds (map) 与 ref:database.order_ds (str) 是不一样的
 
-func TestConfig_UnmarshalYAML(t *testing.T) {
+func TestConfig_UnmarshalYAMLError(t *testing.T) {
 	tests := []struct {
 		name        string
 		yamlData    string
@@ -29,30 +28,43 @@ func TestConfig_UnmarshalYAML(t *testing.T) {
 	}{
 		// 引用类型
 		{
-			name: "反序列化失败_引用类型_变量类型错误",
+			name: "引用类型_引用类型名拼写错误",
 			yamlData: `
 variables:
   str_value: hello world
   err_ref:
-    refs: error.string`,
+    refs: error.string
+`,
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
 			},
 		},
 		{
-			name: "反序列化失败_引用类型_变量值类型错误",
+			name: "引用类型_引用的路径非法_引用自定义小节",
 			yamlData: `
 variables:
   str_value: hello world
   err_ref:
     ref: error.string`,
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
+				return assert.ErrorIs(t, err, ErrReferencePathInvalid)
 			},
 		},
+		{
+			name: "引用类型_引用的路径非法_引用的变量不存在",
+			yamlData: `
+variables:
+  str_value: hello world
+  err_ref:
+    ref: variables.notExist`,
+			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrReferencePathInvalid)
+			},
+		},
+
 		// 模版类型
 		{
-			name: "反序列化失败_模板类型_expr为空",
+			name: "模板类型_expr为空",
 			yamlData: `
 variables:
   tmpl_value:
@@ -68,7 +80,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_expr为空字符串",
+			name: "模板类型_expr为空字符串",
 			yamlData: `
 variables:
   tmpl_value:
@@ -84,7 +96,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_placeholders属性值类型错误",
+			name: "模板类型_placeholders属性值类型错误",
 			yamlData: `
 variables:
   tmpl_value:
@@ -97,7 +109,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_placeholders属性为空",
+			name: "模板类型_placeholders属性为空",
 			yamlData: `
 variables:
   tmpl_value:
@@ -111,7 +123,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_expr中无通配符",
+			name: "模板类型_expr中无通配符",
 			yamlData: `
 variables:
   tmpl_value:
@@ -127,7 +139,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_expr与placeholders不匹配",
+			name: "模板类型_expr与placeholders不匹配",
 			yamlData: `
 variables:
   tmpl_value:
@@ -145,7 +157,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_模板类型_属性名错误",
+			name: "模板类型_属性名错误",
 			yamlData: `
 variables:
   tmpl_value:
@@ -162,7 +174,7 @@ variables:
 		},
 		// 哈希类型
 		{
-			name: "反序列化失败_哈希类型_key为空",
+			name: "哈希类型_key为空",
 			yamlData: `
 variables:
   hash_value:
@@ -175,7 +187,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_哈希类型_base为空",
+			name: "哈希类型_base为空",
 			yamlData: `
 variables:
   hash_value:
@@ -188,7 +200,7 @@ variables:
 			},
 		},
 		{
-			name: "反序列化失败_哈希类型_base为负数",
+			name: "哈希类型_base为负数",
 			yamlData: `
 variables:
   hash_value:
@@ -201,6 +213,110 @@ variables:
 			},
 		},
 		// datasource 数据类型
+
+		// table 数据类型
+		{
+			name: "sharding类型_datasource属性引用非datasources下变量",
+			yamlData: `
+datasources:
+  order_ds:
+    master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+    slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+tables:
+  order:
+    sharding:
+      datasource:
+        ref: datasource.order_ds
+      database:
+        template:
+          expr: "local_sharding_plugin_db_${key}"
+          placeholders:
+            key:
+              hash:
+                key: user_id
+                base: 3
+      table: order_tab
+`,
+			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrReferencePathInvalid)
+			},
+		},
+		{
+			name: "sharding类型_datasource属性引用格式错误",
+			yamlData: `
+datasources:
+  order_ds:
+    master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+    slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+tables:
+  order:
+    sharding:
+      datasource:
+        ref:datasources.order_ds
+      database:
+        template:
+          expr: "local_sharding_plugin_db_${key}"
+          placeholders:
+            key:
+              hash:
+                key: user_id
+                base: 3
+      table: order_tab
+`,
+			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
+			},
+		},
+		{
+			name: "sharding类型_database属性引用非databases下变量",
+			yamlData: `
+databases:
+  order_db:
+    template:
+      expr: "local_sharding_plugin_db_${key}"
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 3
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        ref: database.order_db
+      table: order_tab`,
+			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrReferencePathInvalid)
+			},
+		},
+		{
+			name: "sharding类型_database属性引用格式错误",
+			yamlData: `
+databases:
+  order_db:
+    template:
+      expr: "local_sharding_plugin_db_${key}"
+      placeholders:
+        key:
+          hash:
+            key: user_id
+            base: 3
+tables:
+  order:
+    sharding:
+      datasource:
+        master: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+        slave: root:root@tcp(127.0.0.1:13306)/?charset=utf8mb4&parseTime=True&loc=Local
+      database:
+        ref:database.order_db
+      table: order_tab`,
+			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -327,7 +443,7 @@ variables:
 		{
 			name: "反序列化成功_模板类型",
 			yamlData: `
-variables:
+placeholders:
   region1:
     - cn
     - hk
@@ -343,7 +459,7 @@ variables:
           - value2
         str: "str"
         ref_val:
-          ref: variables.region1
+          ref: placeholders.region1
         hash_val:
           hash:
             key: user_id
@@ -462,12 +578,15 @@ func TestEvaluate(t *testing.T) {
 				"cn.master.mysql.0.example.com",
 				"cn.master.mysql.1.example.com",
 				"cn.master.mysql.2.example.com",
+
 				"cn.slave.mysql.0.example.com",
 				"cn.slave.mysql.1.example.com",
 				"cn.slave.mysql.2.example.com",
+
 				"us.master.mysql.0.example.com",
 				"us.master.mysql.1.example.com",
 				"us.master.mysql.2.example.com",
+
 				"us.slave.mysql.0.example.com",
 				"us.slave.mysql.1.example.com",
 				"us.slave.mysql.2.example.com",
@@ -678,20 +797,6 @@ func TestConfig_GetDatasourceByName(t *testing.T) {
 		getWantValue func(t *testing.T, config *Config) []Datasource
 		assertError  assert.ErrorAssertionFunc
 	}{
-		// 		{
-		// 			name: "反序列化成功_不存在的值",
-		// 			yamlData: `
-		// datasources:
-		//   existing_value: some value`,
-		// 			varNames: []string{"non_existing_value"},
-		// 			getWantValue: func(t *testing.T, config *Config) []Datasource {
-		// 				t.Helper()
-		// 				return nil
-		// 			},
-		// 			assertError: func(t assert.TestingT, err error, msgAndArgs ...any) bool {
-		// 				return assert.ErrorIs(t, err, ErrVariableNameNotFound)
-		// 			},
-		// 		},
 		{
 			name: "反序列化成功_master字符串类型_无slave",
 			yamlData: `
