@@ -31,7 +31,7 @@ template:
 			want: Template{
 				Expr: "${region}.order_db",
 				Placeholders: Placeholders{
-					Variables: map[string]Placeholder{
+					variables: map[string]Placeholder{
 						"region": {String: String("hk")},
 					},
 				},
@@ -51,7 +51,7 @@ template:
 			want: Template{
 				Expr: "${region}.order_db",
 				Placeholders: Placeholders{
-					Variables: map[string]Placeholder{
+					variables: map[string]Placeholder{
 						"region": {Enum: Enum{"us", "uk"}},
 					},
 				},
@@ -72,7 +72,7 @@ template:
 			want: Template{
 				Expr: "order_db_${key}",
 				Placeholders: Placeholders{
-					Variables: map[string]Placeholder{
+					variables: map[string]Placeholder{
 						"key": {Hash: Hash{
 							Key:  "user_id",
 							Base: 3,
@@ -103,7 +103,7 @@ template:
 			want: Template{
 				Expr: "${region}.${role}.${type}.${id}.example.com",
 				Placeholders: Placeholders{
-					Variables: map[string]Placeholder{
+					variables: map[string]Placeholder{
 						"region": {Enum: Enum{"cn", "us"}},
 						"role":   {Enum: Enum{"master", "slave"}},
 						"type":   {String: String("mysql")},

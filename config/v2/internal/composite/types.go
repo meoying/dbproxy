@@ -39,6 +39,23 @@ type (
 	}
 )
 
+// func isKeyword(name string) bool {
+// 	keywords := map[string]struct{}{
+// 		"datasources": {},
+// 		"databases":   {},
+// 		"tables":      {},
+// 		"rules":       {},
+// 		"ref":         {},
+// 		"template":    {},
+// 		// "expr":         {},
+// 		// "master":       {},
+// 		// "slaves":       {},
+// 		// "placeholders": {},
+// 	}
+// 	_, ok := keywords[name]
+// 	return ok
+// }
+
 func Unmarshal(typ string, variables map[string]any) error {
 
 	log.Printf("Unmarshal typ = %s, variables = %#v\n", typ, variables)

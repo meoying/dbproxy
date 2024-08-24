@@ -37,7 +37,7 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	c.Tables = raw.Tables
 
 	log.Printf("raw.Config.Rules = %#v\n", raw.Rules)
-	c.Rules.Datasources = c.Datasources
+	c.Rules.datasources = c.Datasources
 	out, err := yaml.Marshal(raw.Rules)
 	if err != nil {
 		return err

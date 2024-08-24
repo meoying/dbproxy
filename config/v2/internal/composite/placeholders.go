@@ -11,11 +11,11 @@ import (
 
 type Placeholders struct {
 	// global    *Placeholders
-	Variables map[string]Placeholder
+	variables map[string]Placeholder
 }
 
 func (p *Placeholders) IsZeroValue() bool {
-	return len(p.Variables) == 0
+	return len(p.variables) == 0
 }
 
 func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
@@ -25,7 +25,7 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 		return err
 	}
 	log.Printf("raw.Placeholders.Variables = %#v\n", variables)
-	p.Variables = make(map[string]Placeholder, len(variables))
+	p.variables = make(map[string]Placeholder, len(variables))
 	for name, val := range variables {
 		ph := Placeholder{}
 		switch v := val.(type) {
@@ -53,7 +53,7 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 		default:
 			return fmt.Errorf("%w: %q", errs.ErrVariableTypeInvalid, v)
 		}
-		p.Variables[name] = ph
+		p.variables[name] = ph
 	}
 	log.Printf("Placeholders = %#v\n", p)
 	return nil

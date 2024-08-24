@@ -182,3 +182,44 @@ func (r *Ref) unmarshalReferencedVariable(paths []string) (any, string, error) {
 
 	return value, varType, nil
 }
+
+type Finder[T any] interface {
+	Name() string
+	Find(name string) (T, error)
+}
+
+type Reference[E Placeholder | Datasource | Database | Table, F Finder[E]] struct {
+	// global 表示全局预定定义的 Datasources, Databases, Tables, Placeholders
+	global Finder[E]
+	paths  []string
+}
+
+func (r *Reference[E, F]) IsZeroValue() bool {
+	return len(r.paths) == 0
+}
+
+func (r *Reference[E, F]) UnmarshalYAML(value *yaml.Node) error {
+	var paths []string
+	err := value.Decode(&paths)
+	if err != nil {
+		return err
+	}
+	r.paths = paths
+	return nil
+}
+
+func (r *Reference[E, F]) Build() (map[string]E, error) {
+	mp := make(map[string]E, len(r.paths))
+	for _, path := range r.paths {
+		varInfo := strings.SplitN(path, ".", 2)
+		varType, varName := varInfo[0], varInfo[1]
+		log.Printf("引用路径信息 = %#v\n", varInfo)
+		t, err := r.global.Find(varName)
+		// log.Printf("global = %#v\n", d.global.Variables)
+		if varType != r.global.Name() || err != nil {
+			return nil, fmt.Errorf("%w: %s", errs.ErrReferencePathInvalid, path)
+		}
+		mp[varName] = t
+	}
+	return mp, nil
+}
