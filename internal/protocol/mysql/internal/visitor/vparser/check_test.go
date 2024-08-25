@@ -72,7 +72,7 @@ func TestVisitor_Check(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			checkV := &CheckVisitor{}
 			v := checkV.VisitRoot(root.(*parser.RootContext))
 			actualName, ok := v.(string)

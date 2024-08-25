@@ -54,7 +54,7 @@ func TestDeleteBuilder_Build(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			builder := tc.deleteBuilder
 			sql, err := builder.Build(root)
 			assert.Equal(t, tc.wantErr, err)

@@ -11,22 +11,108 @@ func TestHintVisitor(t *testing.T) {
 	testcases := []struct {
 		name    string
 		sql     string
-		wantVal string
+		wantVal Hints
 	}{
 		{
-			name:    "mysql的SELECT语句支持的hint语法",
-			sql:     "SELECT /* useMaster */   * FROM users WHERE (user_id = 1) or (user_id =2);",
-			wantVal: "/* useMaster */",
+			name: "SELECT的hint语法",
+			sql:  "SELECT /* @proxy k1=true;k2=222 */   * FROM users WHERE (user_id = 1) or (user_id =2);",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
 		},
 		{
-			name:    "mysql的其他语句暂不支持hint语法",
-			sql:     "DELETE FROM users WHERE (user_id = 1) or (user_id =2);",
-			wantVal: "当前SQL语句尚不支持Hint语法",
+			name: "update的hint语法",
+			sql:  "UPDATE /* @proxy k1=true;k2=222 */  `report` SET `handler_uid` = 123456, `status` = 1 WHERE `id` = 1;",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "insert的hint语法",
+			sql:  "INSERT /* @proxy k1=true;k2=222 */  INTO `report` (`biz_id`, `biz`, `uid`) VALUES (1001, 'user_report', 2001);",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "delete的hint语法",
+			sql:  "DELETE /* @proxy k1=true;k2=222 */  FROM `report` WHERE `id` = 1;",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "begin的hint语法",
+			sql:  "begin /* @proxy k1=true;k2=222 */ ",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "commit的hint语法",
+			sql:  "commit /* @proxy k1=true;k2=222 */ ",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "rollback的hint语法",
+			sql:  "rollback /* @proxy k1=true;k2=222 */ ",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
+		},
+		{
+			name: "SELECT的hint语法前后有空格",
+			sql:  "SELECT /* @proxy k1 = true ; k2 = 222 */   * FROM users WHERE (user_id = 1) or (user_id =2);",
+			wantVal: Hints{
+				"k1": {
+					Val: "true",
+				},
+				"k2": {
+					Val: "222",
+				},
+			},
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			hint := NewHintVisitor().Visit(root)
 			assert.Equal(t, tc.wantVal, hint)
 		})

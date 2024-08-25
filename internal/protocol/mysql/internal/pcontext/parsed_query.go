@@ -12,14 +12,14 @@ type ParsedQuery struct {
 	// typeName 表示SQL询语句的类型名
 	typeName string
 	// TODO: 在这里把 Hint 放好，在解析 Root 的地方就解析出来放好（这可以认为是一个统一的机制）
-	hintVisitor *vparser.HintVisitor
-	hints       []string
+	hints vparser.Hints
 }
 
-func NewParsedQuery(query string, hintVisitor *vparser.HintVisitor) ParsedQuery {
+func NewParsedQuery(query string) ParsedQuery {
+	ctx := ast.Parse(query)
 	return ParsedQuery{
-		root:        ast.Parse(query),
-		hintVisitor: hintVisitor,
+		root:  ctx.Root,
+		hints: ctx.Hints,
 	}
 }
 
@@ -34,24 +34,15 @@ func (q *ParsedQuery) Type() string {
 	return q.typeName
 }
 
-func (q *ParsedQuery) Hints() []string {
-	if q.hints == nil {
-		q.hints = q.parseHints()
-	}
+func (q *ParsedQuery) Hints() vparser.Hints {
 	return q.hints
 }
 
-func (q *ParsedQuery) parseHints() []string {
-	// 当前只有SELECT语句支持hint语法
-	if q.Type() != vparser.SelectStmt {
-		return nil
-	}
-	var hints []string
-	v := q.hintVisitor.Visit(q.root)
-	if text, ok := v.(string); ok {
-		hints = append(hints, text)
-	}
-	return hints
+func (q *ParsedQuery) UseMaster() bool {
+	hintMap := q.Hints()
+	useMasterVal := hintMap["useMaster"]
+	useMaster, _ := useMasterVal.String()
+	return useMaster == "true"
 }
 
 // FirstDML 第一个 DML 语句，也就是增删改查语句。

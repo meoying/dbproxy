@@ -4,9 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
-	"strings"
-
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
@@ -16,6 +13,7 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"log"
 )
 
 // ForwardHandler 什么也不做，就是转发请求
@@ -63,10 +61,8 @@ func (h *ForwardHandler) handleCRUDStmt(ctx *pcontext.Context, sqlTypeName strin
 	var res sql.Result
 	var err error
 	if sqlTypeName == vparser.SelectStmt {
-		for _, hint := range ctx.ParsedQuery.Hints() {
-			if strings.Contains(hint, "useMaster") {
-				ctx.Context = masterslave.UseMaster(ctx.Context)
-			}
+		if ctx.ParsedQuery.UseMaster() {
+			ctx.Context = masterslave.UseMaster(ctx.Context)
 		}
 		rows, err = h.getDatasource(ctx).Query(ctx.Context, datasource.Query{
 			SQL:  ctx.Query,
@@ -103,7 +99,7 @@ func (h *ForwardHandler) handlePrepareStmt(ctx *pcontext.Context) (*plugin.Resul
 		Context: ctx.Context,
 		// SELECT * FROM order where `user_id` = ?;
 		// SELECT * FROM order where `user_id` = '?';
-		ParsedQuery: pcontext.NewParsedQuery(h.convertQuery(ctx.Query), nil),
+		ParsedQuery: pcontext.NewParsedQuery(h.convertQuery(ctx.Query)),
 		Query:       ctx.Query,
 		ConnID:      ctx.ConnID,
 		StmtID:      ctx.StmtID,
