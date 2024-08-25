@@ -3,7 +3,6 @@
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
 
-
 // A complete Visitor for a parse tree produced by MySqlParser.
 type MySqlParserVisitor interface {
 	antlr.ParseTreeVisitor
@@ -1864,5 +1863,4 @@ type MySqlParserVisitor interface {
 
 	// Visit a parse tree produced by MySqlParser#functionNameBase.
 	VisitFunctionNameBase(ctx *FunctionNameBaseContext) interface{}
-
 }

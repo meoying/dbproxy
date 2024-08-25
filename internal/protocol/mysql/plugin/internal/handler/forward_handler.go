@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+
 	"github.com/ecodeclub/ekit/sqlx"
 	"github.com/ecodeclub/ekit/syncx"
 	"github.com/meoying/dbproxy/config/mysql/plugins/forward"
@@ -13,7 +15,6 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor/vparser"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
-	"log"
 )
 
 // ForwardHandler 什么也不做，就是转发请求

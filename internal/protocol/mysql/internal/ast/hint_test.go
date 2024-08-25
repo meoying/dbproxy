@@ -1,9 +1,8 @@
-package vparser
+package ast
 
 import (
 	"testing"
 
-	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -112,7 +111,7 @@ func TestHintVisitor(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql).Root
+			root := Parse(tc.sql).Root
 			hint := NewHintVisitor().Visit(root)
 			assert.Equal(t, tc.wantVal, hint)
 		})

@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+
 	"github.com/meoying/dbproxy/internal/datasource/masterslave"
 
 	"github.com/meoying/dbproxy/internal/datasource"

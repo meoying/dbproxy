@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
+
 	"github.com/meoying/dbproxy/internal/datasource"
 	"go.uber.org/multierr"
-	"sync"
 )
 
 var _ datasource.Stmt = &DelayStmt{}

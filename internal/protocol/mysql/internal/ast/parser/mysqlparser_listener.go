@@ -3,7 +3,6 @@
 package parser // MySqlParser
 import "github.com/antlr4-go/antlr/v4"
 
-
 // MySqlParserListener is a complete listener for a parse tree produced by MySqlParser.
 type MySqlParserListener interface {
 	antlr.ParseTreeListener

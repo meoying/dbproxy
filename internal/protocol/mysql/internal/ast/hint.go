@@ -1,15 +1,18 @@
-package vparser
+package ast
 
 import (
+	"regexp"
+	"strings"
+
+	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/visitor"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/ecodeclub/ekit"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
-	"regexp"
-	"strings"
 )
 
 type HintVisitor struct {
-	*BaseVisitor
+	visitor.BaseVisitor
 }
 
 type Hints map[string]ekit.AnyValue
@@ -19,9 +22,7 @@ func (s *HintVisitor) Name() string {
 }
 
 func NewHintVisitor() *HintVisitor {
-	return &HintVisitor{
-		BaseVisitor: &BaseVisitor{},
-	}
+	return &HintVisitor{}
 }
 
 func (s *HintVisitor) Visit(tree antlr.ParseTree) any {
@@ -70,6 +71,7 @@ func (s *HintVisitor) VisitCommitWork(ctx *parser.CommitWorkContext) any {
 	}
 	return Hints{}
 }
+
 func (s *HintVisitor) VisitInsertStatement(ctx *parser.InsertStatementContext) any {
 	if ctx.ProxyHint() != nil {
 		return s.VisitProxyHint(ctx.ProxyHint().(*parser.ProxyHintContext))
