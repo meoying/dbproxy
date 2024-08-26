@@ -106,11 +106,11 @@ func (r *Ref) UnmarshalYAML(value *yaml.Node) error {
 				v = vv.Value
 			case DataTypeDatabase:
 				vv := v.(Database)
-				t = vv.varType
+				// t = vv.varType
 				v = vv.Value
 			case DataTypeHash:
 				vv := v.(Hash)
-				vv.Name = r.Name
+				// vv.Name = r.Name
 				v = vv
 			case DataTypeTemplate:
 				vv := v.(Template)
@@ -157,7 +157,7 @@ func (r *Ref) unmarshalReferencedVariable(paths []string) (any, string, error) {
 		log.Printf("config.Datasources = %#v\n", r.Datasources)
 		values = r.Datasources
 		varType = DataTypeDatasource
-	case ConfigFieldTables:
+	case ConfigSectionTypeTables:
 		return nil, "", fmt.Errorf("%w: 暂不支持对tables的引用", errs.ErrReferencePathInvalid)
 	default:
 		return nil, "", fmt.Errorf("%w: 未知的小节%s", errs.ErrReferencePathInvalid, paths[0])
@@ -184,17 +184,21 @@ func (r *Ref) unmarshalReferencedVariable(paths []string) (any, string, error) {
 }
 
 type Finder[T any] interface {
-	Name() string
+	Type() string
 	Find(name string) (T, error)
 }
 
-type Reference[E Placeholder | Datasource | Database | Table, F Finder[E]] struct {
+type Referencable interface {
+	Placeholder | Datasource | Database | Table
+}
+
+type Reference[E Referencable, F Finder[E]] struct {
 	// global 表示全局预定定义的 Datasources, Databases, Tables, Placeholders
-	global Finder[E]
+	global F
 	paths  []string
 }
 
-func (r *Reference[E, F]) IsZeroValue() bool {
+func (r *Reference[E, F]) IsZero() bool {
 	return len(r.paths) == 0
 }
 
@@ -226,7 +230,7 @@ func (r *Reference[E, F]) Build() (map[string]E, error) {
 		log.Printf("引用路径信息 = %#v\n", varInfo)
 		t, err := r.global.Find(varName)
 		// log.Printf("global = %#v\n", d.global.Variables)
-		if varType != r.global.Name() || err != nil {
+		if varType != r.global.Type() || err != nil {
 			return nil, fmt.Errorf("%w: %s", errs.ErrReferencePathInvalid, path)
 		}
 		mp[varName] = t

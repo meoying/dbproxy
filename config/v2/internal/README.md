@@ -202,7 +202,7 @@ rules:
                 - placeholders.key 
 ```
 
-待确认问题 —— 引用类型的转换问题
+待确认问题 —— 引用类型语义问题, 引用多个时候的类型校验和转换问题
 
 ```yaml
 placeholders:
@@ -248,3 +248,20 @@ rules:
 ```
 上例中`region`是[cn,hk] 但是placeholders.region_cn和placeholders.region_hk表示两个字符串
 ,而期望的是将两个字符串转换为字符串数组,这种转换需要明确给出的,否则`placeholders.key`解释不通
+
+## databases
+
+### 全局定义
+
+### 局部定义
+
+## tables
+
+### 全局定义
+
+### 局部定义
+
+## rules
+
+只能全局定义
+

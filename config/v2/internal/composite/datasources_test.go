@@ -29,7 +29,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"master": {
 							MasterSlaves: MasterSlaves{
 								Master: "webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx",
@@ -52,7 +52,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"cn": {
 							MasterSlaves: MasterSlaves{
 								Master: "webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx",
@@ -77,7 +77,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"cn": {
 							MasterSlaves: MasterSlaves{
 								Master: "webook:webook@tcp(cn.toB.mysql.meoying.com:3306)/order?xxx",
@@ -116,7 +116,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"cn_test": {
 							MasterSlaves: MasterSlaves{
 								Master: "webook:webook@tcp(cn.master.test.mysql.meoying.com:3306)/order?xxx",
@@ -178,7 +178,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"hk_equal": {
 							Template: DatasourceTemplate{
 								global: ph,
@@ -265,7 +265,7 @@ datasources:
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
 					globalPlaceholders: ph,
-					variables: map[string]Datasource{
+					Variables: map[string]Datasource{
 						"hk_equal": {
 							Template: DatasourceTemplate{
 								global: ph,
@@ -340,6 +340,7 @@ datasources:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg Config
+			cfg.testMode = true
 			err := yaml.Unmarshal([]byte(tt.yamlData), &cfg)
 			tt.assertError(t, err)
 			if err != nil {
@@ -618,6 +619,7 @@ datasources:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg Config
+			cfg.testMode = true
 			err := yaml.Unmarshal([]byte(tt.yamlData), &cfg)
 			require.NoError(t, err)
 

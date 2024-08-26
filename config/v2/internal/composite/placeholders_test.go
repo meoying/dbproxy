@@ -107,6 +107,7 @@ placeholders:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg Config
+			cfg.testMode = true
 			err := yaml.Unmarshal([]byte(tt.yamlData), &cfg)
 			tt.assertError(t, err)
 			if err != nil {

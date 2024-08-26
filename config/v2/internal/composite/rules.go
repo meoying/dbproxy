@@ -84,10 +84,10 @@ func unmarshalShardingFieldVariable[T Database | Datasource](fieldType, varType,
 type Rules struct {
 	placeholders *Placeholders
 	datasources  *Datasources
-	// databases    *Databases
-	// tables       *Tables
+	databases    *Databases
+	tables       *Tables
 
-	variables map[string]Rule
+	Variables map[string]Rule
 }
 
 func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
@@ -99,11 +99,13 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	log.Printf("raw.Rules = %#v\n", variables)
-	r.variables = make(map[string]Rule, len(variables))
+	r.Variables = make(map[string]Rule, len(variables))
 	for name, values := range variables {
 		v := Rule{
 			globalPlaceholders: r.placeholders,
 			globalDatasources:  r.datasources,
+			globalDatabases:    r.databases,
+			globalTables:       r.tables,
 		}
 		out, err1 := yaml.Marshal(values)
 		if err1 != nil {
@@ -113,28 +115,43 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 		if err1 != nil {
 			return fmt.Errorf("%w: %w: rules.%s", err1, errs.ErrUnmarshalVariableFailed, name)
 		}
-		r.variables[name] = v
+		r.Variables[name] = v
 	}
-	log.Printf("Rules.Variables = %#v\n", r.variables)
+	log.Printf("Rules.Variables = %#v\n", r.Variables)
 	return nil
 }
 
 type Rule struct {
 	globalPlaceholders *Placeholders
 	globalDatasources  *Datasources
-	Datasources        Datasources `yaml:"datasources"`
+	globalDatabases    *Databases
+	globalTables       *Tables
+
+	Datasources Datasources `yaml:"datasources"`
+	Databases   Databases   `yaml:"databases"`
+	Tables      Tables      `yaml:"tables"`
 }
 
 func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 
 	type rawRule struct {
 		Datasources Datasources `yaml:"datasources"`
+		Databases   Databases   `yaml:"databases"`
+		Tables      Tables      `yaml:"tables"`
 	}
 
 	raw := &rawRule{
 		Datasources: Datasources{
 			globalPlaceholders: r.globalPlaceholders,
 			global:             r.globalDatasources,
+		},
+		Databases: Databases{
+			globalPlaceholders: r.globalPlaceholders,
+			global:             r.globalDatabases,
+		},
+		Tables: Tables{
+			globalPlaceholders: r.globalPlaceholders,
+			global:             r.globalTables,
 		},
 	}
 	err := value.Decode(&raw)
@@ -146,5 +163,7 @@ func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 	log.Printf("globalDatasources = %#v\n", r.globalDatasources)
 
 	r.Datasources = raw.Datasources
+	r.Databases = raw.Databases
+	r.Tables = raw.Tables
 	return nil
 }

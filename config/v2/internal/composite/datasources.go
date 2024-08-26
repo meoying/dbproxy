@@ -11,24 +11,24 @@ import (
 type Datasources struct {
 	global             *Datasources // 全局Datasources存在时,当前 Datasources 对象必为局部定义
 	globalPlaceholders *Placeholders
-	variables          map[string]Datasource
+	Variables          map[string]Datasource
 }
 
-func (d *Datasources) Name() string {
+func (d *Datasources) Type() string {
 	return "datasources"
 }
 
 // Find 根据变量名查找数据源 注意: 数据源中可能是模版类型
 func (d *Datasources) Find(name string) (Datasource, error) {
-	v, ok := d.variables[name]
+	v, ok := d.Variables[name]
 	if !ok {
 		return Datasource{}, fmt.Errorf("%w: %s", errs.ErrVariableNameNotFound, name)
 	}
 	return v, nil
 }
 
-func (d *Datasources) IsZeroValue() bool {
-	return len(d.variables) == 0
+func (d *Datasources) IsZero() bool {
+	return len(d.Variables) == 0
 }
 
 func (d *Datasources) isGlobal() bool {
@@ -77,7 +77,7 @@ func (d *Datasources) UnmarshalYAML(value *yaml.Node) error {
 			vars[n] = v
 		}
 	}
-	d.variables = vars
+	d.Variables = vars
 	log.Printf("解析后的 datasources = %#v\n", d)
 	// 使用 Global 来判定
 	// 非全局:  1) 支持,ref 匿名, 2) 匿名: template, 3) 命名 Datasource
@@ -87,7 +87,7 @@ func (d *Datasources) UnmarshalYAML(value *yaml.Node) error {
 
 func (d *Datasources) Evaluate() (map[string]MasterSlaves, error) {
 	mp := make(map[string]MasterSlaves)
-	for name, value := range d.variables {
+	for name, value := range d.Variables {
 		if err := d.getMasterSlaves(mp, name, value); err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func (d *DatasourceBuilder) isGlobalValue() bool {
 }
 
 func (d *DatasourceBuilder) isReferenceType() bool {
-	return d.Ref != nil && !d.Ref.IsZeroValue()
+	return d.Ref != nil && !d.Ref.IsZero()
 }
 
 func (d *DatasourceBuilder) isTemplateType() bool {
@@ -233,7 +233,7 @@ type DatasourceTemplate struct {
 }
 
 func (d *DatasourceTemplate) IsZeroValue() bool {
-	return d.Master.IsZeroValue() && d.Slaves.IsZeroValue()
+	return d.Master.IsZero() && d.Slaves.IsZero()
 }
 
 func (d *DatasourceTemplate) UnmarshalYAML(value *yaml.Node) error {

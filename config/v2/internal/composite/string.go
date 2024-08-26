@@ -2,6 +2,14 @@ package composite
 
 type String string
 
+func (s String) Type() string {
+	return "String"
+}
+
+func (s String) IsZero() bool {
+	return len(s) == 0
+}
+
 func (s String) Evaluate() (map[string]string, error) {
 	return map[string]string{string(s): string(s)}, nil
 }

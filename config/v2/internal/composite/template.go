@@ -17,8 +17,18 @@ type Template struct {
 	Placeholders Placeholders `yaml:"placeholders"`
 }
 
-func (t *Template) IsZeroValue() bool {
-	return t.Expr == "" && t.Placeholders.IsZeroValue()
+func NewTemplate(global *Placeholders) *Template {
+	return &Template{
+		global: global,
+	}
+}
+
+func (t *Template) Type() string {
+	return "template"
+}
+
+func (t *Template) IsZero() bool {
+	return t.Expr == "" && t.Placeholders.IsZero()
 }
 
 func (t *Template) UnmarshalYAML(value *yaml.Node) error {
@@ -42,7 +52,7 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 		return fmt.Errorf("%w: template.expr", errs.ErrUnmarshalVariableFailed)
 	}
 
-	if raw.Placeholders.IsZeroValue() {
+	if raw.Placeholders.IsZero() {
 		return fmt.Errorf("%w: template.placeholders", errs.ErrUnmarshalVariableFailed)
 	}
 

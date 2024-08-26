@@ -1,17 +1,19 @@
 package composite
 
 import (
+	"fmt"
 	"log"
 
 	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Placeholders *Placeholders  `yaml:"placeholders,omitempty"`
-	Datasources  *Datasources   `yaml:"datasources,omitempty"`
-	Databases    map[string]any `yaml:"databases,omitempty"`
-	Tables       map[string]any `yaml:"tables,omitempty"`
-	Rules        Rules          `yaml:"rules"`
+	testMode     bool
+	Placeholders *Placeholders `yaml:"placeholders,omitempty"`
+	Datasources  *Datasources  `yaml:"datasources,omitempty"`
+	Databases    *Databases    `yaml:"databases,omitempty"`
+	Tables       *Tables       `yaml:"tables,omitempty"`
+	Rules        Rules         `yaml:"rules"`
 }
 
 func (c *Config) UnmarshalYAML(value *yaml.Node) error {
@@ -19,14 +21,16 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	type rawConfig struct {
 		Placeholders *Placeholders  `yaml:"placeholders,omitempty"`
 		Datasources  *Datasources   `yaml:"datasources,omitempty"`
-		Databases    map[string]any `yaml:"databases,omitempty"`
-		Tables       map[string]any `yaml:"tables,omitempty"`
+		Databases    *Databases     `yaml:"databases,omitempty"`
+		Tables       *Tables        `yaml:"tables,omitempty"`
 		Rules        map[string]any `yaml:"rules"`
 	}
 	ph := &Placeholders{}
 	raw := rawConfig{
 		Placeholders: ph,
 		Datasources:  &Datasources{globalPlaceholders: ph},
+		Databases:    &Databases{globalPlaceholders: ph},
+		Tables:       &Tables{globalPlaceholders: ph},
 	}
 	err := value.Decode(&raw)
 	if err != nil {
@@ -44,11 +48,20 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	log.Printf("raw.Config.Rules = %#v\n", raw.Rules)
 	c.Rules.placeholders = c.Placeholders
 	c.Rules.datasources = c.Datasources
-	// c.Rules.databases = c.Placeholders
-	// c.Rules.tables = c.Placeholders
+	c.Rules.databases = c.Databases
+	c.Rules.tables = c.Tables
 	out, err := yaml.Marshal(raw.Rules)
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(out, &c.Rules)
+	err = yaml.Unmarshal(out, &c.Rules)
+	if err != nil {
+		return err
+	}
+
+	if len(c.Rules.Variables) == 0 && !c.testMode {
+		return fmt.Errorf("no rules defined")
+	}
+
+	return nil
 }

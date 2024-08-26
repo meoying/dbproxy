@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ConfigFieldTables        = "tables"
+	ConfigSectionTypeTables  = "tables"
 	ConfigFieldDatabases     = "databases"
 	ConfigFieldVariables     = "variables"
 	ConfigSectionDatasources = "datasources"
@@ -150,13 +150,13 @@ func UnmarshalVariable(Name string, values map[string]any) (any, error) {
 		DataTypeVariable: &Variable{
 			Name: Name,
 		},
-		DataTypeDatabase: &Database{
-			Name: Name,
-		},
+		// DataTypeDatabase: &Database{
+		// 	// Name: Name,
+		// },
 
-		DataTypeTable: &Table{
-			Name: Name,
-		},
+		// DataTypeTable: &Table{
+		// 	Name: Name,
+		// },
 		DataTypeSharding: &Sharding{
 			Name: Name,
 		},

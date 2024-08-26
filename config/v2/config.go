@@ -134,29 +134,29 @@ func convertArrayValues(val []any) (any, string, error) {
 
 func UnmarshalDataType(c *Config, varName string, untypedVal map[string]any) (any, error) {
 	dataTypes := map[string]yaml.Unmarshaler{
-		composite.DataTypeTemplate: &composite.Template{
-			// Name: varName,
-		},
-		composite.DataTypeReference: &composite.Ref{
-			Name: varName,
-		},
+		// composite.DataTypeTemplate: &composite.Template{
+		// 	// Name: varName,
+		// },
+		// composite.DataTypeReference: &composite.Ref{
+		// 	Name: varName,
+		// },
 		// composite.DataTypeHash: &composite.Hash{Name: varName},
 
-		composite.DataTypeVariable: &composite.Variable{
-			Name: varName,
-		},
-		composite.DataTypeDatabase: &composite.Database{
-			Name: varName,
-		},
+		// composite.DataTypeVariable: &composite.Variable{
+		// 	Name: varName,
+		// },
+		// composite.DataTypeDatabase: &composite.Database{
+		// 	Name: varName,
+		// },
 		// composite.DataTypeDatasource: &composite.Datasource{
 		// 	Name: varName,
 		// },
-		composite.DataTypeTable: &composite.Table{
-			Name: varName,
-		},
-		composite.DataTypeSharding: &composite.Sharding{
-			Name: varName,
-		},
+		// composite.DataTypeTable: &composite.Table{
+		// 	Name: varName,
+		// },
+		// composite.DataTypeSharding: &composite.Sharding{
+		// 	Name: varName,
+		// },
 	}
 	for key, typ := range dataTypes {
 		if r, ok := untypedVal[key]; ok {

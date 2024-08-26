@@ -3,6 +3,7 @@ package composite
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/meoying/dbproxy/config/v2/internal/errs"
@@ -14,7 +15,7 @@ type Placeholders struct {
 	variables map[string]Placeholder
 }
 
-func (p *Placeholders) Name() string {
+func (p *Placeholders) Type() string {
 	return "placeholders"
 }
 
@@ -26,7 +27,7 @@ func (p *Placeholders) Find(name string) (Placeholder, error) {
 	return ph, nil
 }
 
-func (p *Placeholders) IsZeroValue() bool {
+func (p *Placeholders) IsZero() bool {
 	return len(p.variables) == 0
 }
 
@@ -61,7 +62,12 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 			p.variables[name] = ph
 		case []any:
 			ph.Enum = slice.Map(v, func(idx int, src any) string {
-				return src.(string)
+				switch t := src.(type) {
+				case int:
+					return strconv.Itoa(t)
+				default:
+					return src.(string)
+				}
 			})
 			p.variables[name] = ph
 		case map[string]any:
@@ -76,11 +82,11 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 			err1 = yaml.Unmarshal(out, &h)
 			if err1 != nil {
 				return fmt.Errorf("%w: %w: placeholders.%s", err1, errs.ErrVariableTypeInvalid, name)
-			} else if !h.Hash.IsZeroValue() {
+			} else if !h.Hash.IsZero() {
 				log.Printf("hash value = %#v\n", v)
 				ph.Hash = h.Hash
 				p.variables[name] = ph
-			} else if !p.isGlobal() && !h.Ref.IsZeroValue() {
+			} else if !p.isGlobal() && !h.Ref.IsZero() {
 				h.Ref.global = p.global
 				log.Printf("ref value = %#v\n", v)
 				build, err2 := h.Ref.Build()
@@ -88,6 +94,10 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 					return err2
 				}
 				for n, ph := range build {
+					if name != "" && name != "ref" {
+						p.variables[name] = ph
+						continue
+					}
 					p.variables[n] = ph
 				}
 			} else {
@@ -113,7 +123,7 @@ func (p *Placeholder) Value() Evaluator {
 		return p.Enum
 	} else if p.String != "" {
 		return p.String
-	} else if !p.Hash.IsZeroValue() {
+	} else if !p.Hash.IsZero() {
 		return &p.Hash
 	}
 	return nil
