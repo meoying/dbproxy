@@ -23,7 +23,7 @@ placeholders:
   str: This is string
 `,
 			want: Placeholders{
-				variables: map[string]Placeholder{
+				Variables: map[string]Placeholder{
 					"str": {
 						String: String("This is string"),
 					},
@@ -40,7 +40,7 @@ placeholders:
     - cn
 `,
 			want: Placeholders{
-				variables: map[string]Placeholder{
+				Variables: map[string]Placeholder{
 					"enum": {
 						Enum: Enum{"hk", "cn"},
 					},
@@ -58,7 +58,7 @@ placeholders:
       base: 3
 `,
 			want: Placeholders{
-				variables: map[string]Placeholder{
+				Variables: map[string]Placeholder{
 					"hash": {
 						Hash: Hash{
 							Key:  "user_id",
@@ -102,6 +102,7 @@ placeholders:
 				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
 			},
 		},
+		// TODO: 不支持引用模版类型, 模版的占位不能再引用模版
 	}
 
 	for _, tt := range tests {

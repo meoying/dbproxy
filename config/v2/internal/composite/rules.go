@@ -3,89 +3,16 @@ package composite
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
-type Sharding struct {
-	Name       string
-	Datasource Datasource `yaml:"datasource"`
-	Database   Database   `yaml:"database"`
-	Table      Variable   `yaml:"table"`
-}
-
-func (s *Sharding) UnmarshalYAML(value *yaml.Node) error {
-	type rawSharding struct {
-		Datasource map[string]any `yaml:"datasource"`
-		Database   map[string]any `yaml:"database"`
-		Table      any            `yaml:"table"`
-	}
-	log.Printf("解析前 raw.sharding 前 sharding 自身 = %#v\n", s)
-	var raw rawSharding
-	if err := value.Decode(&raw); err != nil {
-		return err
-	}
-
-	log.Printf("解析 raw.Sharding = %#v\n", raw)
-	log.Printf("before ds = %#v\n", raw.Datasource)
-	log.Printf("before db = %#v\n", raw.Database)
-	log.Printf("before tb = %#v\n", raw.Table)
-
-	ds, err := unmarshalShardingFieldVariable[Datasource](ConfigSectionDatasources,
-		DataTypeDatasource, s.Name, raw.Datasource)
-	if err != nil {
-		return err
-	}
-	s.Datasource = ds
-	log.Printf("解析ds成功! = %#v\n", s.Datasource)
-
-	db, err := unmarshalShardingFieldVariable[Database](ConfigFieldDatabases,
-		DataTypeDatabase, s.Name, raw.Database)
-	if err != nil {
-		return err
-	}
-	s.Database = db
-	log.Printf("解析db成功! = %#v\n", s.Database)
-
-	v, err := UnmarshalUntypedVariable(DataTypeVariable, s.Name, raw.Table)
-	if err != nil {
-		return err
-	}
-	tb := v.(Variable)
-	s.Table = tb
-	log.Printf("解析tb成功! = %#v\n", s.Table)
-	return nil
-}
-
-func unmarshalShardingFieldVariable[T Database | Datasource](fieldType, varType, varName string, variables map[string]any) (T, error) {
-	var zero T
-	if len(variables) == 0 {
-		return zero, fmt.Errorf("%w: %s.sharding.%s", errs.ErrUnmarshalVariableFailed, varName, varType)
-	}
-	var chosenVarName string
-	if p, ok := variables[DataTypeReference]; ok {
-		refPath := p.(string)
-		if !strings.HasPrefix(refPath, fieldType) {
-			return zero, fmt.Errorf("%w: %s", errs.ErrReferencePathInvalid, refPath)
-		}
-		chosenVarName = refPath
-	} else {
-		chosenVarName = varName
-	}
-	v, err := UnmarshalUntypedVariable(varType, chosenVarName, variables)
-	if err != nil {
-		return zero, err
-	}
-	return v.(T), nil
-}
-
 type Rules struct {
 	placeholders *Placeholders
 	datasources  *Datasources
-	databases    *Databases
-	tables       *Tables
+	databases    *Section[Database]
+	tables       *Section[Table]
 
 	Variables map[string]Rule
 }
@@ -124,20 +51,20 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 type Rule struct {
 	globalPlaceholders *Placeholders
 	globalDatasources  *Datasources
-	globalDatabases    *Databases
-	globalTables       *Tables
+	globalDatabases    *Section[Database]
+	globalTables       *Section[Table]
 
-	Datasources Datasources `yaml:"datasources"`
-	Databases   Databases   `yaml:"databases"`
-	Tables      Tables      `yaml:"tables"`
+	Datasources Datasources       `yaml:"datasources"`
+	Databases   Section[Database] `yaml:"databases"`
+	Tables      Section[Table]    `yaml:"tables"`
 }
 
 func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 
 	type rawRule struct {
-		Datasources Datasources `yaml:"datasources"`
-		Databases   Databases   `yaml:"databases"`
-		Tables      Tables      `yaml:"tables"`
+		Datasources Datasources        `yaml:"datasources"`
+		Databases   *Section[Database] `yaml:"databases"`
+		Tables      *Section[Table]    `yaml:"tables"`
 	}
 
 	raw := &rawRule{
@@ -145,14 +72,8 @@ func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 			globalPlaceholders: r.globalPlaceholders,
 			global:             r.globalDatasources,
 		},
-		Databases: Databases{
-			globalPlaceholders: r.globalPlaceholders,
-			global:             r.globalDatabases,
-		},
-		Tables: Tables{
-			globalPlaceholders: r.globalPlaceholders,
-			global:             r.globalTables,
-		},
+		Databases: NewSection[Database](ConfigSectionTypeDatabases, r.globalDatabases, r.globalPlaceholders, NewDatabase),
+		Tables:    NewSection[Table](ConfigSectionTypeTables, r.globalTables, r.globalPlaceholders, NewTable),
 	}
 	err := value.Decode(&raw)
 	if err != nil {
@@ -163,7 +84,7 @@ func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 	log.Printf("globalDatasources = %#v\n", r.globalDatasources)
 
 	r.Datasources = raw.Datasources
-	r.Databases = raw.Databases
-	r.Tables = raw.Tables
+	r.Databases = *raw.Databases
+	r.Tables = *raw.Tables
 	return nil
 }

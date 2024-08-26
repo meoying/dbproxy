@@ -12,7 +12,7 @@ func TestDatabases(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantFunc func(t *testing.T, ph *Placeholders) Databases
+		getWantFunc func(t *testing.T, ph *Placeholders) Section[Database]
 		assertError assert.ErrorAssertionFunc
 	}{
 		{
@@ -21,9 +21,8 @@ func TestDatabases(t *testing.T) {
 databases:
   user: user_db
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Databases {
-				return Databases{
-					globalPlaceholders: ph,
+			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
+				return Section[Database]{
 					Variables: map[string]Database{
 						"user": {
 							Value: String("user_db"),
@@ -43,9 +42,8 @@ databases:
     - payment_db_0
     - payment_db_1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Databases {
-				return Databases{
-					globalPlaceholders: ph,
+			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
+				return Section[Database]{
 					Variables: map[string]Database{
 						"order": {
 							Value: Enum{"order_db_0"},
@@ -67,9 +65,8 @@ databases:
       key: user_id
       base: 3
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Databases {
-				return Databases{
-					globalPlaceholders: ph,
+			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
+				return Section[Database]{
 					Variables: map[string]Database{
 						"hash": {
 							Value: Hash{
@@ -94,17 +91,14 @@ databases:
           - 0
           - 1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Databases {
-				return Databases{
-					globalPlaceholders: ph,
+			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
+				return Section[Database]{
 					Variables: map[string]Database{
 						"payment": {
 							Value: Template{
-								global: ph,
-								Expr:   "payment_db_${ID}",
+								Expr: "payment_db_${ID}",
 								Placeholders: Placeholders{
-									global: ph,
-									variables: map[string]Placeholder{
+									Variables: map[string]Placeholder{
 										"ID": {
 											Enum: Enum{"0", "1"},
 										},
@@ -117,8 +111,9 @@ databases:
 			},
 			assertError: assert.NoError,
 		},
+		// 模版类型_引用全局占位符_字符串
 		{
-			name: "模版类型_引用全局占位符",
+			name: "模版类型_引用全局占位符_枚举",
 			yamlData: `
 placeholders:
   id:
@@ -133,17 +128,14 @@ databases:
           ref:
             - placeholders.id 
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Databases {
-				return Databases{
-					globalPlaceholders: ph,
+			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
+				return Section[Database]{
 					Variables: map[string]Database{
 						"payment": {
 							Value: Template{
-								global: ph,
-								Expr:   "payment_db_${ID}",
+								Expr: "payment_db_${ID}",
 								Placeholders: Placeholders{
-									global: ph,
-									variables: map[string]Placeholder{
+									Variables: map[string]Placeholder{
 										"ID": {
 											Enum: Enum{"0", "1"},
 										},
@@ -156,8 +148,8 @@ databases:
 			},
 			assertError: assert.NoError,
 		},
+		// 模版类型_引用全局占位符_哈希
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cfg Config
@@ -167,7 +159,7 @@ databases:
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Databases)
+			assert.EqualExportedValues(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Databases)
 		})
 	}
 }

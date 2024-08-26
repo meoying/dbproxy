@@ -13,13 +13,13 @@ func TestRules(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantRules func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules
+		getWantRules func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules
 		assertError  assert.ErrorAssertionFunc
 	}{
 		// 局部定义datasources
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有数据源定义_标准写法",
+			name: "仅有datasources定义_标准写法",
 			yamlData: `
 rules:
   user:
@@ -35,17 +35,11 @@ rules:
           - webook:webook@tcp(2.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
           - webook:webook@tcp(3.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
 							Datasources: Datasources{
-								global:             ds,
-								globalPlaceholders: ph,
 								Variables: map[string]Datasource{
 									"cn": {
 										MasterSlaves: MasterSlaves{
@@ -75,7 +69,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_应该报错_模版语法_匿名",
+			name: "仅有datasources定义_应该报错_模版语法_匿名",
 			yamlData: `
 rules:
   user:
@@ -91,7 +85,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -100,7 +94,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_应该报错_模版语法_匿名与命名混合",
+			name: "仅有datasources定义_应该报错_模版语法_匿名与命名混合",
 			yamlData: `
 rules:
   user:
@@ -118,7 +112,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -127,7 +121,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_模版语法_命名",
+			name: "仅有datasources定义_模版语法_命名",
 			yamlData: `
 rules:
   user:
@@ -144,27 +138,18 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
 							Datasources: Datasources{
-								globalPlaceholders: ph,
-								global:             ds,
 								Variables: map[string]Datasource{
 									"named_tmpl": {
 										Template: DatasourceTemplate{
-											global: ph,
 											Master: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -175,11 +160,9 @@ rules:
 												},
 											},
 											Slaves: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -201,7 +184,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_模版语法_命名_多个",
+			name: "仅有datasources定义_模版语法_命名_多个",
 			yamlData: `
 rules:
   user:
@@ -229,27 +212,18 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
 							Datasources: Datasources{
-								global:             ds,
-								globalPlaceholders: ph,
 								Variables: map[string]Datasource{
 									"named_tmpl": {
 										Template: DatasourceTemplate{
-											global: ph,
 											Master: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -260,11 +234,9 @@ rules:
 												},
 											},
 											Slaves: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -278,13 +250,10 @@ rules:
 									},
 									"named_tmpl2": {
 										Template: DatasourceTemplate{
-											global: ph,
 											Master: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -295,11 +264,9 @@ rules:
 												},
 											},
 											Slaves: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -322,7 +289,7 @@ rules:
 		// TODO: 局部定义 placeholders —— 在 datasources 中 引用全局 placeholders
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_引用语法_数据源类型",
+			name: "仅有datasources定义_引用语法_数据源类型",
 			yamlData: `
 datasources:
   cn_test:
@@ -350,17 +317,11 @@ rules:
         - datasources.cn_test
         - datasources.cn_prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
 							Datasources: Datasources{
-								global:             ds,
-								globalPlaceholders: ph,
 								Variables: map[string]Datasource{
 									"cn_test": {
 										MasterSlaves: MasterSlaves{
@@ -404,7 +365,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有局部数据源定义_引用语法_模版类型",
+			name: "仅有datasources定义_引用语法_模版类型",
 			yamlData: `
 datasources:
   ds_tmpl:
@@ -423,27 +384,18 @@ rules:
     datasources:
       ref:
         - datasources.ds_tmpl`,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					datasources:  ds,
-					placeholders: ph,
 					Variables: map[string]Rule{
 						"user": {
-							globalDatasources:  ds,
-							globalPlaceholders: ph,
 							Datasources: Datasources{
-								global:             ds,
-								globalPlaceholders: ph,
 								Variables: map[string]Datasource{
 									"ds_tmpl": {
 										Template: DatasourceTemplate{
-											global: ph,
 											Master: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -454,11 +406,9 @@ rules:
 												},
 											},
 											Slaves: Template{
-												global: ph,
-												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
-													global: ph,
-													variables: map[string]Placeholder{
+													Variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
 														},
@@ -480,7 +430,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有数据源定义_引用路径错误",
+			name: "仅有datasources定义_引用路径错误",
 			yamlData: `
 datasources:
   cn_test:
@@ -505,7 +455,7 @@ rules:
       ref:
         - abc.hk_prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -516,25 +466,17 @@ rules:
 		// 局部定义databases
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有databases定义_字符串",
+			name: "仅有databases定义_匿名字符串",
 			yamlData: `
 rules:
   user:
     databases: user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Databases: Databases{
-								global:             db,
-								globalPlaceholders: ph,
+							Databases: Section[Database]{
 								Variables: map[string]Database{
 									"": {
 										Value: String("user_db"),
@@ -549,7 +491,7 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有databases定义_引用字符串",
+			name: "仅有databases定义_匿名引用字符串",
 			yamlData: `
 databases:
   user_db: user_db
@@ -560,17 +502,11 @@ rules:
       ref:
         - databases.user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Databases: Databases{
+							Databases: Section[Database]{
 								global:             db,
 								globalPlaceholders: ph,
 								Variables: map[string]Database{
@@ -587,7 +523,66 @@ rules:
 		},
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
-			name: "仅有databases定义_枚举",
+			name: "仅有databases定义_命名字符串",
+			yamlData: `
+rules:
+  user:
+    databases:
+      cn: user_db
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"cn": {
+										Value: String("user_db"),
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_命名引用字符串",
+			yamlData: `
+databases:
+  user_db: user_db
+
+rules:
+  user:
+    databases:
+      cn:
+        ref:
+          - databases.user_db
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								global:             db,
+								globalPlaceholders: ph,
+								Variables: map[string]Database{
+									"cn": {
+										Value: String("user_db"),
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_匿名枚举",
 			yamlData: `
 rules:
   user:
@@ -595,19 +590,11 @@ rules:
       - user_db_0
       - user_db_1
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Databases: Databases{
-								global:             db,
-								globalPlaceholders: ph,
+							Databases: Section[Database]{
 								Variables: map[string]Database{
 									"": {
 										Value: Enum{"user_db_0", "user_db_1"},
@@ -620,14 +607,579 @@ rules:
 			},
 			assertError: assert.NoError,
 		},
-		// 引用枚举
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_匿名引用枚举",
+			yamlData: `
+databases:
+  user_dbs:
+    - user_db_0
+    - user_db_1
 
-		// 模版语法
-		// 引用模版
+rules:
+  user:
+    databases:
+      ref:
+        - databases.user_dbs
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"user_dbs": {
+										Value: Enum{"user_db_0", "user_db_1"},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_命名枚举",
+			yamlData: `
+rules:
+  user:
+    databases:
+      enum:
+        - user_db_0
+        - user_db_1
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"enum": {
+										Value: Enum{"user_db_0", "user_db_1"},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_命名引用枚举",
+			yamlData: `
+databases:
+  user_dbs:
+    - user_db_0
+    - user_db_1
 
-		// 模版语法_引用占位符
-		// TODO: 局部定义 placeholders —— 在 databases 中 引用全局 placeholders
+rules:
+  user:
+    databases:
+      cn_user:
+        ref:
+          - databases.user_dbs
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"cn_user": {
+										Value: Enum{"user_db_0", "user_db_1"},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_匿名模版",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+rules:
+  user:
+    databases:
+      template:
+        expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"template": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_匿名引用模版",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
 
+databases:
+  user:
+    template:
+        expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+rules:
+  user:
+    databases:
+      ref:
+        - databases.user
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"user": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_命名模版",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+rules:
+  user:
+    databases:
+      user_cn:
+        template:
+          expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+          placeholders:
+            ID: 0
+            region:
+              - cn
+              - hk
+            index:
+              hash:
+                key: user_id
+                base: 3
+            ID2:
+              ref:
+                - placeholders.id2
+            Region2:
+              ref:
+                - placeholders.region2
+            Index2:
+              ref:
+                - placeholders.index2
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"user_cn": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_命名引用模版",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+
+databases:
+  user:
+    template:
+        expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+rules:
+  user:
+    databases:
+      cn:
+        ref:
+          - databases.user
+      hk:
+        ref:
+          - databases.user
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"cn": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+									"hk": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有databases定义_模版语法_匿名与命名混合",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+rules:
+  user:
+    databases:
+      user_cn:
+        template:
+          expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+          placeholders:
+            ID: 0
+            region:
+              - cn
+              - hk
+            index:
+              hash:
+                key: user_id
+                base: 3
+            ID2:
+              ref:
+                - placeholders.id2
+            Region2:
+              ref:
+                - placeholders.region2
+            Index2:
+              ref:
+                - placeholders.index2
+      template:
+        expr: user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"template": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+									"user_cn": {
+										Value: Template{
+											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
 		// 局部定义tables
 		{
 			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
@@ -637,19 +1189,11 @@ rules:
   user:
     tables: user_tbl
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Tables: Tables{
-								global:             tb,
-								globalPlaceholders: ph,
+							Tables: Section[Table]{
 								Variables: map[string]Table{
 									"": {
 										Value: String("user_tbl"),
@@ -675,19 +1219,11 @@ rules:
       ref:
         - tables.user_table
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Tables: Tables{
-								global:             tb,
-								globalPlaceholders: ph,
+							Tables: Section[Table]{
 								Variables: map[string]Table{
 									"user_table": {
 										Value: String("user_table"),
@@ -707,25 +1243,212 @@ rules:
 rules:
   user:
     tables:
-      - user_db_0
-      - user_db_1
+      - user_tb_0
+      - user_tb_1
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
-					placeholders: ph,
-					datasources:  ds,
-					databases:    db,
 					Variables: map[string]Rule{
 						"user": {
-							globalPlaceholders: ph,
-							globalDatasources:  ds,
-							globalDatabases:    db,
-							Tables: Tables{
+							Tables: Section[Table]{
 								global:             tb,
 								globalPlaceholders: ph,
 								Variables: map[string]Table{
 									"": {
-										Value: Enum{"user_db_0", "user_db_1"},
+										Value: Enum{"user_tb_0", "user_tb_1"},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有tables定义_引用枚举",
+			yamlData: `
+tables:
+  user_tables:
+    - user_tb_0
+    - user_tb_1
+
+rules:
+  user:
+    tables:
+      ref:
+        - tables.user_tables
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Tables: Section[Table]{
+								Variables: map[string]Table{
+									"user_tables": {
+										Value: Enum{"user_tb_0", "user_tb_1"},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有tables定义_模版语法",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+rules:
+  user:
+    tables:
+      template:
+        expr: user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Tables: Section[Table]{
+								Variables: map[string]Table{
+									"template": {
+										Value: Template{
+											Expr: "user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+			},
+			assertError: assert.NoError,
+		},
+		{
+			// TODO: 后续改为报错,必须包含数据源、数据库、数据表
+			name: "仅有tables定义_引用模版语法",
+			yamlData: `
+placeholders:
+  id2: "1"
+  region2:
+    - us
+    - uk
+  index2:
+    hash:
+      key: user_id
+      base: 10
+
+tables:
+  user:
+    template:
+        expr: user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}
+        placeholders:
+          ID: 0
+          region:
+            - cn
+            - hk
+          index:
+            hash:
+             key: user_id
+             base: 3
+          ID2:
+            ref:
+              - placeholders.id2
+          Region2:
+            ref:
+              - placeholders.region2
+          Index2:
+            ref:
+              - placeholders.index2
+rules:
+  user:
+    tables:
+      ref:
+        - tables.user
+`,
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+				return Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Tables: Section[Table]{
+								Variables: map[string]Table{
+									"user": {
+										Value: Template{
+											Expr: "user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"ID": {
+														String: "0",
+													},
+													"region": {
+														Enum: Enum{"cn", "hk"},
+													},
+													"index": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+													"ID2": {
+														String: "1",
+													},
+													"Region2": {
+														Enum: Enum{"us", "uk"},
+													},
+													"Index2": {
+														Hash: Hash{Key: "user_id", Base: 10},
+													},
+												},
+											},
+										},
 									},
 								},
 							},
@@ -746,7 +1469,7 @@ rules:
 			if err != nil {
 				return
 			}
-			assert.EqualExportedValues(t, tt.getWantRules(t, cfg.Placeholders, cfg.Datasources, cfg.Databases, nil), cfg.Rules)
+			assert.EqualExportedValues(t, tt.getWantRules(t, cfg.Placeholders, cfg.Datasources, cfg.Databases, cfg.Tables), cfg.Rules)
 		})
 	}
 }

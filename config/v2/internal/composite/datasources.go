@@ -168,7 +168,7 @@ func (d *DatasourceBuilder) Build(values any) (map[string]Datasource, error) {
 			},
 		}, nil
 	} else if d.isReferenceType() {
-		if d.isGlobalValue() && d.Ref.IsSection(ConfigSectionDatasources) {
+		if d.isGlobalValue() && d.Ref.IsSection(ConfigSectionTypeDatasources) {
 			return nil, fmt.Errorf("%w: 全局datasources不支持ref(引用类型)变量", errs.ErrVariableTypeInvalid)
 		}
 		if d.isTemplateType() {

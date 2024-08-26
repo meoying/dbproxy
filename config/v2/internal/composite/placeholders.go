@@ -12,7 +12,7 @@ import (
 
 type Placeholders struct {
 	global    *Placeholders
-	variables map[string]Placeholder
+	Variables map[string]Placeholder
 }
 
 func (p *Placeholders) Type() string {
@@ -20,7 +20,7 @@ func (p *Placeholders) Type() string {
 }
 
 func (p *Placeholders) Find(name string) (Placeholder, error) {
-	ph, ok := p.variables[name]
+	ph, ok := p.Variables[name]
 	if !ok {
 		return Placeholder{}, fmt.Errorf("%w: %s", errs.ErrVariableNameNotFound, name)
 	}
@@ -28,7 +28,7 @@ func (p *Placeholders) Find(name string) (Placeholder, error) {
 }
 
 func (p *Placeholders) IsZero() bool {
-	return len(p.variables) == 0
+	return len(p.Variables) == 0
 }
 
 func (d *Placeholders) isGlobal() bool {
@@ -43,13 +43,13 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	log.Printf("raw.Placeholders.Variables = %#v\n", variables)
-	p.variables = make(map[string]Placeholder, len(variables))
+	p.Variables = make(map[string]Placeholder, len(variables))
 	for name, val := range variables {
 
 		if !p.isGlobal() {
 			// 在局部datasources中引用
 			if name == DataTypeReference {
-				variables[name] = map[string]any{
+				val = map[string]any{
 					DataTypeReference: val,
 				}
 			}
@@ -57,9 +57,12 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 
 		ph := Placeholder{}
 		switch v := val.(type) {
+		case int:
+			ph.String = String(strconv.Itoa(v))
+			p.Variables[name] = ph
 		case string:
 			ph.String = String(v)
-			p.variables[name] = ph
+			p.Variables[name] = ph
 		case []any:
 			ph.Enum = slice.Map(v, func(idx int, src any) string {
 				switch t := src.(type) {
@@ -69,7 +72,7 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 					return src.(string)
 				}
 			})
-			p.variables[name] = ph
+			p.Variables[name] = ph
 		case map[string]any:
 			var h struct {
 				Hash Hash `yaml:"hash,omitempty"`
@@ -85,7 +88,7 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 			} else if !h.Hash.IsZero() {
 				log.Printf("hash value = %#v\n", v)
 				ph.Hash = h.Hash
-				p.variables[name] = ph
+				p.Variables[name] = ph
 			} else if !p.isGlobal() && !h.Ref.IsZero() {
 				h.Ref.global = p.global
 				log.Printf("ref value = %#v\n", v)
@@ -95,10 +98,10 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 				}
 				for n, ph := range build {
 					if name != "" && name != "ref" {
-						p.variables[name] = ph
+						p.Variables[name] = ph
 						continue
 					}
-					p.variables[n] = ph
+					p.Variables[n] = ph
 				}
 			} else {
 				return fmt.Errorf("%w: %w: placeholders.%s", err1, errs.ErrVariableTypeInvalid, name)

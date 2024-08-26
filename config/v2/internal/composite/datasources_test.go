@@ -28,7 +28,6 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"master": {
 							MasterSlaves: MasterSlaves{
@@ -51,7 +50,6 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"cn": {
 							MasterSlaves: MasterSlaves{
@@ -76,7 +74,6 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"cn": {
 							MasterSlaves: MasterSlaves{
@@ -115,7 +112,6 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"cn_test": {
 							MasterSlaves: MasterSlaves{
@@ -177,17 +173,13 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"hk_equal": {
 							Template: DatasourceTemplate{
-								global: ph,
 								Master: Template{
-									global: ph,
-									Expr:   "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
+									Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 									Placeholders: Placeholders{
-										global: ph,
-										variables: map[string]Placeholder{
+										Variables: map[string]Placeholder{
 											"region": {
 												Enum: Enum{"hk", "cn"},
 											},
@@ -204,11 +196,9 @@ datasources:
 									},
 								},
 								Slaves: Template{
-									global: ph,
-									Expr:   "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
+									Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 									Placeholders: Placeholders{
-										global: ph,
-										variables: map[string]Placeholder{
+										Variables: map[string]Placeholder{
 											"region": {
 												Enum: Enum{"hk", "cn"},
 											},
@@ -264,17 +254,13 @@ datasources:
  `,
 			getWantFunc: func(t *testing.T, ph *Placeholders) Datasources {
 				return Datasources{
-					globalPlaceholders: ph,
 					Variables: map[string]Datasource{
 						"hk_equal": {
 							Template: DatasourceTemplate{
-								global: ph,
 								Master: Template{
-									global: ph,
-									Expr:   "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
+									Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 									Placeholders: Placeholders{
-										global: ph,
-										variables: map[string]Placeholder{
+										Variables: map[string]Placeholder{
 											"region": {
 												Enum: Enum{"hk", "cn"},
 											},
@@ -291,11 +277,9 @@ datasources:
 									},
 								},
 								Slaves: Template{
-									global: ph,
-									Expr:   "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
+									Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 									Placeholders: Placeholders{
-										global: ph,
-										variables: map[string]Placeholder{
+										Variables: map[string]Placeholder{
 											"region": {
 												Enum: Enum{"hk", "cn"},
 											},
@@ -346,7 +330,7 @@ datasources:
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Datasources)
+			assert.EqualExportedValues(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Datasources)
 		})
 	}
 }

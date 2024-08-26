@@ -57,12 +57,12 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	for _, ph := range t.placeholdersInExpr() {
-		if _, ok := raw.Placeholders.variables[ph]; !ok {
+		if _, ok := raw.Placeholders.Variables[ph]; !ok {
 			return fmt.Errorf("%w: template.placeholders 缺少占位符 %s", errs.ErrUnmarshalVariableFailed, ph)
 		}
 	}
 
-	for ph := range raw.Placeholders.variables {
+	for ph := range raw.Placeholders.Variables {
 		if !strings.Contains(t.Expr, fmt.Sprintf("${%s}", ph)) {
 			return fmt.Errorf("%w: template.expr 缺少占位符 %s", errs.ErrUnmarshalVariableFailed, ph)
 		}
@@ -86,7 +86,7 @@ func (t *Template) placeholdersInExpr() []string {
 
 func (t *Template) Evaluate() (map[string]string, error) {
 	results := make(map[string]string)
-	keys := make([]string, 0, len(t.Placeholders.variables))
+	keys := make([]string, 0, len(t.Placeholders.Variables))
 
 	if err := t.evaluate(results, t.Expr, t.placeholdersInExpr(), &keys); err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (t *Template) evaluate(results map[string]string, expr string, placeholders
 	ph := placeholders[i]
 	expr = strings.Replace(expr, "${"+ph+"}", "%s", 1)
 
-	placeholder := t.Placeholders.variables[ph]
+	placeholder := t.Placeholders.Variables[ph]
 	values, err := placeholder.Value().Evaluate()
 	if err != nil {
 		return err

@@ -31,7 +31,7 @@ template:
 			want: Template{
 				Expr: "${region}.order_db",
 				Placeholders: Placeholders{
-					variables: map[string]Placeholder{
+					Variables: map[string]Placeholder{
 						"region": {String: String("hk")},
 					},
 				},
@@ -51,7 +51,7 @@ template:
 			want: Template{
 				Expr: "${region}.order_db",
 				Placeholders: Placeholders{
-					variables: map[string]Placeholder{
+					Variables: map[string]Placeholder{
 						"region": {Enum: Enum{"us", "uk"}},
 					},
 				},
@@ -72,7 +72,7 @@ template:
 			want: Template{
 				Expr: "order_db_${key}",
 				Placeholders: Placeholders{
-					variables: map[string]Placeholder{
+					Variables: map[string]Placeholder{
 						"key": {Hash: Hash{
 							Key:  "user_id",
 							Base: 3,
@@ -82,6 +82,11 @@ template:
 			},
 			assertError: assert.NoError,
 		},
+		// TODO: 占位符为引用类型
+		// 1) 引用字符串
+		// 2) 引用枚举
+		// 3) 引用哈希
+		// TODO: 应该报错_引用模版
 		{
 			name: "占位符为各种类型的组合",
 			yamlData: `
@@ -103,7 +108,7 @@ template:
 			want: Template{
 				Expr: "${region}.${role}.${type}.${id}.example.com",
 				Placeholders: Placeholders{
-					variables: map[string]Placeholder{
+					Variables: map[string]Placeholder{
 						"region": {Enum: Enum{"cn", "us"}},
 						"role":   {Enum: Enum{"master", "slave"}},
 						"type":   {String: String("mysql")},
