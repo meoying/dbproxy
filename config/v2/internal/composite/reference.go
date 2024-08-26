@@ -208,6 +208,16 @@ func (r *Reference[E, F]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// IsSection 根据 name 判断是否引用某个全局小节
+func (r *Reference[E, F]) IsSection(name string) bool {
+	for _, path := range r.paths {
+		if strings.SplitN(path, ".", 2)[0] == name {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Reference[E, F]) Build() (map[string]E, error) {
 	mp := make(map[string]E, len(r.paths))
 	for _, path := range r.paths {

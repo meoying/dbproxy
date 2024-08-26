@@ -10,12 +10,28 @@ import (
 )
 
 type Placeholders struct {
-	// global    *Placeholders
+	global    *Placeholders
 	variables map[string]Placeholder
+}
+
+func (p *Placeholders) Name() string {
+	return "placeholders"
+}
+
+func (p *Placeholders) Find(name string) (Placeholder, error) {
+	ph, ok := p.variables[name]
+	if !ok {
+		return Placeholder{}, fmt.Errorf("%w: %s", errs.ErrVariableNameNotFound, name)
+	}
+	return ph, nil
 }
 
 func (p *Placeholders) IsZeroValue() bool {
 	return len(p.variables) == 0
+}
+
+func (d *Placeholders) isGlobal() bool {
+	return d.global == nil
 }
 
 func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
@@ -24,38 +40,65 @@ func (p *Placeholders) UnmarshalYAML(value *yaml.Node) error {
 	if err != nil {
 		return err
 	}
+
 	log.Printf("raw.Placeholders.Variables = %#v\n", variables)
 	p.variables = make(map[string]Placeholder, len(variables))
 	for name, val := range variables {
+
+		if !p.isGlobal() {
+			// 在局部datasources中引用
+			if name == DataTypeReference {
+				variables[name] = map[string]any{
+					DataTypeReference: val,
+				}
+			}
+		}
+
 		ph := Placeholder{}
 		switch v := val.(type) {
 		case string:
 			ph.String = String(v)
+			p.variables[name] = ph
 		case []any:
-			// 引用类型, 非全局Placeholders,中变量可以引用全局Placeholders
 			ph.Enum = slice.Map(v, func(idx int, src any) string {
 				return src.(string)
 			})
+			p.variables[name] = ph
 		case map[string]any:
-			log.Printf("hash value = %#v\n", v)
 			var h struct {
 				Hash Hash `yaml:"hash,omitempty"`
+				Ref  Reference[Placeholder, *Placeholders]
 			}
 			out, err1 := yaml.Marshal(v)
 			if err1 != nil {
 				return err1
 			}
 			err1 = yaml.Unmarshal(out, &h)
-			if err1 != nil || h.Hash.IsZeroValue() {
-				return fmt.Errorf("%w: 复合类型当前仅支持哈希: %s", errs.ErrVariableTypeInvalid, err1)
+			if err1 != nil {
+				return fmt.Errorf("%w: %w: placeholders.%s", err1, errs.ErrVariableTypeInvalid, name)
+			} else if !h.Hash.IsZeroValue() {
+				log.Printf("hash value = %#v\n", v)
+				ph.Hash = h.Hash
+				p.variables[name] = ph
+			} else if !p.isGlobal() && !h.Ref.IsZeroValue() {
+				h.Ref.global = p.global
+				log.Printf("ref value = %#v\n", v)
+				build, err2 := h.Ref.Build()
+				if err2 != nil {
+					return err2
+				}
+				for n, ph := range build {
+					p.variables[n] = ph
+				}
+			} else {
+				return fmt.Errorf("%w: %w: placeholders.%s", err1, errs.ErrVariableTypeInvalid, name)
 			}
-			ph.Hash = h.Hash
 		default:
 			return fmt.Errorf("%w: %q", errs.ErrVariableTypeInvalid, v)
 		}
-		p.variables[name] = ph
+
 	}
-	log.Printf("Placeholders = %#v\n", p)
+	log.Printf("解析后的 Placeholders = %#v\n", p)
 	return nil
 }
 

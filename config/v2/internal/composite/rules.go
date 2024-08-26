@@ -82,8 +82,12 @@ func unmarshalShardingFieldVariable[T Database | Datasource](fieldType, varType,
 }
 
 type Rules struct {
-	datasources *Datasources
-	variables   map[string]Rule
+	placeholders *Placeholders
+	datasources  *Datasources
+	// databases    *Databases
+	// tables       *Tables
+
+	variables map[string]Rule
 }
 
 func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
@@ -98,7 +102,8 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 	r.variables = make(map[string]Rule, len(variables))
 	for name, values := range variables {
 		v := Rule{
-			globalDatasources: r.datasources,
+			globalPlaceholders: r.placeholders,
+			globalDatasources:  r.datasources,
 		}
 		out, err1 := yaml.Marshal(values)
 		if err1 != nil {
@@ -115,8 +120,9 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Rule struct {
-	globalDatasources *Datasources
-	Datasources       Datasources `yaml:"datasources"`
+	globalPlaceholders *Placeholders
+	globalDatasources  *Datasources
+	Datasources        Datasources `yaml:"datasources"`
 }
 
 func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
@@ -127,7 +133,8 @@ func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 
 	raw := &rawRule{
 		Datasources: Datasources{
-			global: r.globalDatasources,
+			globalPlaceholders: r.globalPlaceholders,
+			global:             r.globalDatasources,
 		},
 	}
 	err := value.Decode(&raw)

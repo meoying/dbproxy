@@ -12,6 +12,7 @@ import (
 
 // Template 模版类型
 type Template struct {
+	global       *Placeholders
 	Expr         string       `yaml:"expr"`
 	Placeholders Placeholders `yaml:"placeholders"`
 }
@@ -25,7 +26,11 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 		Expr         string       `yaml:"expr"`
 		Placeholders Placeholders `yaml:"placeholders"`
 	}
-	var raw rawTemplate
+	raw := rawTemplate{
+		Placeholders: Placeholders{
+			global: t.global,
+		},
+	}
 	if err := value.Decode(&raw); err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ func TestRules(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantRules func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules
+		getWantRules func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules
 		assertError  assert.ErrorAssertionFunc
 	}{
 		// 局部定义datasources
@@ -35,12 +35,17 @@ rules:
           - webook:webook@tcp(2.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
           - webook:webook@tcp(3.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{
+					placeholders: ph,
+					datasources:  ds,
 					variables: map[string]Rule{
 						"user": {
-							globalDatasources: ds,
+							globalPlaceholders: ph,
+							globalDatasources:  ds,
 							Datasources: Datasources{
+								global:             ds,
+								globalPlaceholders: ph,
 								variables: map[string]Datasource{
 									"cn": {
 										MasterSlaves: MasterSlaves{
@@ -86,7 +91,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -113,7 +118,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -139,20 +144,26 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{
-					datasources: ds,
+					placeholders: ph,
+					datasources:  ds,
 					variables: map[string]Rule{
 						"user": {
-							globalDatasources: ds,
+							globalPlaceholders: ph,
+							globalDatasources:  ds,
 							Datasources: Datasources{
-								global: ds,
+								globalPlaceholders: ph,
+								global:             ds,
 								variables: map[string]Datasource{
 									"named_tmpl": {
 										Template: DatasourceTemplate{
+											global: ph,
 											Master: Template{
-												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -164,8 +175,10 @@ rules:
 												},
 											},
 											Slaves: Template{
-												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -216,20 +229,26 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{
-					datasources: ds,
+					placeholders: ph,
+					datasources:  ds,
 					variables: map[string]Rule{
 						"user": {
-							globalDatasources: ds,
+							globalPlaceholders: ph,
+							globalDatasources:  ds,
 							Datasources: Datasources{
-								global: ds,
+								global:             ds,
+								globalPlaceholders: ph,
 								variables: map[string]Datasource{
 									"named_tmpl": {
 										Template: DatasourceTemplate{
+											global: ph,
 											Master: Template{
-												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -241,8 +260,10 @@ rules:
 												},
 											},
 											Slaves: Template{
-												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -257,9 +278,12 @@ rules:
 									},
 									"named_tmpl2": {
 										Template: DatasourceTemplate{
+											global: ph,
 											Master: Template{
-												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -271,8 +295,10 @@ rules:
 												},
 											},
 											Slaves: Template{
-												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -323,14 +349,17 @@ rules:
         - datasources.cn_test
         - datasources.cn_prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{
-					datasources: ds,
+					placeholders: ph,
+					datasources:  ds,
 					variables: map[string]Rule{
 						"user": {
-							globalDatasources: ds,
+							globalPlaceholders: ph,
+							globalDatasources:  ds,
 							Datasources: Datasources{
-								global: ds,
+								global:             ds,
+								globalPlaceholders: ph,
 								variables: map[string]Datasource{
 									"cn_test": {
 										MasterSlaves: MasterSlaves{
@@ -393,20 +422,26 @@ rules:
     datasources:
       ref:
         - datasources.ds_tmpl`,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{
-					datasources: ds,
+					datasources:  ds,
+					placeholders: ph,
 					variables: map[string]Rule{
 						"user": {
-							globalDatasources: ds,
+							globalDatasources:  ds,
+							globalPlaceholders: ph,
 							Datasources: Datasources{
-								global: ds,
+								global:             ds,
+								globalPlaceholders: ph,
 								variables: map[string]Datasource{
 									"ds_tmpl": {
 										Template: DatasourceTemplate{
+											global: ph,
 											Master: Template{
-												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -418,8 +453,10 @@ rules:
 												},
 											},
 											Slaves: Template{
-												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
+												global: ph,
+												Expr:   "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
 												Placeholders: Placeholders{
+													global: ph,
 													variables: map[string]Placeholder{
 														"region": {
 															Enum: Enum{"hk", "cn"},
@@ -467,7 +504,7 @@ rules:
       ref:
         - abc.hk_prod
 `,
-			getWantRules: func(t *testing.T, ds *Datasources, db *Databases, tb *Tables) Rules {
+			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Databases, tb *Tables) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -489,7 +526,7 @@ rules:
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.getWantRules(t, cfg.Datasources, nil, nil), cfg.Rules)
+			assert.Equal(t, tt.getWantRules(t, cfg.Placeholders, cfg.Datasources, nil, nil), cfg.Rules)
 		})
 	}
 }

@@ -5,7 +5,6 @@
 数据源表示方式:
 
 
-
 ```yaml
 # 预定义的全局datasources,可选
 datasources:
@@ -111,8 +110,9 @@ rules:
 
 待确认:
 
-1. 是否支持如下语法, 局部datasources声明中既有模版语法又要有其他变量,那么此时模版类型需要给变量名,这与上面匿名模版类型不一致.
+- 是否支持如下语法, 局部datasources声明中既有模版语法又要有其他变量,那么此时模版类型需要给变量名,这与上面匿名模版类型不一致.
 是否需要增加限制, 只有当局部datasources中只有一个变量的时候且为模版类型,则可以简写为匿名
+
 ```yaml
 rules:
   order:
@@ -131,3 +131,120 @@ rules:
       cn:
         master: webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx 
 ```
+- datasourceTemplate模版中master与slaves中的占位符不匹配
+
+```yaml
+master: webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx
+slaves: webook:webook@tcp(${region}.slave.mysql.meoying.com:3306)/order?xxx
+```
+
+## placeholders
+
+### 全局定义
+
+- 只支持字符串、数组、哈希类型, 注意:不支持模版类型
+
+```yaml
+placeholders:
+  str: this is string
+  array:
+    - hk
+    - cn
+  id:
+    hash:
+      key: user_id
+      base: 3
+```
+
+### 局部定义
+
+- 在rules.datasources、rules.databases、rules.tables的模版中使用时,支持引用类型
+
+```yaml
+placeholders:
+  region_cn: cn
+  region_hk: hk
+  key:
+    hash:
+      key: user_id
+      base: 3
+  type:
+    - tob
+    - toc
+      
+rules:
+  user:
+    datasources:
+      cn:
+        template:
+          master: webook:webook@tcp(cn.${type}.master.mysql.meoying.com:3306)/order?xxx
+          slaves: webook:webook@tcp(cn.${type}.slave.mysql.meoying.com:3306)/order?xxx
+          placeholders:
+            type:
+              ref:
+                - placeholders.type 
+    databases:
+      cn:
+        template:
+          expr: user_db_${region}
+          placeholders:
+            region: 
+              ref:
+                - cn
+                - hk 
+    tables:
+      cn:
+        template:
+          expr: user_tbl_${key}
+          placeholders:
+            key:
+              ref:
+                - placeholders.key 
+```
+
+待确认问题 —— 引用类型的转换问题
+
+```yaml
+placeholders:
+  region_cn: cn
+  region_hk: hk
+  key:
+    hash:
+      key: user_id
+      base: 3
+  type:
+    - tob
+    - toc
+      
+rules:
+  user:
+    datasources:
+      cn:
+        template:
+          master: webook:webook@tcp(cn.${type}.master.mysql.meoying.com:3306)/order?xxx
+          slaves: webook:webook@tcp(cn.${type}.slave.mysql.meoying.com:3306)/order?xxx
+          placeholders:
+            type:
+              ref:
+                - placeholders.type 
+    databases:
+      cn:
+        template:
+          expr: user_db_${region}
+          placeholders:
+            region:
+              # 引用的语义问题: 
+              ref:
+                - placeholders.region_cn
+                - placeholders.region_hk 
+    tables:
+      cn:
+        template:
+          expr: user_tbl_${key}
+          placeholders:
+            key:
+              ref:
+                - placeholders.key 
+```
+上例中`region`是[cn,hk] 但是placeholders.region_cn和placeholders.region_hk表示两个字符串
+,而期望的是将两个字符串转换为字符串数组,这种转换需要明确给出的,否则`placeholders.key`解释不通

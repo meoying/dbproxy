@@ -9,8 +9,9 @@ import (
 )
 
 type Datasources struct {
-	global    *Datasources // 全局Datasources存在时,当前 Datasources 对象必为局部定义
-	variables map[string]Datasource
+	global             *Datasources // 全局Datasources存在时,当前 Datasources 对象必为局部定义
+	globalPlaceholders *Placeholders
+	variables          map[string]Datasource
 }
 
 func (d *Datasources) Name() string {
@@ -60,7 +61,8 @@ func (d *Datasources) UnmarshalYAML(value *yaml.Node) error {
 	log.Printf("datasources >>> vars = %#v\n", variables)
 	vars := make(map[string]Datasource, len(variables))
 	builder := &DatasourceBuilder{
-		global: d.global,
+		global:             d.global,
+		globalPlaceholders: d.globalPlaceholders,
 	}
 	for name, val := range variables {
 		values, err1 := builder.Build(val)
@@ -76,7 +78,7 @@ func (d *Datasources) UnmarshalYAML(value *yaml.Node) error {
 		}
 	}
 	d.variables = vars
-
+	log.Printf("解析后的 datasources = %#v\n", d)
 	// 使用 Global 来判定
 	// 非全局:  1) 支持,ref 匿名, 2) 匿名: template, 3) 命名 Datasource
 	// ref, tmpl, Datasource
@@ -112,7 +114,8 @@ func (d *Datasources) getMasterSlaves(res map[string]MasterSlaves, name string, 
 }
 
 type DatasourceBuilder struct {
-	global *Datasources
+	global             *Datasources
+	globalPlaceholders *Placeholders
 
 	Master   String                               `yaml:"master"`
 	Slaves   Enum                                 `yaml:"slaves,omitempty"`
@@ -125,11 +128,11 @@ func (d *DatasourceBuilder) isGlobalValue() bool {
 }
 
 func (d *DatasourceBuilder) isReferenceType() bool {
-	return d.Ref != nil
+	return d.Ref != nil && !d.Ref.IsZeroValue()
 }
 
 func (d *DatasourceBuilder) isTemplateType() bool {
-	return d.Template != nil
+	return d.Template != nil && !d.Template.IsZeroValue()
 }
 
 func (d *DatasourceBuilder) isMasterSlavesType() bool {
@@ -137,16 +140,17 @@ func (d *DatasourceBuilder) isMasterSlavesType() bool {
 }
 
 func (d *DatasourceBuilder) Build(values any) (map[string]Datasource, error) {
+	d.reset()
+
 	out, err := yaml.Marshal(values)
 	if err != nil {
 		return nil, err
 	}
+
 	err = yaml.Unmarshal(out, d)
 	if err != nil {
 		return nil, err
 	}
-
-	defer d.reset()
 
 	if d.isMasterSlavesType() {
 		if d.isReferenceType() {
@@ -164,18 +168,19 @@ func (d *DatasourceBuilder) Build(values any) (map[string]Datasource, error) {
 			},
 		}, nil
 	} else if d.isReferenceType() {
-		if d.isGlobalValue() {
+		if d.isGlobalValue() && d.Ref.IsSection(ConfigSectionDatasources) {
 			return nil, fmt.Errorf("%w: 全局datasources不支持ref(引用类型)变量", errs.ErrVariableTypeInvalid)
 		}
 		if d.isTemplateType() {
 			return nil, fmt.Errorf("%w: ref不能与template并用", errs.ErrVariableTypeInvalid)
 		}
-		d.Ref.global = d.global
+		// d.Ref.global = d.global
 		return d.Ref.Build()
 	} else if d.isTemplateType() {
 		if d.isReferenceType() {
 			return nil, fmt.Errorf("%w: template不能与ref并用", errs.ErrVariableTypeInvalid)
 		}
+		// d.Template.global = d.global.globalPlaceholders
 		return map[string]Datasource{
 			"": {
 				Template: *d.Template,
@@ -188,8 +193,8 @@ func (d *DatasourceBuilder) Build(values any) (map[string]Datasource, error) {
 func (d *DatasourceBuilder) reset() {
 	d.Master = ""
 	d.Slaves = nil
-	d.Ref = nil
-	d.Template = nil
+	d.Ref = &Reference[Datasource, *Datasources]{global: d.global}
+	d.Template = &DatasourceTemplate{global: d.globalPlaceholders}
 }
 
 // MasterSlaves 主从类型
@@ -222,6 +227,7 @@ func (d Datasource) IsTemplate() bool {
 
 // DatasourceTemplate 数据源模版类型
 type DatasourceTemplate struct {
+	global *Placeholders
 	Master Template
 	Slaves Template
 }
@@ -237,15 +243,17 @@ func (d *DatasourceTemplate) UnmarshalYAML(value *yaml.Node) error {
 		Placeholders Placeholders `yaml:"placeholders"`
 	}
 
-	var raw rawDatasourceTemplate
+	raw := &rawDatasourceTemplate{
+		Placeholders: Placeholders{global: d.global},
+	}
 	err := value.Decode(&raw)
 	if err != nil {
 		return err
 	}
 
 	log.Printf("raw.DatasourceTemplate = %#v\n", raw)
-	d.Master = Template{Expr: raw.Master, Placeholders: raw.Placeholders}
-	d.Slaves = Template{Expr: raw.Slaves, Placeholders: raw.Placeholders}
+	d.Master = Template{global: d.global, Expr: raw.Master, Placeholders: raw.Placeholders}
+	d.Slaves = Template{global: d.global, Expr: raw.Slaves, Placeholders: raw.Placeholders}
 	return nil
 }
 
