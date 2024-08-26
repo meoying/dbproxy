@@ -9,7 +9,6 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	t.Skip()
 	tests := []struct {
 		name     string
 		yamlData string
@@ -29,10 +28,6 @@ rules:
     tables: user_tb
 `,
 			want: Config{
-				Placeholders: nil,
-				Datasources:  nil,
-				Databases:    nil,
-				Tables:       nil,
 				Rules: Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -65,6 +60,75 @@ rules:
 			},
 			assertError: assert.NoError,
 		},
+		{
+			name: "分库分表_简单情况",
+			yamlData: `
+rules:
+  user:
+    datasources:
+      cn:
+        master: webook:webook@tcp(cn.mysql.meoying.com:3306)/?xxx
+      hk:
+        master: webook:webook@tcp(hk.mysql.meoying.com:3306)/?xxx
+    databases:
+       template:
+         expr: user_db_${key}
+         placeholders:
+           key:
+             hash:
+               key: user_id
+               base: 3
+    tables:
+      - user_tb_0
+      - user_tb_1
+`,
+			want: Config{
+				Rules: Rules{
+					Variables: map[string]Rule{
+						"user": {
+							Datasources: Datasources{
+								Variables: map[string]Datasource{
+									"cn": {
+										MasterSlaves: MasterSlaves{
+											Master: "webook:webook@tcp(cn.mysql.meoying.com:3306)/?xxx",
+										},
+									},
+									"hk": {
+										MasterSlaves: MasterSlaves{
+											Master: "webook:webook@tcp(hk.mysql.meoying.com:3306)/?xxx",
+										},
+									},
+								},
+							},
+							Databases: Section[Database]{
+								Variables: map[string]Database{
+									"template": {
+										Template{
+											Expr: "user_db_${key}",
+											Placeholders: Placeholders{
+												Variables: map[string]Placeholder{
+													"key": {
+														Hash: Hash{Key: "user_id", Base: 3},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							Tables: Section[Table]{
+								Variables: map[string]Table{
+									"": {
+										Enum{"user_tb_0", "user_tb_1"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			assertError: assert.NoError,
+		},
 	}
 
 	for _, tt := range tests {
@@ -74,6 +138,14 @@ rules:
 		if err != nil {
 			return
 		}
+		assert.True(t, cfg.Datasources.IsZero(), cfg.Datasources)
+		cfg.Datasources = nil
+		assert.True(t, cfg.Databases.IsZero(), cfg.Databases)
+		cfg.Databases = nil
+		assert.True(t, cfg.Tables.IsZero(), cfg.Tables)
+		cfg.Tables = nil
+		assert.True(t, cfg.Placeholders.IsZero(), cfg.Placeholders)
+		cfg.Placeholders = nil
 		assert.EqualExportedValues(t, tt.want, cfg)
 	}
 }
