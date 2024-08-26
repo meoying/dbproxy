@@ -105,10 +105,10 @@ rules:
 									"template": {
 										Template{
 											Expr: "user_db_${key}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"key": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 												},
 											},

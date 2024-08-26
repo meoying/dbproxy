@@ -12,7 +12,7 @@ func TestTables(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantFunc func(t *testing.T, ph *Placeholders) Section[Table]
+		want        Section[Table]
 		assertError assert.ErrorAssertionFunc
 	}{
 		{
@@ -21,14 +21,12 @@ func TestTables(t *testing.T) {
 tables:
   user: user_db
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Table] {
-				return Section[Table]{
-					Variables: map[string]Table{
-						"user": {
-							Value: String("user_db"),
-						},
+			want: Section[Table]{
+				Variables: map[string]Table{
+					"user": {
+						Value: String("user_db"),
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -42,17 +40,15 @@ tables:
     - payment_db_0
     - payment_db_1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Table] {
-				return Section[Table]{
-					Variables: map[string]Table{
-						"order": {
-							Value: Enum{"order_db_0"},
-						},
-						"payment": {
-							Value: Enum{"payment_db_0", "payment_db_1"},
-						},
+			want: Section[Table]{
+				Variables: map[string]Table{
+					"order": {
+						Value: Enum{"order_db_0"},
 					},
-				}
+					"payment": {
+						Value: Enum{"payment_db_0", "payment_db_1"},
+					},
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -65,17 +61,15 @@ tables:
       key: user_id
       base: 3
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Table] {
-				return Section[Table]{
-					Variables: map[string]Table{
-						"hash": {
-							Value: Hash{
-								Key:  "user_id",
-								Base: 3,
-							},
+			want: Section[Table]{
+				Variables: map[string]Table{
+					"hash": {
+						Value: Hash{
+							Key:  "user_id",
+							Base: 3,
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -91,23 +85,21 @@ tables:
           - 0
           - 1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Table] {
-				return Section[Table]{
-					Variables: map[string]Table{
-						"payment": {
-							Value: Template{
-								Expr: "payment_db_${ID}",
-								Placeholders: Placeholders{
-									Variables: map[string]Placeholder{
-										"ID": {
-											Enum: Enum{"0", "1"},
-										},
+			want: Section[Table]{
+				Variables: map[string]Table{
+					"payment": {
+						Value: Template{
+							Expr: "payment_db_${ID}",
+							Placeholders: Section[Placeholder]{
+								Variables: map[string]Placeholder{
+									"ID": {
+										Value: Enum{"0", "1"},
 									},
 								},
 							},
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -127,24 +119,21 @@ tables:
           ref:
             - placeholders.id 
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Table] {
-				return Section[Table]{
-					Variables: map[string]Table{
-						"payment": {
-							Value: Template{
-								global: ph,
-								Expr:   "payment_db_${ID}",
-								Placeholders: Placeholders{
-									Variables: map[string]Placeholder{
-										"ID": {
-											Enum: Enum{"0", "1"},
-										},
+			want: Section[Table]{
+				Variables: map[string]Table{
+					"payment": {
+						Value: Template{
+							Expr: "payment_db_${ID}",
+							Placeholders: Section[Placeholder]{
+								Variables: map[string]Placeholder{
+									"ID": {
+										Value: Enum{"0", "1"},
 									},
 								},
 							},
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -159,7 +148,7 @@ tables:
 			if err != nil {
 				return
 			}
-			assert.EqualExportedValues(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Tables)
+			assert.EqualExportedValues(t, tt.want, *cfg.Tables)
 		})
 	}
 }

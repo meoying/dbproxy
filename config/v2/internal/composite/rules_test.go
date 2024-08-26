@@ -13,7 +13,7 @@ func TestRules(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantRules func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules
+		getWantRules func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules
 		assertError  assert.ErrorAssertionFunc
 	}{
 		// 局部定义datasources
@@ -35,7 +35,7 @@ rules:
           - webook:webook@tcp(2.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
           - webook:webook@tcp(3.hk.slave.toB.mysql.meoying.com:3306)/order?xxx
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -85,7 +85,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -112,7 +112,7 @@ rules:
             - test
             - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -138,7 +138,7 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -148,26 +148,26 @@ rules:
 										Template: DatasourceTemplate{
 											Master: Template{
 												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
 											},
 											Slaves: Template{
 												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
@@ -212,7 +212,7 @@ rules:
               - test
               - prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -222,26 +222,26 @@ rules:
 										Template: DatasourceTemplate{
 											Master: Template{
 												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
 											},
 											Slaves: Template{
 												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
@@ -252,26 +252,26 @@ rules:
 										Template: DatasourceTemplate{
 											Master: Template{
 												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
 											},
 											Slaves: Template{
 												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
@@ -317,7 +317,7 @@ rules:
         - datasources.cn_test
         - datasources.cn_prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -384,7 +384,7 @@ rules:
     datasources:
       ref:
         - datasources.ds_tmpl`,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -394,26 +394,26 @@ rules:
 										Template: DatasourceTemplate{
 											Master: Template{
 												Expr: "webook:webook@tcp(${region}.master.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
 											},
 											Slaves: Template{
 												Expr: "webook:webook@tcp(${region}.slave.${role}.mysql.meoying.com:3306)/order?xxx",
-												Placeholders: Placeholders{
+												Placeholders: Section[Placeholder]{
 													Variables: map[string]Placeholder{
 														"region": {
-															Enum: Enum{"hk", "cn"},
+															Value: Enum{"hk", "cn"},
 														},
 														"role": {
-															Enum: Enum{"test", "prod"},
+															Value: Enum{"test", "prod"},
 														},
 													},
 												},
@@ -455,7 +455,7 @@ rules:
       ref:
         - abc.hk_prod
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{}
 			},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
@@ -472,7 +472,7 @@ rules:
   user:
     databases: user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -502,7 +502,7 @@ rules:
       ref:
         - databases.user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -530,7 +530,7 @@ rules:
     databases:
       cn: user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -561,7 +561,7 @@ rules:
         ref:
           - databases.user_db
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -590,7 +590,7 @@ rules:
       - user_db_0
       - user_db_1
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -622,7 +622,7 @@ rules:
       ref:
         - databases.user_dbs
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -650,7 +650,7 @@ rules:
         - user_db_0
         - user_db_1
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -683,7 +683,7 @@ rules:
         ref:
           - databases.user_dbs
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -737,7 +737,7 @@ rules:
             ref:
               - placeholders.index2
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -746,25 +746,25 @@ rules:
 									"template": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -820,7 +820,7 @@ rules:
       ref:
         - databases.user
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -829,25 +829,25 @@ rules:
 									"user": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -899,7 +899,7 @@ rules:
               ref:
                 - placeholders.index2
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -908,25 +908,25 @@ rules:
 									"user_cn": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -986,7 +986,7 @@ rules:
         ref:
           - databases.user
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -995,25 +995,25 @@ rules:
 									"cn": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -1022,25 +1022,25 @@ rules:
 									"hk": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -1112,7 +1112,7 @@ rules:
             ref:
               - placeholders.index2
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1121,25 +1121,25 @@ rules:
 									"template": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -1148,25 +1148,25 @@ rules:
 									"user_cn": {
 										Value: Template{
 											Expr: "user_db_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -1189,7 +1189,7 @@ rules:
   user:
     tables: user_tbl
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1219,7 +1219,7 @@ rules:
       ref:
         - tables.user_table
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1246,7 +1246,7 @@ rules:
       - user_tb_0
       - user_tb_1
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1280,7 +1280,7 @@ rules:
       ref:
         - tables.user_tables
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1334,7 +1334,7 @@ rules:
             ref:
               - placeholders.index2
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1343,25 +1343,25 @@ rules:
 									"template": {
 										Value: Template{
 											Expr: "user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},
@@ -1417,7 +1417,7 @@ rules:
       ref:
         - tables.user
 `,
-			getWantRules: func(t *testing.T, ph *Placeholders, ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
+			getWantRules: func(t *testing.T, ph *Section[Placeholder], ds *Datasources, db *Section[Database], tb *Section[Table]) Rules {
 				return Rules{
 					Variables: map[string]Rule{
 						"user": {
@@ -1426,25 +1426,25 @@ rules:
 									"user": {
 										Value: Template{
 											Expr: "user_tb_${ID}_${region}_${index}_${ID2}_${Region2}_${Index2}",
-											Placeholders: Placeholders{
+											Placeholders: Section[Placeholder]{
 												Variables: map[string]Placeholder{
 													"ID": {
-														String: "0",
+														Value: String("0"),
 													},
 													"region": {
-														Enum: Enum{"cn", "hk"},
+														Value: Enum{"cn", "hk"},
 													},
 													"index": {
-														Hash: Hash{Key: "user_id", Base: 3},
+														Value: Hash{Key: "user_id", Base: 3},
 													},
 													"ID2": {
-														String: "1",
+														Value: String("1"),
 													},
 													"Region2": {
-														Enum: Enum{"us", "uk"},
+														Value: Enum{"us", "uk"},
 													},
 													"Index2": {
-														Hash: Hash{Key: "user_id", Base: 10},
+														Value: Hash{Key: "user_id", Base: 10},
 													},
 												},
 											},

@@ -9,7 +9,7 @@ import (
 )
 
 type Rules struct {
-	placeholders *Placeholders
+	placeholders *Section[Placeholder]
 	datasources  *Datasources
 	databases    *Section[Database]
 	tables       *Section[Table]
@@ -49,7 +49,7 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Rule struct {
-	globalPlaceholders *Placeholders
+	globalPlaceholders *Section[Placeholder]
 	globalDatasources  *Datasources
 	globalDatabases    *Section[Database]
 	globalTables       *Section[Table]

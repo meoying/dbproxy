@@ -13,7 +13,7 @@ func TestPlaceholders(t *testing.T) {
 		name     string
 		yamlData string
 
-		want        Placeholders
+		want        Section[Placeholder]
 		assertError assert.ErrorAssertionFunc
 	}{
 		{
@@ -22,10 +22,10 @@ func TestPlaceholders(t *testing.T) {
 placeholders:
   str: This is string
 `,
-			want: Placeholders{
+			want: Section[Placeholder]{
 				Variables: map[string]Placeholder{
 					"str": {
-						String: String("This is string"),
+						Value: String("This is string"),
 					},
 				},
 			},
@@ -39,10 +39,10 @@ placeholders:
     - hk
     - cn
 `,
-			want: Placeholders{
+			want: Section[Placeholder]{
 				Variables: map[string]Placeholder{
 					"enum": {
-						Enum: Enum{"hk", "cn"},
+						Value: Enum{"hk", "cn"},
 					},
 				},
 			},
@@ -57,10 +57,10 @@ placeholders:
       key: user_id
       base: 3
 `,
-			want: Placeholders{
+			want: Section[Placeholder]{
 				Variables: map[string]Placeholder{
 					"hash": {
-						Hash: Hash{
+						Value: Hash{
 							Key:  "user_id",
 							Base: 3,
 						},
@@ -81,7 +81,7 @@ placeholders:
           - 0
           - 1
 `,
-			want: Placeholders{},
+			want: Section[Placeholder]{},
 			assertError: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
 			},
@@ -97,12 +97,11 @@ placeholders:
     - hk
     - uk
  `,
-			want: Placeholders{},
+			want: Section[Placeholder]{},
 			assertError: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
 			},
 		},
-		// TODO: 不支持引用模版类型, 模版的占位不能再引用模版
 	}
 
 	for _, tt := range tests {
@@ -114,7 +113,7 @@ placeholders:
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.want, *cfg.Placeholders)
+			assert.EqualExportedValues(t, tt.want, *cfg.Placeholders)
 		})
 	}
 }

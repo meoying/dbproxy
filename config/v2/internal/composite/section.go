@@ -13,17 +13,18 @@ type Creator[T Referencable] func(value any) T
 type Section[E Referencable] struct {
 	typeName           string
 	global             *Section[E]
-	globalPlaceholders *Placeholders
+	globalPlaceholders *Section[Placeholder]
 	creator            Creator[E]
 	Variables          map[string]E
 }
 
-func NewSection[E Referencable](typ string, global *Section[E], ph *Placeholders, creator Creator[E]) *Section[E] {
+func NewSection[E Referencable](typ string, global *Section[E], ph *Section[Placeholder], creator Creator[E]) *Section[E] {
 	return &Section[E]{
 		typeName:           typ,
 		global:             global,
 		globalPlaceholders: ph,
 		creator:            creator,
+		// Variables:          make(map[string]E),
 	}
 }
 
@@ -41,6 +42,7 @@ func (s *Section[E]) Find(name string) (E, error) {
 }
 
 func (s *Section[E]) IsZero() bool {
+	log.Printf("isZero: %#v\n", s)
 	return len(s.Variables) == 0
 }
 
@@ -100,8 +102,10 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 			return fmt.Errorf("%w: %w: %s.%s", err1, errs.ErrUnmarshalVariableFailed, s.typeName, name)
 		}
 
-		ref, ok := v.(Reference[E, *Section[E]])
-		if ok {
+		if ref, ok := v.(Reference[E, *Section[E]]); ok {
+			if s.isGlobal() && ref.IsSection(s.typeName) {
+				return fmt.Errorf("%w: %s: 不支持引用%s内变量", errs.ErrVariableTypeInvalid, name, s.typeName)
+			}
 			ref.global = s.global
 			refVars, err1 := ref.Build()
 			if err1 != nil {
@@ -115,6 +119,8 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 
 				s.Variables[n] = v
 			}
+		} else if _, ok = v.(Template); ok && s.typeName == ConfigSectionTypePlaceholders {
+			return fmt.Errorf("%w: %s: %s内不支持模版类型", errs.ErrVariableTypeInvalid, name, s.typeName)
 		} else {
 			s.Variables[name] = s.creator(v)
 		}

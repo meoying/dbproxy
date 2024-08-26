@@ -10,7 +10,7 @@ import (
 
 type Datasources struct {
 	global             *Datasources // 全局Datasources存在时,当前 Datasources 对象必为局部定义
-	globalPlaceholders *Placeholders
+	globalPlaceholders *Section[Placeholder]
 	Variables          map[string]Datasource
 }
 
@@ -115,7 +115,7 @@ func (d *Datasources) getMasterSlaves(res map[string]MasterSlaves, name string, 
 
 type DatasourceBuilder struct {
 	global             *Datasources
-	globalPlaceholders *Placeholders
+	globalPlaceholders *Section[Placeholder]
 
 	Master   String                               `yaml:"master"`
 	Slaves   Enum                                 `yaml:"slaves,omitempty"`
@@ -132,7 +132,7 @@ func (d *DatasourceBuilder) isReferenceType() bool {
 }
 
 func (d *DatasourceBuilder) isTemplateType() bool {
-	return d.Template != nil && !d.Template.IsZeroValue()
+	return d.Template != nil && !d.Template.IsZero()
 }
 
 func (d *DatasourceBuilder) isMasterSlavesType() bool {
@@ -214,37 +214,37 @@ type Datasource struct {
 }
 
 func (d Datasource) IsZeroValue() bool {
-	return d.MasterSlaves.IsZeroValue() && d.Template.IsZeroValue()
+	return d.MasterSlaves.IsZeroValue() && d.Template.IsZero()
 }
 
 func (d Datasource) IsMasterSlaves() bool {
-	return !d.MasterSlaves.IsZeroValue() && d.Template.IsZeroValue()
+	return !d.MasterSlaves.IsZeroValue() && d.Template.IsZero()
 }
 
 func (d Datasource) IsTemplate() bool {
-	return d.MasterSlaves.IsZeroValue() && !d.Template.IsZeroValue()
+	return d.MasterSlaves.IsZeroValue() && !d.Template.IsZero()
 }
 
 // DatasourceTemplate 数据源模版类型
 type DatasourceTemplate struct {
-	global *Placeholders
+	global *Section[Placeholder]
 	Master Template
 	Slaves Template
 }
 
-func (d *DatasourceTemplate) IsZeroValue() bool {
+func (d *DatasourceTemplate) IsZero() bool {
 	return d.Master.IsZero() && d.Slaves.IsZero()
 }
 
 func (d *DatasourceTemplate) UnmarshalYAML(value *yaml.Node) error {
 	type rawDatasourceTemplate struct {
-		Master       string       `yaml:"master"`
-		Slaves       string       `yaml:"slaves"`
-		Placeholders Placeholders `yaml:"placeholders"`
+		Master       string                `yaml:"master"`
+		Slaves       string                `yaml:"slaves"`
+		Placeholders *Section[Placeholder] `yaml:"placeholders"`
 	}
 
 	raw := &rawDatasourceTemplate{
-		Placeholders: Placeholders{global: d.global},
+		Placeholders: NewSection(ConfigSectionTypePlaceholders, d.global, nil, NewPlaceholderV1),
 	}
 	err := value.Decode(&raw)
 	if err != nil {
@@ -252,8 +252,8 @@ func (d *DatasourceTemplate) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	log.Printf("raw.DatasourceTemplate = %#v\n", raw)
-	d.Master = Template{global: d.global, Expr: raw.Master, Placeholders: raw.Placeholders}
-	d.Slaves = Template{global: d.global, Expr: raw.Slaves, Placeholders: raw.Placeholders}
+	d.Master = Template{global: d.global, Expr: raw.Master, Placeholders: *raw.Placeholders}
+	d.Slaves = Template{global: d.global, Expr: raw.Slaves, Placeholders: *raw.Placeholders}
 	return nil
 }
 

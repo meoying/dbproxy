@@ -10,23 +10,23 @@ import (
 
 type Config struct {
 	testMode     bool
-	Placeholders *Placeholders      `yaml:"placeholders,omitempty"`
-	Datasources  *Datasources       `yaml:"datasources,omitempty"`
-	Databases    *Section[Database] `yaml:"databases,omitempty"`
-	Tables       *Section[Table]    `yaml:"tables,omitempty"`
-	Rules        Rules              `yaml:"rules"`
+	Placeholders *Section[Placeholder] `yaml:"placeholders,omitempty"`
+	Datasources  *Datasources          `yaml:"datasources,omitempty"`
+	Databases    *Section[Database]    `yaml:"databases,omitempty"`
+	Tables       *Section[Table]       `yaml:"tables,omitempty"`
+	Rules        Rules                 `yaml:"rules"`
 }
 
 func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 
 	type rawConfig struct {
-		Placeholders *Placeholders      `yaml:"placeholders,omitempty"`
-		Datasources  *Datasources       `yaml:"datasources,omitempty"`
-		Databases    *Section[Database] `yaml:"databases,omitempty"`
-		Tables       *Section[Table]    `yaml:"tables,omitempty"`
-		Rules        map[string]any     `yaml:"rules"`
+		Placeholders *Section[Placeholder] `yaml:"placeholders,omitempty"`
+		Datasources  *Datasources          `yaml:"datasources,omitempty"`
+		Databases    *Section[Database]    `yaml:"databases,omitempty"`
+		Tables       *Section[Table]       `yaml:"tables,omitempty"`
+		Rules        map[string]any        `yaml:"rules"`
 	}
-	ph := &Placeholders{}
+	ph := NewSection[Placeholder](ConfigSectionTypePlaceholders, nil, nil, NewPlaceholderV1)
 	raw := rawConfig{
 		Placeholders: ph,
 		Datasources:  &Datasources{globalPlaceholders: ph},

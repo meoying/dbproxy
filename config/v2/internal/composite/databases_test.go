@@ -3,6 +3,7 @@ package composite
 import (
 	"testing"
 
+	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -12,7 +13,7 @@ func TestDatabases(t *testing.T) {
 		name     string
 		yamlData string
 
-		getWantFunc func(t *testing.T, ph *Placeholders) Section[Database]
+		want        Section[Database]
 		assertError assert.ErrorAssertionFunc
 	}{
 		{
@@ -21,14 +22,12 @@ func TestDatabases(t *testing.T) {
 databases:
   user: user_db
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
-				return Section[Database]{
-					Variables: map[string]Database{
-						"user": {
-							Value: String("user_db"),
-						},
+			want: Section[Database]{
+				Variables: map[string]Database{
+					"user": {
+						Value: String("user_db"),
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -42,17 +41,15 @@ databases:
     - payment_db_0
     - payment_db_1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
-				return Section[Database]{
-					Variables: map[string]Database{
-						"order": {
-							Value: Enum{"order_db_0"},
-						},
-						"payment": {
-							Value: Enum{"payment_db_0", "payment_db_1"},
-						},
+			want: Section[Database]{
+				Variables: map[string]Database{
+					"order": {
+						Value: Enum{"order_db_0"},
 					},
-				}
+					"payment": {
+						Value: Enum{"payment_db_0", "payment_db_1"},
+					},
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -65,17 +62,15 @@ databases:
       key: user_id
       base: 3
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
-				return Section[Database]{
-					Variables: map[string]Database{
-						"hash": {
-							Value: Hash{
-								Key:  "user_id",
-								Base: 3,
-							},
+			want: Section[Database]{
+				Variables: map[string]Database{
+					"hash": {
+						Value: Hash{
+							Key:  "user_id",
+							Base: 3,
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -91,23 +86,21 @@ databases:
           - 0
           - 1
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
-				return Section[Database]{
-					Variables: map[string]Database{
-						"payment": {
-							Value: Template{
-								Expr: "payment_db_${ID}",
-								Placeholders: Placeholders{
-									Variables: map[string]Placeholder{
-										"ID": {
-											Enum: Enum{"0", "1"},
-										},
+			want: Section[Database]{
+				Variables: map[string]Database{
+					"payment": {
+						Value: Template{
+							Expr: "payment_db_${ID}",
+							Placeholders: Section[Placeholder]{
+								Variables: map[string]Placeholder{
+									"ID": {
+										Value: Enum{"0", "1"},
 									},
 								},
 							},
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
@@ -128,27 +121,43 @@ databases:
           ref:
             - placeholders.id 
 `,
-			getWantFunc: func(t *testing.T, ph *Placeholders) Section[Database] {
-				return Section[Database]{
-					Variables: map[string]Database{
-						"payment": {
-							Value: Template{
-								Expr: "payment_db_${ID}",
-								Placeholders: Placeholders{
-									Variables: map[string]Placeholder{
-										"ID": {
-											Enum: Enum{"0", "1"},
-										},
+			want: Section[Database]{
+				Variables: map[string]Database{
+					"payment": {
+						Value: Template{
+							Expr: "payment_db_${ID}",
+							Placeholders: Section[Placeholder]{
+								Variables: map[string]Placeholder{
+									"ID": {
+										Value: Enum{"0", "1"},
 									},
 								},
 							},
 						},
 					},
-				}
+				},
 			},
 			assertError: assert.NoError,
 		},
 		// 模版类型_引用全局占位符_哈希
+
+		// 不支持全局自引用
+		{
+			name: "应该报错_不支持引用全局变量",
+			yamlData: `
+databases:
+  region_ref:
+    ref:
+      - databases.region
+  region:
+    - hk
+    - uk
+ `,
+			want: Section[Database]{},
+			assertError: func(t assert.TestingT, err error, i ...any) bool {
+				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -159,7 +168,7 @@ databases:
 			if err != nil {
 				return
 			}
-			assert.EqualExportedValues(t, tt.getWantFunc(t, cfg.Placeholders), *cfg.Databases)
+			assert.EqualExportedValues(t, tt.want, *cfg.Databases)
 		})
 	}
 }

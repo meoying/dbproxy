@@ -12,15 +12,9 @@ import (
 
 // Template 模版类型
 type Template struct {
-	global       *Placeholders
-	Expr         string       `yaml:"expr"`
-	Placeholders Placeholders `yaml:"placeholders"`
-}
-
-func NewTemplate(global *Placeholders) *Template {
-	return &Template{
-		global: global,
-	}
+	global       *Section[Placeholder]
+	Expr         string               `yaml:"expr"`
+	Placeholders Section[Placeholder] `yaml:"placeholders"`
 }
 
 func (t *Template) Type() string {
@@ -33,19 +27,18 @@ func (t *Template) IsZero() bool {
 
 func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 	type rawTemplate struct {
-		Expr         string       `yaml:"expr"`
-		Placeholders Placeholders `yaml:"placeholders"`
+		Expr         string               `yaml:"expr"`
+		Placeholders Section[Placeholder] `yaml:"placeholders"`
 	}
 	raw := rawTemplate{
-		Placeholders: Placeholders{
-			global: t.global,
-		},
+		Placeholders: *NewSection[Placeholder](ConfigSectionTypePlaceholders, t.global, nil, NewPlaceholderV1),
 	}
+	log.Printf("before raw.Template = %#v\n", raw)
 	if err := value.Decode(&raw); err != nil {
 		return err
 	}
 
-	log.Printf("raw.Template = %#v\n", raw)
+	log.Printf("after raw.Template = %#v\n", raw)
 
 	t.Expr = strings.TrimSpace(raw.Expr)
 	if len(t.Expr) == 0 {
@@ -106,7 +99,7 @@ func (t *Template) evaluate(results map[string]string, expr string, placeholders
 	expr = strings.Replace(expr, "${"+ph+"}", "%s", 1)
 
 	placeholder := t.Placeholders.Variables[ph]
-	values, err := placeholder.Value().Evaluate()
+	values, err := placeholder.Evaluator().Evaluate()
 	if err != nil {
 		return err
 	}

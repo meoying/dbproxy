@@ -30,9 +30,9 @@ template:
     region: hk`,
 			want: Template{
 				Expr: "${region}.order_db",
-				Placeholders: Placeholders{
+				Placeholders: Section[Placeholder]{
 					Variables: map[string]Placeholder{
-						"region": {String: String("hk")},
+						"region": {Value: String("hk")},
 					},
 				},
 			},
@@ -50,9 +50,9 @@ template:
 `,
 			want: Template{
 				Expr: "${region}.order_db",
-				Placeholders: Placeholders{
+				Placeholders: Section[Placeholder]{
 					Variables: map[string]Placeholder{
-						"region": {Enum: Enum{"us", "uk"}},
+						"region": {Value: Enum{"us", "uk"}},
 					},
 				},
 			},
@@ -71,22 +71,22 @@ template:
 `,
 			want: Template{
 				Expr: "order_db_${key}",
-				Placeholders: Placeholders{
+				Placeholders: Section[Placeholder]{
 					Variables: map[string]Placeholder{
-						"key": {Hash: Hash{
-							Key:  "user_id",
-							Base: 3,
-						}},
+						"key": {
+							Value: Hash{
+								Key:  "user_id",
+								Base: 3,
+							}},
 					},
 				},
 			},
 			assertError: assert.NoError,
 		},
 		// TODO: 占位符为引用类型
-		// 1) 引用字符串
-		// 2) 引用枚举
-		// 3) 引用哈希
-		// TODO: 应该报错_引用模版
+		// TODO: 1) 引用全局字符串类型占位符
+		// TODO: 2) 引用全局枚举类型占位符
+		// TODO: 3) 引用全局哈希类型占位符
 		{
 			name: "占位符为各种类型的组合",
 			yamlData: `
@@ -107,15 +107,16 @@ template:
 `,
 			want: Template{
 				Expr: "${region}.${role}.${type}.${id}.example.com",
-				Placeholders: Placeholders{
+				Placeholders: Section[Placeholder]{
 					Variables: map[string]Placeholder{
-						"region": {Enum: Enum{"cn", "us"}},
-						"role":   {Enum: Enum{"master", "slave"}},
-						"type":   {String: String("mysql")},
-						"id": {Hash: Hash{
-							Key:  "user_id",
-							Base: 3,
-						}},
+						"region": {Value: Enum{"cn", "us"}},
+						"role":   {Value: Enum{"master", "slave"}},
+						"type":   {Value: String("mysql")},
+						"id": {
+							Value: Hash{
+								Key:  "user_id",
+								Base: 3,
+							}},
 					},
 				},
 			},
@@ -192,7 +193,7 @@ template:
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.want, cfg.Templ)
+			assert.EqualExportedValues(t, tt.want, cfg.Templ)
 		})
 	}
 }
