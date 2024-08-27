@@ -10,10 +10,6 @@ type Hash struct {
 	Base int    `yaml:"base"`
 }
 
-func (h *Hash) Type() string {
-	return "hash"
-}
-
 func (h *Hash) IsZero() bool {
 	return h.Key == "" && h.Base == 0
 }

@@ -104,32 +104,48 @@ databases:
 			},
 			assertError: assert.NoError,
 		},
-		// 模版类型_引用全局占位符_字符串
 		{
-			name: "模版类型_引用全局占位符_枚举",
+			name: "模版类型_引用全局占位符",
 			yamlData: `
 placeholders:
+  name: db
   id:
     - 0
     - 1
+  index:
+    hash:
+      key: user_id
+      base: 3
 databases:
   payment:
     template:
-      expr: payment_db_${ID}
+      expr: payment_${name}_${ID}_${index}
       placeholders:
+        name:
+          ref:
+            - placeholders.name
         ID:
           ref:
-            - placeholders.id 
+            - placeholders.id
+        index:
+          ref:
+            - placeholders.index
 `,
 			want: Section[Database]{
 				Variables: map[string]Database{
 					"payment": {
 						Value: Template{
-							Expr: "payment_db_${ID}",
+							Expr: "payment_${name}_${ID}_${index}",
 							Placeholders: Section[Placeholder]{
 								Variables: map[string]Placeholder{
+									"name": {
+										Value: String("db"),
+									},
 									"ID": {
 										Value: Enum{"0", "1"},
+									},
+									"index": {
+										Value: Hash{Key: "user_id", Base: 3},
 									},
 								},
 							},
@@ -139,9 +155,6 @@ databases:
 			},
 			assertError: assert.NoError,
 		},
-		// 模版类型_引用全局占位符_哈希
-
-		// 不支持全局自引用
 		{
 			name: "应该报错_不支持引用全局变量",
 			yamlData: `

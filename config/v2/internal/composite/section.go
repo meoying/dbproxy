@@ -24,7 +24,6 @@ func NewSection[E Referencable](typ string, global *Section[E], ph *Section[Plac
 		global:             global,
 		globalPlaceholders: ph,
 		creator:            creator,
-		// Variables:          make(map[string]E),
 	}
 }
 
@@ -47,20 +46,21 @@ func (s *Section[E]) IsZero() bool {
 }
 
 func (s *Section[E]) isGlobal() bool {
+	// 如果当前Section[E]没有引用任何其他Section[E]即s.global == nil
+	// 那么当前Section[E]就是Config配置文件中的全局Section[E]
+	// 反之,如果s.global != nil 即当前Section[E]引用了全局Section[E]
+	// 那么当前Section[E]就是局部的
 	return s.global == nil
 }
 
 func (s *Section[E]) UnmarshalYAML(value *yaml.Node) error {
-	// 尝试解析为 string
 	var stringData string
 	if err := value.Decode(&stringData); err == nil {
-		// 成功解析为 string
 		return s.unmarshalMapVariables(map[string]any{
 			"": stringData,
 		})
 	}
 
-	// 尝试解析为 []any
 	var sliceData []any
 	if err := value.Decode(&sliceData); err == nil {
 		return s.unmarshalMapVariables(map[string]any{
@@ -68,10 +68,14 @@ func (s *Section[E]) UnmarshalYAML(value *yaml.Node) error {
 		})
 	}
 
-	// 尝试解析为 map[string]interface{}
 	var mapData map[string]any
 	if err := value.Decode(&mapData); err == nil {
-		// 成功解析为 map
+		// 为了支持 datasources 中的匿名主从
+		if _, ok := mapData["master"]; ok && s.typeName == ConfigSectionTypeDatasources {
+			mapData = map[string]any{
+				"": mapData,
+			}
+		}
 		return s.unmarshalMapVariables(mapData)
 	}
 
@@ -84,8 +88,20 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 	s.Variables = make(map[string]E, len(variables))
 	for name, val := range variables {
 
+		if !s.isGlobal() && s.typeName == ConfigSectionTypeDatasources {
+			// 为了支持 datasources 下的模版类型,需要改名
+			if name == DataTypeTemplate {
+				name = DataTypeDatasourceTemplate
+				// datasources 下 匿名模版不能与命名变量混用
+				if len(variables) != 1 {
+					return fmt.Errorf("%w: 匿名模版不能与其他变量组合使用", errs.ErrUnmarshalVariableFailed)
+				}
+			}
+		}
+
 		if !s.isGlobal() {
-			// 在局部datasources中引用
+			// 在局部小节中引用语法和模版语法都是匿名的
+			// 所以要为其添加名字,这里直接使用类型名作为名字
 			if name == DataTypeReference {
 				val = map[string]any{
 					DataTypeReference: val,
@@ -93,6 +109,10 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 			} else if name == DataTypeTemplate {
 				val = map[string]any{
 					DataTypeTemplate: val,
+				}
+			} else if name == DataTypeDatasourceTemplate {
+				val = map[string]any{
+					DataTypeDatasourceTemplate: val,
 				}
 			}
 		}
@@ -103,7 +123,7 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 		}
 
 		if ref, ok := v.(Reference[E, *Section[E]]); ok {
-			if s.isGlobal() && ref.IsSection(s.typeName) {
+			if s.isGlobal() && ref.IsReferencedSection(s.typeName) {
 				return fmt.Errorf("%w: %s: 不支持引用%s内变量", errs.ErrVariableTypeInvalid, name, s.typeName)
 			}
 			ref.global = s.global
@@ -116,7 +136,6 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 				if n == "" || (name != DataTypeReference && name != DataTypeTemplate) {
 					n = name
 				}
-
 				s.Variables[n] = v
 			}
 		} else if _, ok = v.(Template); ok && s.typeName == ConfigSectionTypePlaceholders {

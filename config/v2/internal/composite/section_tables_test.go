@@ -107,27 +107,44 @@ tables:
 			name: "模版类型_引用全局占位符",
 			yamlData: `
 placeholders:
+  name: db
   id:
     - 0
     - 1
+  index:
+    hash:
+      key: user_id
+      base: 3
 tables:
   payment:
     template:
-      expr: payment_db_${ID}
+      expr: payment_${name}_${ID}_${index}
       placeholders:
+        name:
+          ref:
+            - placeholders.name
         ID:
           ref:
-            - placeholders.id 
+            - placeholders.id
+        index:
+          ref:
+            - placeholders.index
 `,
 			want: Section[Table]{
 				Variables: map[string]Table{
 					"payment": {
 						Value: Template{
-							Expr: "payment_db_${ID}",
+							Expr: "payment_${name}_${ID}_${index}",
 							Placeholders: Section[Placeholder]{
 								Variables: map[string]Placeholder{
+									"name": {
+										Value: String("db"),
+									},
 									"ID": {
 										Value: Enum{"0", "1"},
+									},
+									"index": {
+										Value: Hash{Key: "user_id", Base: 3},
 									},
 								},
 							},

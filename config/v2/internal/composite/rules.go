@@ -9,8 +9,9 @@ import (
 )
 
 type Rules struct {
+	testMode     bool
 	placeholders *Section[Placeholder]
-	datasources  *Datasources
+	datasources  *Section[Datasource]
 	databases    *Section[Database]
 	tables       *Section[Table]
 
@@ -29,6 +30,8 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 	r.Variables = make(map[string]Rule, len(variables))
 	for name, values := range variables {
 		v := Rule{
+			testMode:           r.testMode,
+			name:               name,
 			globalPlaceholders: r.placeholders,
 			globalDatasources:  r.datasources,
 			globalDatabases:    r.databases,
@@ -42,6 +45,7 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 		if err1 != nil {
 			return fmt.Errorf("%w: %w: rules.%s", err1, errs.ErrUnmarshalVariableFailed, name)
 		}
+		log.Printf("unmarshal %q = %#v\n rule = %#v\n", name, values, v)
 		r.Variables[name] = v
 	}
 	log.Printf("Rules.Variables = %#v\n", r.Variables)
@@ -49,42 +53,53 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 }
 
 type Rule struct {
+	testMode           bool
+	name               string
 	globalPlaceholders *Section[Placeholder]
-	globalDatasources  *Datasources
+	globalDatasources  *Section[Datasource]
 	globalDatabases    *Section[Database]
 	globalTables       *Section[Table]
 
-	Datasources Datasources       `yaml:"datasources"`
-	Databases   Section[Database] `yaml:"databases"`
-	Tables      Section[Table]    `yaml:"tables"`
+	Datasources Section[Datasource] `yaml:"datasources"`
+	Databases   Section[Database]   `yaml:"databases"`
+	Tables      Section[Table]      `yaml:"tables"`
 }
 
 func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 
 	type rawRule struct {
-		Datasources Datasources        `yaml:"datasources"`
-		Databases   *Section[Database] `yaml:"databases"`
-		Tables      *Section[Table]    `yaml:"tables"`
+		Datasources *Section[Datasource] `yaml:"datasources"`
+		Databases   *Section[Database]   `yaml:"databases"`
+		Tables      *Section[Table]      `yaml:"tables"`
 	}
 
 	raw := &rawRule{
-		Datasources: Datasources{
-			globalPlaceholders: r.globalPlaceholders,
-			global:             r.globalDatasources,
-		},
-		Databases: NewSection[Database](ConfigSectionTypeDatabases, r.globalDatabases, r.globalPlaceholders, NewDatabase),
-		Tables:    NewSection[Table](ConfigSectionTypeTables, r.globalTables, r.globalPlaceholders, NewTable),
+		Datasources: NewSection[Datasource](ConfigSectionTypeDatasources, r.globalDatasources, r.globalPlaceholders, NewDatasource),
+		Databases:   NewSection[Database](ConfigSectionTypeDatabases, r.globalDatabases, r.globalPlaceholders, NewDatabase),
+		Tables:      NewSection[Table](ConfigSectionTypeTables, r.globalTables, r.globalPlaceholders, NewTable),
 	}
 	err := value.Decode(&raw)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errs.ErrConfigSyntaxInvalid, err)
 	}
 
 	log.Printf("raw.Rule = %#v\n", raw)
 	log.Printf("globalDatasources = %#v\n", r.globalDatasources)
 
-	r.Datasources = raw.Datasources
+	if raw.Datasources.IsZero() && !r.testMode {
+		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatasources)
+	}
 	r.Databases = *raw.Databases
+
+	if raw.Databases.IsZero() && !r.testMode {
+		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatabases)
+	}
+	r.Datasources = *raw.Datasources
+
+	if raw.Tables.IsZero() && !r.testMode {
+		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeTables)
+	}
 	r.Tables = *raw.Tables
+
 	return nil
 }

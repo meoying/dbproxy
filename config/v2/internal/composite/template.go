@@ -17,10 +17,6 @@ type Template struct {
 	Placeholders Section[Placeholder] `yaml:"placeholders"`
 }
 
-func (t *Template) Type() string {
-	return "template"
-}
-
 func (t *Template) IsZero() bool {
 	return t.Expr == "" && t.Placeholders.IsZero()
 }
@@ -31,7 +27,7 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 		Placeholders Section[Placeholder] `yaml:"placeholders"`
 	}
 	raw := rawTemplate{
-		Placeholders: *NewSection[Placeholder](ConfigSectionTypePlaceholders, t.global, nil, NewPlaceholderV1),
+		Placeholders: *NewSection[Placeholder](ConfigSectionTypePlaceholders, t.global, nil, NewPlaceholder),
 	}
 	log.Printf("before raw.Template = %#v\n", raw)
 	if err := value.Decode(&raw); err != nil {

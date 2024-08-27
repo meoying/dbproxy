@@ -10,12 +10,11 @@ import (
 )
 
 func TestDatasources(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		yamlData string
 
-		want        Datasources
+		want        Section[Datasource]
 		assertError assert.ErrorAssertionFunc
 	}{
 
@@ -23,13 +22,13 @@ func TestDatasources(t *testing.T) {
 			name: "仅有一主",
 			yamlData: `
 datasources:
-  master:
+  master_only:
     master: webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
-					"master": {
-						MasterSlaves: MasterSlaves{
+					"master_only": {
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx",
 						},
 					},
@@ -46,10 +45,10 @@ datasources:
     slaves:
       - webook:webook@tcp(cn.slave.toB.mysql.meoying.com:3306)/order?xxx
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
 					"cn": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{"webook:webook@tcp(cn.slave.toB.mysql.meoying.com:3306)/order?xxx"},
 						},
@@ -68,10 +67,10 @@ datasources:
       - webook:webook@tcp(0.cn.slave.toB.mysql.meoying.com:3306)/order?xxx
       - webook:webook@tcp(1.cn.slave.toB.mysql.meoying.com:3306)/order?xxx
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
 					"cn": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(cn.toB.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{
 								"webook:webook@tcp(0.cn.slave.toB.mysql.meoying.com:3306)/order?xxx",
@@ -104,10 +103,10 @@ datasources:
     slaves:
       - webook:webook@tcp(hk.slave.prod.mysql.meoying.com:3306)/order?xxx
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
 					"cn_test": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(cn.master.test.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{
 								"webook:webook@tcp(cn.slave.test.mysql.meoying.com:3306)/order?xxx",
@@ -115,7 +114,7 @@ datasources:
 						},
 					},
 					"hk_test": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(hk.master.test.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{
 								"webook:webook@tcp(hk.slave.test.mysql.meoying.com:3306)/order?xxx",
@@ -123,7 +122,7 @@ datasources:
 						},
 					},
 					"cn_prod": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(cn.master.prod.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{
 								"webook:webook@tcp(cn.slave.prod.mysql.meoying.com:3306)/order?xxx",
@@ -131,7 +130,7 @@ datasources:
 						},
 					},
 					"hk_prod": {
-						MasterSlaves: MasterSlaves{
+						Value: MasterSlaves{
 							Master: "webook:webook@tcp(hk.master.prod.mysql.meoying.com:3306)/order?xxx",
 							Slaves: Enum{
 								"webook:webook@tcp(hk.slave.prod.mysql.meoying.com:3306)/order?xxx",
@@ -163,10 +162,10 @@ datasources:
           - prod
         type: mysql
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
 					"hk_equal": {
-						Template: DatasourceTemplate{
+						Value: DatasourceTemplate{
 							Master: Template{
 								Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 								Placeholders: Section[Placeholder]{
@@ -242,10 +241,10 @@ datasources:
             - placeholders.role
         type: mysql
  `,
-			want: Datasources{
+			want: Section[Datasource]{
 				Variables: map[string]Datasource{
 					"hk_equal": {
-						Template: DatasourceTemplate{
+						Value: DatasourceTemplate{
 							Master: Template{
 								Expr: "webook:webook@tcp(${region}.${id}.${role}.${type}.meoying.com:3306)/order?xxx",
 								Placeholders: Section[Placeholder]{
@@ -300,11 +299,12 @@ datasources:
   cn:
     master: webook:webook@tcp(cn.tob.mysql.meoying.com:3306)/order?xxx
  `,
-			want: Datasources{},
+			want: Section[Datasource]{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
 			},
 		},
+		// TODO: 全局声明中不支持匿名变量——主从/模版
 	}
 
 	for _, tt := range tests {
@@ -322,7 +322,6 @@ datasources:
 }
 
 func TestDatasources_Evaluate(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		yamlData string
@@ -593,7 +592,7 @@ datasources:
 			err := yaml.Unmarshal([]byte(tt.yamlData), &cfg)
 			require.NoError(t, err)
 
-			actual, err := cfg.Datasources.Evaluate()
+			actual, err := DatasourceSectionEvaluator{s: *cfg.Datasources}.Evaluate()
 			tt.assertError(t, err)
 			if err != nil {
 				return

@@ -11,7 +11,7 @@ import (
 type Config struct {
 	testMode     bool
 	Placeholders *Section[Placeholder] `yaml:"placeholders,omitempty"`
-	Datasources  *Datasources          `yaml:"datasources,omitempty"`
+	Datasources  *Section[Datasource]  `yaml:"datasources,omitempty"`
 	Databases    *Section[Database]    `yaml:"databases,omitempty"`
 	Tables       *Section[Table]       `yaml:"tables,omitempty"`
 	Rules        Rules                 `yaml:"rules"`
@@ -21,15 +21,15 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 
 	type rawConfig struct {
 		Placeholders *Section[Placeholder] `yaml:"placeholders,omitempty"`
-		Datasources  *Datasources          `yaml:"datasources,omitempty"`
+		Datasources  *Section[Datasource]  `yaml:"datasources,omitempty"`
 		Databases    *Section[Database]    `yaml:"databases,omitempty"`
 		Tables       *Section[Table]       `yaml:"tables,omitempty"`
 		Rules        map[string]any        `yaml:"rules"`
 	}
-	ph := NewSection[Placeholder](ConfigSectionTypePlaceholders, nil, nil, NewPlaceholderV1)
+	ph := NewSection[Placeholder](ConfigSectionTypePlaceholders, nil, nil, NewPlaceholder)
 	raw := rawConfig{
 		Placeholders: ph,
-		Datasources:  &Datasources{globalPlaceholders: ph},
+		Datasources:  NewSection[Datasource](ConfigSectionTypeDatasources, nil, ph, NewDatasource),
 		Databases:    NewSection[Database](ConfigSectionTypeDatabases, nil, ph, NewDatabase),
 		Tables:       NewSection[Table](ConfigSectionTypeTables, nil, ph, NewTable),
 	}
@@ -40,26 +40,17 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 
 	log.Printf("raw.Config = %#v\n", raw)
 
-	// 全局预定义配置
+	// 全局预定义的、可选的配置
+	// placeholders/datasources/databases/tables
 	c.Placeholders = raw.Placeholders
 	c.Datasources = raw.Datasources
 	c.Databases = raw.Databases
 	c.Tables = raw.Tables
 
-	// if !raw.Placeholders.IsZero() {
-	// 	c.Placeholders = raw.Placeholders
-	// }
-	// if !raw.Datasources.IsZero() {
-	// 	c.Datasources = raw.Datasources
-	// }
-	// if !raw.Databases.IsZero() {
-	// 	c.Databases = raw.Databases
-	// }
-	// if !raw.Tables.IsZero() {
-	// 	c.Tables = raw.Tables
-	// }
-
 	log.Printf("raw.Config.Rules = %#v\n", raw.Rules)
+	// 全局预定义的、必选的配置
+	// rules
+	c.Rules.testMode = c.testMode
 	c.Rules.placeholders = c.Placeholders
 	c.Rules.datasources = c.Datasources
 	c.Rules.databases = c.Databases

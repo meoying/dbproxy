@@ -16,6 +16,7 @@ type Finder[T any] interface {
 
 type Referencable interface {
 	Placeholder | Datasource | Database | Table
+	TypeName() string
 }
 
 type Reference[E Referencable, F Finder[E]] struct {
@@ -38,8 +39,8 @@ func (r *Reference[E, F]) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// IsSection 根据 name 判断是否引用某个全局小节
-func (r *Reference[E, F]) IsSection(typeName string) bool {
+// IsReferencedSection 根据 typeName 判断是否引用某个全局小节
+func (r *Reference[E, F]) IsReferencedSection(typeName string) bool {
 	for _, path := range r.paths {
 		if strings.SplitN(path, ".", 2)[0] == typeName {
 			return true
@@ -55,7 +56,6 @@ func (r *Reference[E, F]) Build() (map[string]E, error) {
 		varType, varName := varInfo[0], varInfo[1]
 		log.Printf("引用路径信息 = %#v\n", varInfo)
 		t, err := r.global.Find(varName)
-		// log.Printf("global = %#v\n", d.global.Variables)
 		if varType != r.global.Type() || err != nil {
 			return nil, fmt.Errorf("%w: %s", errs.ErrReferencePathInvalid, path)
 		}

@@ -87,7 +87,7 @@ placeholders:
 			},
 		},
 		{
-			name: "应该报错_不支持引用全局变量",
+			name: "应该报错_不支持全局自引用",
 			yamlData: `
 placeholders:
   region_ref:

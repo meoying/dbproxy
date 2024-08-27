@@ -2,10 +2,6 @@ package composite
 
 type String string
 
-func (s String) Type() string {
-	return "String"
-}
-
 func (s String) IsZero() bool {
 	return len(s) == 0
 }

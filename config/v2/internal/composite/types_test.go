@@ -14,7 +14,6 @@ func TestUnmarshal_Datasource(t *testing.T) {
 		want      any
 		assertErr assert.ErrorAssertionFunc
 	}{
-		// TODO: Add test cases.
 		{
 			name: "datasources模版",
 			val: map[string]any{
@@ -50,13 +49,10 @@ func TestUnmarshal_Datasource(t *testing.T) {
 			},
 			assertErr: assert.NoError,
 		},
-		// datasources: master:
-		// datasources: master: slaves:
-		// datasources: master:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := unmarshal[Datasource, *Datasources](tt.ph, tt.val)
+			got, err := unmarshal[Datasource, *Section[Datasource]](tt.ph, tt.val)
 			tt.assertErr(t, err)
 			if err != nil {
 				return
