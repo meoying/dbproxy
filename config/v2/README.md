@@ -58,7 +58,7 @@ datasources:
 
 ### 局部定义
 
-局部定义是指在`rules.{name}.datasources`中定义变量,除了支持全局定义中的所有类型,还支持引用类型
+局部定义是指在`rules.{变量名}.datasources`下定义的变量,除了支持全局定义中的所有类型,还支持引用类型
 
 
 ```yaml
@@ -395,13 +395,6 @@ rules:
           - hk_user_db_1
 ```
 
-```yaml
-
-```
-
-
-
-
 #### 字符串类型
 
 ```yaml
@@ -409,7 +402,6 @@ rules:
 rules:
   user:
     databases: user_db
-
 ```
 
 ## tables
