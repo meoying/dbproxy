@@ -38,6 +38,12 @@ type Placeholder struct {
 	Value any
 }
 
+func NewPlaceholder(value any) Placeholder {
+	return Placeholder{
+		Value: value,
+	}
+}
+
 func (p Placeholder) TypeName() string {
 	return DataTypePlaceholder
 }
@@ -55,23 +61,17 @@ func (p Placeholder) Evaluator() Evaluable {
 	}
 }
 
-func NewPlaceholder(value any) Placeholder {
-	return Placeholder{
-		Value: value,
-	}
-}
-
 // Database 数据库类型
 type Database struct {
 	Value any
 }
 
-func (d Database) TypeName() string {
-	return DataTypeDatabase
-}
-
 func NewDatabase(v any) Database {
 	return Database{Value: v}
+}
+
+func (d Database) TypeName() string {
+	return DataTypeDatabase
 }
 
 // Table 数据表类型
@@ -79,14 +79,15 @@ type Table struct {
 	Value any
 }
 
-func (t Table) TypeName() string {
-	return DataTypeTable
-}
-
 func NewTable(value any) Table {
 	return Table{Value: value}
 }
 
+func (t Table) TypeName() string {
+	return DataTypeTable
+}
+
+// AnyValue 用于存储反序列化后的多种类型的值
 type AnyValue[E Referencable, F Finder[E]] struct {
 	Hash     Hash      `yaml:"hash,omitempty"`
 	Template *Template `yaml:"template,omitempty"`

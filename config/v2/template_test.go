@@ -82,10 +82,6 @@ template:
 			},
 			assertError: assert.NoError,
 		},
-		// TODO: 占位符为引用类型
-		// TODO: 1) 引用全局字符串类型占位符
-		// TODO: 2) 引用全局枚举类型占位符
-		// TODO: 3) 引用全局哈希类型占位符
 		{
 			name: "占位符为各种类型的组合",
 			yamlData: `
@@ -121,6 +117,7 @@ template:
 			},
 			assertError: assert.NoError,
 		},
+		// TODO: 编写一个模版,模版中的占位符即有直接定义,又有引用全局占位符(字符串、枚举、哈希) 一个测试用例就可以
 		{
 			name: "解析失败_表达式为空",
 			yamlData: `
