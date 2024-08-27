@@ -1,4 +1,4 @@
-package composite
+package v2
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/ecodeclub/ekit/slice"
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -140,7 +139,7 @@ func unmarshal[E Referencable, F Finder[E]](ph *Section[Placeholder], value any)
 			if !a.DSTemplate.IsZero() {
 				// TODO: 写测试覆盖该分支
 				// datasources 中 ref 不能与template同时出现
-				return nil, fmt.Errorf("%w: ref不能与template并用", errs.ErrVariableTypeInvalid)
+				return nil, fmt.Errorf("%w: ref不能与template并用", ErrVariableTypeInvalid)
 			}
 
 			return *a.Ref, nil
@@ -153,12 +152,12 @@ func unmarshal[E Referencable, F Finder[E]](ph *Section[Placeholder], value any)
 
 			if !a.Ref.IsZero() {
 				// TODO: 写测试覆盖该分支
-				return nil, fmt.Errorf("%w: master、salves不能与ref并用", errs.ErrVariableTypeInvalid)
+				return nil, fmt.Errorf("%w: master、salves不能与ref并用", ErrVariableTypeInvalid)
 			}
 
 			if !a.DSTemplate.IsZero() {
 				// TODO: 写测试覆盖该分支
-				return nil, fmt.Errorf("%w: master、salves不能与template并用", errs.ErrVariableTypeInvalid)
+				return nil, fmt.Errorf("%w: master、salves不能与template并用", ErrVariableTypeInvalid)
 			}
 
 			log.Printf("datasources masterSlaves value = %#v\n", masterSlaves)
@@ -168,16 +167,16 @@ func unmarshal[E Referencable, F Finder[E]](ph *Section[Placeholder], value any)
 			if !a.Ref.IsZero() {
 				// TODO: 写测试覆盖该分支
 				// datasources 中 ref 不能与template同时出现
-				return nil, fmt.Errorf("%w: template不能与ref并用", errs.ErrVariableTypeInvalid)
+				return nil, fmt.Errorf("%w: template不能与ref并用", ErrVariableTypeInvalid)
 			}
 
 			log.Printf("datasources template value = %#v\n tmpl = %#v\n", v, *a.DSTemplate)
 			return *a.DSTemplate, nil
 		} else {
-			return nil, fmt.Errorf("%w", errs.ErrVariableTypeInvalid)
+			return nil, fmt.Errorf("%w", ErrVariableTypeInvalid)
 		}
 	default:
-		return nil, fmt.Errorf("%w", errs.ErrVariableTypeInvalid)
+		return nil, fmt.Errorf("%w", ErrVariableTypeInvalid)
 	}
 }
 
@@ -198,7 +197,7 @@ func modifyDatasourceTemplateName[E Referencable](value map[string]any) map[stri
 
 func convert(values []any) (any, error) {
 	if len(values) == 0 {
-		return nil, fmt.Errorf("%w", errs.ErrVariableTypeInvalid)
+		return nil, fmt.Errorf("%w", ErrVariableTypeInvalid)
 	}
 	switch values[0].(type) {
 	case int, string:
@@ -224,6 +223,6 @@ func convert(values []any) (any, error) {
 		}
 		return res, nil
 	default:
-		return nil, fmt.Errorf("%w", errs.ErrVariableTypeInvalid)
+		return nil, fmt.Errorf("%w", ErrVariableTypeInvalid)
 	}
 }

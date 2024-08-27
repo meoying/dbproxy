@@ -1,9 +1,8 @@
-package composite
+package v2
 
 import (
 	"testing"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -255,5 +254,5 @@ rules:
 func TestConfig_UnmarshalError(t *testing.T) {
 	var cfg Config
 	err := yaml.Unmarshal([]byte(`str`), &cfg)
-	assert.ErrorIs(t, err, errs.ErrConfigSyntaxInvalid)
+	assert.ErrorIs(t, err, ErrConfigSyntaxInvalid)
 }

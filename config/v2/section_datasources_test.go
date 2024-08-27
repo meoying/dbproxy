@@ -1,9 +1,8 @@
-package composite
+package v2
 
 import (
 	"testing"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -301,7 +300,7 @@ datasources:
  `,
 			want: Section[Datasource]{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
+				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
 			},
 		},
 		// TODO: 全局声明中不支持匿名变量——主从/模版

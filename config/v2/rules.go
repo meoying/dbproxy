@@ -1,10 +1,9 @@
-package composite
+package v2
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -43,7 +42,7 @@ func (r *Rules) UnmarshalYAML(value *yaml.Node) error {
 		}
 		err1 = yaml.Unmarshal(out, &v)
 		if err1 != nil {
-			return fmt.Errorf("%w: %w: rules.%s", err1, errs.ErrUnmarshalVariableFailed, name)
+			return fmt.Errorf("%w: %w: rules.%s", err1, ErrUnmarshalVariableFailed, name)
 		}
 		log.Printf("unmarshal %q = %#v\n rule = %#v\n", name, values, v)
 		r.Variables[name] = v
@@ -80,24 +79,24 @@ func (r *Rule) UnmarshalYAML(value *yaml.Node) error {
 	}
 	err := value.Decode(&raw)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errs.ErrConfigSyntaxInvalid, err)
+		return fmt.Errorf("%w: %w", ErrConfigSyntaxInvalid, err)
 	}
 
 	log.Printf("raw.Rule = %#v\n", raw)
 	log.Printf("globalDatasources = %#v\n", r.globalDatasources)
 
 	if raw.Datasources.IsZero() && !r.testMode {
-		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatasources)
+		return fmt.Errorf("%w: %s缺少%s信息", ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatasources)
 	}
 	r.Databases = *raw.Databases
 
 	if raw.Databases.IsZero() && !r.testMode {
-		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatabases)
+		return fmt.Errorf("%w: %s缺少%s信息", ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeDatabases)
 	}
 	r.Datasources = *raw.Datasources
 
 	if raw.Tables.IsZero() && !r.testMode {
-		return fmt.Errorf("%w: %s缺少%s信息", errs.ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeTables)
+		return fmt.Errorf("%w: %s缺少%s信息", ErrConfigSyntaxInvalid, r.name, ConfigSectionTypeTables)
 	}
 	r.Tables = *raw.Tables
 

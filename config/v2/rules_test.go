@@ -1,10 +1,9 @@
-package composite
+package v2
 
 import (
 	"log"
 	"testing"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -114,7 +113,7 @@ rules:
 `,
 			want: Rules{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrConfigSyntaxInvalid)
+				return assert.ErrorIs(t, err, ErrConfigSyntaxInvalid)
 			},
 		},
 		{
@@ -412,7 +411,7 @@ rules:
 			want: Rules{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				log.Printf("err = %#v\n", err)
-				return assert.ErrorIs(t, err, errs.ErrConfigSyntaxInvalid)
+				return assert.ErrorIs(t, err, ErrConfigSyntaxInvalid)
 			},
 		},
 		{
@@ -436,7 +435,7 @@ rules:
 `,
 			want: Rules{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 		{
@@ -602,7 +601,7 @@ rules:
 `,
 			want: Rules{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrReferencePathInvalid)
+				return assert.ErrorIs(t, err, ErrReferencePathInvalid)
 			},
 		},
 		// 局部定义 databases
@@ -1316,7 +1315,7 @@ rules:
 `,
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				log.Printf("err = %#v\n", err)
-				return assert.Error(t, err, errs.ErrConfigSyntaxInvalid)
+				return assert.Error(t, err, ErrConfigSyntaxInvalid)
 			},
 		},
 		{
@@ -1329,7 +1328,7 @@ rules:
 `,
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				log.Printf("err = %#v\n", err)
-				return assert.Error(t, err, errs.ErrConfigSyntaxInvalid)
+				return assert.Error(t, err, ErrConfigSyntaxInvalid)
 			},
 		},
 		{
@@ -1342,7 +1341,7 @@ rules:
 `,
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
 				log.Printf("err = %#v\n", err)
-				return assert.Error(t, err, errs.ErrConfigSyntaxInvalid)
+				return assert.Error(t, err, ErrConfigSyntaxInvalid)
 			},
 		},
 	}

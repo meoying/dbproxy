@@ -1,10 +1,9 @@
-package composite
+package v2
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,7 +34,7 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	}
 	err := value.Decode(&raw)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errs.ErrConfigSyntaxInvalid, err)
+		return fmt.Errorf("%w: %w", ErrConfigSyntaxInvalid, err)
 	}
 
 	log.Printf("raw.Config = %#v\n", raw)
@@ -65,7 +64,7 @@ func (c *Config) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	if len(c.Rules.Variables) == 0 && !c.testMode {
-		return fmt.Errorf("%w: 缺少%s配置", errs.ErrConfigSyntaxInvalid, ConfigSectionTypeRules)
+		return fmt.Errorf("%w: 缺少%s配置", ErrConfigSyntaxInvalid, ConfigSectionTypeRules)
 	}
 
 	return nil

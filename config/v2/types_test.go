@@ -1,4 +1,4 @@
-package composite
+package v2
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package composite
+package v2
 
 // Enum 枚举类型
 type Enum []string

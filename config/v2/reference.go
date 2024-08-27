@@ -1,11 +1,10 @@
-package composite
+package v2
 
 import (
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -57,7 +56,7 @@ func (r *Reference[E, F]) Build() (map[string]E, error) {
 		log.Printf("引用路径信息 = %#v\n", varInfo)
 		t, err := r.global.Find(varName)
 		if varType != r.global.Type() || err != nil {
-			return nil, fmt.Errorf("%w: %s", errs.ErrReferencePathInvalid, path)
+			return nil, fmt.Errorf("%w: %s", ErrReferencePathInvalid, path)
 		}
 		mp[varName] = t
 	}

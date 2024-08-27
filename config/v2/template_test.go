@@ -1,9 +1,8 @@
-package composite
+package v2
 
 import (
 	"testing"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -131,7 +130,7 @@ template:
     region: hk`,
 			want: Template{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 		{
@@ -143,7 +142,7 @@ template:
 `,
 			want: Template{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 		{
@@ -155,7 +154,7 @@ template:
     region: hk`,
 			want: Template{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 		{
@@ -167,7 +166,7 @@ template:
     region: hk`,
 			want: Template{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 		{
@@ -180,7 +179,7 @@ template:
     region: hk`,
 			want: Template{},
 			assertError: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorIs(t, err, errs.ErrUnmarshalVariableFailed)
+				return assert.ErrorIs(t, err, ErrUnmarshalVariableFailed)
 			},
 		},
 	}

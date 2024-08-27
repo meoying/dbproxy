@@ -1,9 +1,8 @@
-package composite
+package v2
 
 import (
 	"testing"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -83,7 +82,7 @@ placeholders:
 `,
 			want: Section[Placeholder]{},
 			assertError: func(t assert.TestingT, err error, i ...any) bool {
-				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
+				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
 			},
 		},
 		{
@@ -99,7 +98,7 @@ placeholders:
  `,
 			want: Section[Placeholder]{},
 			assertError: func(t assert.TestingT, err error, i ...any) bool {
-				return assert.ErrorIs(t, err, errs.ErrVariableTypeInvalid)
+				return assert.ErrorIs(t, err, ErrVariableTypeInvalid)
 			},
 		},
 	}

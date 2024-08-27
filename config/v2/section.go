@@ -1,10 +1,9 @@
-package composite
+package v2
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,7 +34,7 @@ func (s *Section[E]) Find(name string) (E, error) {
 	var zero E
 	v, ok := s.Variables[name]
 	if !ok {
-		return zero, fmt.Errorf("%w: %s", errs.ErrVariableNameNotFound, name)
+		return zero, fmt.Errorf("%w: %s", ErrVariableNameNotFound, name)
 	}
 	return v, nil
 }
@@ -80,7 +79,7 @@ func (s *Section[E]) UnmarshalYAML(value *yaml.Node) error {
 	}
 
 	// 如果都不是，返回错误
-	return fmt.Errorf("%w: %s", errs.ErrUnmarshalVariableFailed, s.typeName)
+	return fmt.Errorf("%w: %s", ErrUnmarshalVariableFailed, s.typeName)
 }
 
 func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
@@ -94,7 +93,7 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 				name = DataTypeDatasourceTemplate
 				// datasources 下 匿名模版不能与命名变量混用
 				if len(variables) != 1 {
-					return fmt.Errorf("%w: 匿名模版不能与其他变量组合使用", errs.ErrUnmarshalVariableFailed)
+					return fmt.Errorf("%w: 匿名模版不能与其他变量组合使用", ErrUnmarshalVariableFailed)
 				}
 			}
 		}
@@ -119,12 +118,12 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 
 		v, err1 := unmarshal[E, *Section[E]](s.globalPlaceholders, val)
 		if err1 != nil {
-			return fmt.Errorf("%w: %w: %s.%s", err1, errs.ErrUnmarshalVariableFailed, s.typeName, name)
+			return fmt.Errorf("%w: %w: %s.%s", err1, ErrUnmarshalVariableFailed, s.typeName, name)
 		}
 
 		if ref, ok := v.(Reference[E, *Section[E]]); ok {
 			if s.isGlobal() && ref.IsReferencedSection(s.typeName) {
-				return fmt.Errorf("%w: %s: 不支持引用%s内变量", errs.ErrVariableTypeInvalid, name, s.typeName)
+				return fmt.Errorf("%w: %s: 不支持引用%s内变量", ErrVariableTypeInvalid, name, s.typeName)
 			}
 			ref.global = s.global
 			refVars, err1 := ref.Build()
@@ -139,7 +138,7 @@ func (s *Section[E]) unmarshalMapVariables(variables map[string]any) error {
 				s.Variables[n] = v
 			}
 		} else if _, ok = v.(Template); ok && s.typeName == ConfigSectionTypePlaceholders {
-			return fmt.Errorf("%w: %s: %s内不支持模版类型", errs.ErrVariableTypeInvalid, name, s.typeName)
+			return fmt.Errorf("%w: %s: %s内不支持模版类型", ErrVariableTypeInvalid, name, s.typeName)
 		} else {
 			s.Variables[name] = s.creator(v)
 		}

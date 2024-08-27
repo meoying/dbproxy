@@ -1,4 +1,4 @@
-package composite
+package v2
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/meoying/dbproxy/config/v2/internal/errs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,22 +37,22 @@ func (t *Template) UnmarshalYAML(value *yaml.Node) error {
 
 	t.Expr = strings.TrimSpace(raw.Expr)
 	if len(t.Expr) == 0 {
-		return fmt.Errorf("%w: template.expr", errs.ErrUnmarshalVariableFailed)
+		return fmt.Errorf("%w: template.expr", ErrUnmarshalVariableFailed)
 	}
 
 	if raw.Placeholders.IsZero() {
-		return fmt.Errorf("%w: template.placeholders", errs.ErrUnmarshalVariableFailed)
+		return fmt.Errorf("%w: template.placeholders", ErrUnmarshalVariableFailed)
 	}
 
 	for _, ph := range t.placeholdersInExpr() {
 		if _, ok := raw.Placeholders.Variables[ph]; !ok {
-			return fmt.Errorf("%w: template.placeholders 缺少占位符 %s", errs.ErrUnmarshalVariableFailed, ph)
+			return fmt.Errorf("%w: template.placeholders 缺少占位符 %s", ErrUnmarshalVariableFailed, ph)
 		}
 	}
 
 	for ph := range raw.Placeholders.Variables {
 		if !strings.Contains(t.Expr, fmt.Sprintf("${%s}", ph)) {
-			return fmt.Errorf("%w: template.expr 缺少占位符 %s", errs.ErrUnmarshalVariableFailed, ph)
+			return fmt.Errorf("%w: template.expr 缺少占位符 %s", ErrUnmarshalVariableFailed, ph)
 		}
 	}
 
