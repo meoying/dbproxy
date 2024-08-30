@@ -95,7 +95,7 @@ func (s *PrepareDataTypeTestSuite) TestIntTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) intTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`,`type_tinyint`, `type_smallint`,`type_mediumint`,`type_int`,`type_integer`,`type_bigint` FROM `test_int_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) generateSQL(tmpl string, columns []string, isNULL bool) string {
@@ -268,7 +268,7 @@ func (s *PrepareDataTypeTestSuite) TestFloatTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) floatTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`,`type_float`, `type_double`,`type_decimal`,`type_numeric`,`type_real` FROM `test_float_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanFloatValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -332,7 +332,7 @@ func (s *PrepareDataTypeTestSuite) TestStringTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) stringTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`,`type_char`, `type_varchar`, `type_tinytext`, `type_text`, `type_mediumtext`, `type_longtext`, `type_enum`, `type_set`, `type_binary`, `type_varbinary`, `type_json`, `type_bit` FROM `test_string_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanStringValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -396,7 +396,7 @@ func (s *PrepareDataTypeTestSuite) TestDateTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) dateTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`, `type_date`, `type_datetime`, `type_timestamp`, `type_time`, `type_year` FROM `test_date_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanDateValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -468,7 +468,7 @@ func (s *PrepareDataTypeTestSuite) TestGeographyTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) geographyTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`,`type_geometry`,`type_geomcollection`,`type_linestring`,`type_multilinestring`,`type_point`,`type_multipoint`,`type_polygon`,`type_multipolygon` FROM `test_geography_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanGeographyValues(t *testing.T, rows *sql.Rows) [][]any {
@@ -531,7 +531,7 @@ func (s *PrepareDataTypeTestSuite) TestFilePathTypes() {
 }
 
 func (s *PrepareDataTypeTestSuite) filepathTypeQueryTmpl() string {
-	return "SELECT /*useMaster*/ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE %s"
+	return "SELECT  /* @proxy useMaster=true */ `id`,`type_tinyblob`,`type_mediumblob`,`type_blob`,`type_longblob` FROM `test_file_path_type` WHERE %s"
 }
 
 func (s *PrepareDataTypeTestSuite) scanFilepathValues(t *testing.T, rows *sql.Rows) [][]any {

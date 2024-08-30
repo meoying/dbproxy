@@ -44,7 +44,7 @@ func (e *StmtPrepareExecutor) Exec(
 	pctx := &pcontext.Context{
 		Context:     ctx,
 		Query:       query,
-		ParsedQuery: pcontext.NewParsedQuery(prepareStmtSQL, nil),
+		ParsedQuery: pcontext.NewParsedQuery(prepareStmtSQL),
 		ConnID:      conn.ID(),
 		StmtID:      stmtID,
 	}

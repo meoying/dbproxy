@@ -5,9 +5,19 @@ import (
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/ast/parser"
 )
 
-func Parse(query string) parser.IRootContext {
+func Parse(query string) ProxyCtx {
 	lexer := parser.NewMySqlLexer(antlr.NewInputStream(query))
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	paser := parser.NewMySqlParser(tokens)
-	return paser.Root()
+	root := paser.Root()
+	hints := NewHintVisitor().Visit(root).(Hints)
+	return ProxyCtx{
+		Hints: hints,
+		Root:  root,
+	}
+}
+
+type ProxyCtx struct {
+	Root  parser.IRootContext
+	Hints Hints
 }

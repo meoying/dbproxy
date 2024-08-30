@@ -817,7 +817,7 @@ handlerStatement
     ;
 
 insertStatement
-    : INSERT priority = (LOW_PRIORITY | DELAYED | HIGH_PRIORITY)? IGNORE? INTO? tableName (
+    : INSERT proxyHint? priority = (LOW_PRIORITY | DELAYED | HIGH_PRIORITY)? IGNORE? INTO? tableName (
         PARTITION '(' partitions = uidList? ')'
     )? (
         ('(' columns = fullColumnNameList? ')')? insertStatementValue (AS? uid)?
@@ -907,13 +907,13 @@ lockClause
 //    Detailed DML Statements
 
 singleDeleteStatement
-    : DELETE priority = LOW_PRIORITY? QUICK? IGNORE? FROM tableName (AS? uid)? (
+    : DELETE proxyHint? priority = LOW_PRIORITY? QUICK? IGNORE? FROM tableName (AS? uid)? (
         PARTITION '(' uidList ')'
     )? (WHERE expression)? orderByClause? (LIMIT limitClauseAtom)?
     ;
 
 multipleDeleteStatement
-    : DELETE priority = LOW_PRIORITY? QUICK? IGNORE? (
+    : DELETE proxyHint? priority = LOW_PRIORITY? QUICK? IGNORE? (
         tableName ('.' '*')? ( ',' tableName ('.' '*')?)* FROM tableSources
         | FROM tableName ('.' '*')? ( ',' tableName ('.' '*')?)* USING tableSources
     ) (WHERE expression)?
@@ -939,13 +939,13 @@ handlerCloseStatement
     ;
 
 singleUpdateStatement
-    : UPDATE priority = LOW_PRIORITY? IGNORE? tableName (AS? uid)? SET updatedElement (
+    : UPDATE proxyHint? priority = LOW_PRIORITY? IGNORE? tableName (AS? uid)? SET updatedElement (
         ',' updatedElement
     )* (WHERE expression)? orderByClause? limitClause?
     ;
 
 multipleUpdateStatement
-    : UPDATE priority = LOW_PRIORITY? IGNORE? tableSources SET updatedElement (',' updatedElement)* (
+    : UPDATE proxyHint? priority = LOW_PRIORITY? IGNORE? tableSources SET updatedElement (',' updatedElement)* (
         WHERE expression
     )?
     ;
@@ -1017,7 +1017,7 @@ querySpecification
 
 // dbproxy 扩展语法
 proxyHint
-    : PROXY_HINT
+    :  PROXY_HINT
     ;
 
 
@@ -1153,15 +1153,15 @@ startTransaction
     ;
 
 beginWork
-    : BEGIN WORK?
+    : BEGIN WORK? proxyHint?
     ;
 
 commitWork
-    : COMMIT WORK? (AND nochain = NO? CHAIN)? (norelease = NO? RELEASE)?
+    : COMMIT WORK? (AND nochain = NO? CHAIN)? (norelease = NO? RELEASE)? proxyHint?
     ;
 
 rollbackWork
-    : ROLLBACK WORK? (AND nochain = NO? CHAIN)? (norelease = NO? RELEASE)?
+    : ROLLBACK WORK? (AND nochain = NO? CHAIN)? (norelease = NO? RELEASE)? proxyHint?
     ;
 
 savepointStatement
@@ -3495,3 +3495,4 @@ functionNameBase
     | JSON_ARRAYAGG
     | JSON_OBJECTAGG
     ;
+

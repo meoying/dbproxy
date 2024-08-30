@@ -37,7 +37,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 21) OR (`user_id` = 22);",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 21) OR (`user_id` = 22);",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -66,7 +66,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?);",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?);",
 				args:  []any{21, 22},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -96,7 +96,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ AVG(`amount`)  FROM `order`",
+				query: "SELECT  /* @proxy useMaster=true */ AVG(`amount`)  FROM `order`",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				avgAccounts := make([]sql.NullFloat64, 0, 2)
@@ -123,7 +123,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ AVG(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
+				query: "SELECT  /* @proxy useMaster=true */ AVG(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
 				args:  []any{1, 2, 3, 4},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -151,7 +151,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ MAX(`amount`)  FROM `order`;",
+				query: "SELECT  /* @proxy useMaster=true */ MAX(`amount`)  FROM `order`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				maxAccounts := make([]sql.NullFloat64, 0, 2)
@@ -178,7 +178,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ MAX(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
+				query: "SELECT  /* @proxy useMaster=true */ MAX(`amount`)  FROM `order` WHERE `user_id` IN (?, ?, ?, ?);",
 				args:  []any{1, 2, 3, 4},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -211,7 +211,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount`  FROM `order` ORDER BY `amount` DESC,`order_id`;",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount`  FROM `order` ORDER BY `amount` DESC,`order_id`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -269,7 +269,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount`  FROM `order` WHERE `user_id` IN (?,?,?,?,?,?) ORDER BY `amount` DESC,`order_id`;",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount`  FROM `order` WHERE `user_id` IN (?,?,?,?,?,?) ORDER BY `amount` DESC,`order_id`;",
 				args:  []any{1, 2, 3, 4, 6, 7},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -331,7 +331,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `order_id` AS `oid`  FROM `order` GROUP BY `oid`;",
+				query: "SELECT  /* @proxy useMaster=true */ `order_id` AS `oid`  FROM `order` GROUP BY `oid`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
@@ -363,7 +363,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `order_id` AS `oid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?) GROUP BY `oid`;",
+				query: "SELECT  /* @proxy useMaster=true */ `order_id` AS `oid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?) GROUP BY `oid`;",
 				args:  []any{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -396,7 +396,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id` AS `uid`  FROM `order` ORDER BY `uid` LIMIT 6 OFFSET 0;",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id` AS `uid`  FROM `order` ORDER BY `uid` LIMIT 6 OFFSET 0;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
@@ -428,7 +428,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id` AS `uid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?) ORDER BY `uid` LIMIT 6 OFFSET 0;",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id` AS `uid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?) ORDER BY `uid` LIMIT 6 OFFSET 0;",
 				args:  []any{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -461,7 +461,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ DISTINCT `order_id` AS `oid`  FROM `order`;",
+				query: "SELECT  /* @proxy useMaster=true */ DISTINCT `order_id` AS `oid`  FROM `order`;",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				oidGroups := make([]int64, 0, 3)
@@ -493,7 +493,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ DISTINCT `order_id` AS `oid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+				query: "SELECT  /* @proxy useMaster=true */ DISTINCT `order_id` AS `oid`  FROM `order` WHERE `user_id` IN (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 				args:  []any{1, 2, 3, 4, 5, 6, 7, 8, 9},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
@@ -520,7 +520,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 3) OR (`user_id` = 1) OR (`user_id` = 2);",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = 3) OR (`user_id` = 1) OR (`user_id` = 2);",
 			},
 			after: func(t *testing.T, rows *sql.Rows) {
 				res := getOrdersFromRows(t, rows)
@@ -557,7 +557,7 @@ func (s *PrepareBasicTestSuite) TestPrepareSelect() {
 				execSQL(t, s.db, sqls)
 			},
 			info: sqlInfo{
-				query: "SELECT /* useMaster */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?) OR (`user_id` = ?);",
+				query: "SELECT  /* @proxy useMaster=true */ `user_id`,`order_id`,`content`,`amount` FROM `order` WHERE (`user_id` = ?) OR (`user_id` = ?) OR (`user_id` = ?);",
 				args:  []any{1, 2, 3},
 			},
 			after: func(t *testing.T, rows *sql.Rows) {

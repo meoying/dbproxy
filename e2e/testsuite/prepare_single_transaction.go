@@ -198,7 +198,7 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(5001), s.getUserID(5002), s.getUserID(5003)),
+					query: fmt.Sprintf("SELECT  /* @proxy useMaster=true */ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(5001), s.getUserID(5002), s.getUserID(5003)),
 				},
 			},
 			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
@@ -273,7 +273,7 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: "SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
+					query: "SELECT  /* @proxy useMaster=true */ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
 					args: []any{
 						s.getUserID(6001), s.getUserID(6002), s.getUserID(6003),
 					},
@@ -351,7 +351,7 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: fmt.Sprintf("SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(7001), s.getUserID(7002), s.getUserID(7003)),
+					query: fmt.Sprintf("SELECT  /* @proxy useMaster=true */ `content` FROM `order` WHERE `user_id` IN (%d, %d, %d)", s.getUserID(7001), s.getUserID(7002), s.getUserID(7003)),
 				},
 			},
 			execSQLStmts: func(t *testing.T, infos []sqlInfo, tx *sql.Tx) {
@@ -426,7 +426,7 @@ func (s *PrepareSingleTXTestSuite) TestLocalTransaction() {
 			driverUsedOnlyCtxFunc: func() context.Context { return sharding.NewSingleTxContext(context.Background()) },
 			infos: []sqlInfo{
 				{
-					query: "SELECT /*useMaster*/ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
+					query: "SELECT  /* @proxy useMaster=true */ `content` FROM `order` WHERE `user_id` IN (?,?,?)",
 					args: []any{
 						s.getUserID(8001), s.getUserID(8002), s.getUserID(8003),
 					},

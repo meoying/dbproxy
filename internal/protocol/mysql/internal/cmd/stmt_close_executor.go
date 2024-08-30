@@ -32,7 +32,7 @@ func (e *StmtCloseExecutor) Exec(
 	pctx := &pcontext.Context{
 		Context:     ctx,
 		Query:       deallocatePrepareStmtSQL,
-		ParsedQuery: pcontext.NewParsedQuery(deallocatePrepareStmtSQL, nil),
+		ParsedQuery: pcontext.NewParsedQuery(deallocatePrepareStmtSQL),
 		ConnID:      conn.ID(),
 		StmtID:      stmtId,
 	}

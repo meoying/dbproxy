@@ -21,7 +21,7 @@ func TestInsert_Build(t *testing.T) {
 			name: "修改多个值",
 			sql:  "INSERT INTO `user` (username, email) VALUES ('john_doe','john@example.com'),('zwl','zwl@qq.com'),('dm','dm.@163.com');",
 			valueFunc: func(sql string) SqlBuilder {
-				root := ast.Parse(sql)
+				root := ast.Parse(sql).Root
 				baseVal := vparser.NewInsertVisitor().Parse(root).(vparser.BaseVal)
 				require.NoError(t, baseVal.Err)
 				insertVal := baseVal.Data.(vparser.InsertVal)
@@ -36,7 +36,7 @@ func TestInsert_Build(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			builder := tc.valueFunc(tc.sql)
 			sql, err := builder.Build(root)
 			require.NoError(t, err)

@@ -81,7 +81,7 @@ func TestVisitor_Insert(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			baseVisitor := &BaseVisitor{}
 			q := InsertVisitor{
 				BaseVisitor: baseVisitor,
