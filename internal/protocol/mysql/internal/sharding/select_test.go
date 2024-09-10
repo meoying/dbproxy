@@ -60,6 +60,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_1`.`order_tab_0` WHERE `user_id` = 123 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -71,31 +72,37 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_0`.`order_tab_0` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_0`.`order_tab_1` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_0`.`order_tab_2` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_1`.`order_tab_0` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_1`.`order_tab_1` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `user_id`,`order_id`,`content`,`account` FROM `order_db_1`.`order_tab_2` WHERE `order_id` = 123 ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -107,6 +114,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `order_id` = 12 ) AND ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -118,11 +126,13 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `user_id` = 123 ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `user_id` = 123 ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -134,31 +144,37 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_1` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_2` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_1` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE ( `order_id` = 12 ) OR ( `user_id` = 123 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -170,31 +186,37 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_1` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_2` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_1` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE ( `user_id` = 123 ) OR ( `order_id` = 12 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -206,11 +228,13 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -222,6 +246,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `user_id` = 123 ) AND ( ( `order_id` = 12 ) OR ( `user_id` = 234 ) ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -233,6 +258,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `user_id` = 123 ) OR ( ( `user_id` = 181 ) AND ( `user_id` = 234 ) ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -244,11 +270,13 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `user_id` = 234 ) ) AND ( `order_id` = 24 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `user_id` = 234 ) ) AND ( `order_id` = 24 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -260,6 +288,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) AND ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -271,16 +300,19 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `user_id` = 253 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_1` WHERE ( ( `user_id` = 123 ) OR ( `user_id` = 253 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `user_id` = 253 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -292,31 +324,37 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_1` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_2` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_1` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE ( ( `user_id` = 123 ) OR ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -328,6 +366,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) AND ( `order_id` = 23 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -339,11 +378,13 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( ( `user_id` = 234 ) AND ( `order_id` = 18 ) ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( ( `user_id` = 234 ) AND ( `order_id` = 18 ) ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -361,6 +402,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -381,6 +423,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -401,6 +444,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -421,6 +465,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -441,6 +486,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -455,11 +501,13 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE `user_id` IN ( 12 , 35 , 101 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE `user_id` IN ( 12 , 35 , 101 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -471,6 +519,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) AND ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -482,16 +531,19 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_0` WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -509,6 +561,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -529,6 +582,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -543,6 +597,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_0`.`order_tab_0` WHERE ( `user_id` NOT IN ( 12 , 35 , 101 ) ) AND ( `user_id` = 234 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -560,6 +615,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -580,6 +636,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -600,6 +657,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -620,6 +678,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -640,6 +699,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -660,6 +720,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -680,6 +741,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -694,6 +756,7 @@ func TestShardingSelector_Build(t *testing.T) {
 			qs: []sharding.Query{
 				{
 					SQL:        "SELECT `order_id`,`content` FROM `order_db_1`.`order_tab_2` WHERE NOT ( `user_id` != 101 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -711,6 +774,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -731,6 +795,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -751,6 +816,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -771,6 +837,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -791,6 +858,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -811,6 +879,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -831,6 +900,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -851,6 +921,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -871,6 +942,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -891,6 +963,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -911,6 +984,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -931,6 +1005,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -951,6 +1026,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -971,6 +1047,7 @@ func TestShardingSelector_Build(t *testing.T) {
 						tableName := fmt.Sprintf(tablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})

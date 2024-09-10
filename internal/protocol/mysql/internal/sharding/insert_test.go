@@ -60,6 +60,7 @@ func TestShardingInsert_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        "INSERT INTO `order_db_1`.`order_tab_1` ( `uid` , `order_id` , `content` , `account` ) VALUES ( 1,3,'content',1.1 ) ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},
@@ -71,21 +72,25 @@ func TestShardingInsert_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 4,4,'4',4.0 ) ; ", "`order_db_0`", "`order_tab_1`"),
+					Table:      "order_tab_1",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 2,2,'2',2.0 ) ; ", "`order_db_0`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 3,3,'3',3.0 ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 1,1,'1',1.0 ) ; ", "`order_db_1`", "`order_tab_1`"),
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},
@@ -97,6 +102,7 @@ func TestShardingInsert_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 1,1,'1',1.0 ) , ( 7,7,'7',7.0 ) ; ", "`order_db_1`", "`order_tab_1`"),
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},
@@ -109,16 +115,19 @@ func TestShardingInsert_Build(t *testing.T) {
 
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 2,2,'2',2.0 ) , ( 8,8,'8',8.0 ) ; ", "`order_db_0`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 3,3,'3',3.0 ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("INSERT INTO %s.%s ( `uid` , `order_id` , `content` , `account` ) VALUES ( 1,1,'1',1.0 ) , ( 7,7,'7',7.0 ) ; ", "`order_db_1`", "`order_tab_1`"),
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "1.db.cluster.company.com:3306",
 				},

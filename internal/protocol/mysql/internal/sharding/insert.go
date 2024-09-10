@@ -82,6 +82,7 @@ func (i *InsertHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 		}
 		ansQuery = append(ansQuery, sharding.Query{
 			SQL:        sql,
+			Table:      dst.Table,
 			DB:         dst.DB,
 			Datasource: dst.Name,
 		})

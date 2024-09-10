@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/ecodeclub/ekit/syncx"
@@ -9,14 +10,17 @@ import (
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/internal/pcontext"
 	"github.com/meoying/dbproxy/internal/protocol/mysql/plugin"
+	"github.com/meoying/dbproxy/internal/query"
 )
 
 type baseHandler struct {
 	ds datasource.DataSource
 	// connID2Tx 在复合操作中的并发安全性，依赖于 Conn 中不可能出现并发Tx.
 	// 即一个 Conn 不会也不可能同时存在两个 Tx
-	connID2Tx syncx.Map[uint32, *transaction.TxDatasource]
-	newTxCtx  func(ctx context.Context) context.Context
+	connID2Tx         syncx.Map[uint32, *transaction.TxDatasource]
+	stmtID2Stmt       syncx.Map[uint32, datasource.Stmt]
+	stmtID2PrepareCtx syncx.Map[uint32, *pcontext.Context]
+	newTxCtx          func(ctx context.Context) context.Context
 }
 
 func newBaseHandler(ds datasource.DataSource, txType string) *baseHandler {
@@ -92,6 +96,54 @@ func (h *baseHandler) getStmtPreparer(ctx *pcontext.Context) datasource.StmtPrep
 		return tx
 	}
 	return h.ds
+}
+
+func (h *baseHandler) handlePrepareStmt(ctx *pcontext.Context, query query.Query) (*plugin.Result, error) {
+	stmt, err := h.getStmtPreparer(ctx).Prepare(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	h.stmtID2Stmt.Store(ctx.StmtID, stmt)
+	h.stmtID2PrepareCtx.Store(ctx.StmtID, &pcontext.Context{
+		Context: ctx.Context,
+		// SELECT * FROM order where `user_id` = ?;
+		// SELECT * FROM order where `user_id` = '?';
+		ParsedQuery: pcontext.NewParsedQuery(h.convertQuery(ctx.Query), nil),
+		Query:       ctx.Query,
+		ConnID:      ctx.ConnID,
+		StmtID:      ctx.StmtID,
+	})
+	return &plugin.Result{
+		InTransactionState: h.isInTransaction(ctx.ConnID),
+		StmtID:             ctx.StmtID,
+	}, nil
+}
+
+func (h *baseHandler) getStmtByStmtID(stmtID uint32) (datasource.Stmt, error) {
+	if stmt, ok := h.stmtID2Stmt.Load(stmtID); ok {
+		return stmt, nil
+	}
+	return nil, fmt.Errorf("未找到id为%d的stmt", stmtID)
+}
+
+func (h *baseHandler) getPrepareContextByStmtID(stmtID uint32) (*pcontext.Context, error) {
+	if ctx, ok := h.stmtID2PrepareCtx.Load(stmtID); ok {
+		return ctx, nil
+	}
+	return nil, fmt.Errorf("未找到id为%d的pcontext.Context", stmtID)
+}
+
+func (h *baseHandler) handleDeallocatePrepareStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	stmt, err := h.getStmtByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	err = stmt.Close()
+	h.stmtID2Stmt.Delete(ctx.StmtID)
+	h.stmtID2PrepareCtx.Delete(ctx.StmtID)
+	return &plugin.Result{
+		InTransactionState: h.isInTransaction(ctx.ConnID),
+	}, err
 }
 
 func (h *baseHandler) convertQuery(query string) string {

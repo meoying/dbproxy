@@ -61,6 +61,7 @@ func (s *SelectHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 		}
 		res = append(res, sharding.Query{
 			SQL:        sql,
+			Table:      dst.Table,
 			DB:         dst.DB,
 			Datasource: dst.Name,
 		})
@@ -74,7 +75,7 @@ func (s *SelectHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	originCols, targetCols, err := s.newQuerySpec()
+	originCols, targetCols, err := s.NewQuerySpec()
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +96,7 @@ func (s *SelectHandler) QueryOrExec(ctx context.Context) (*Result, error) {
 	}, nil
 }
 
-func (s *SelectHandler) newQuerySpec() (factory.QuerySpec, factory.QuerySpec, error) {
+func (s *SelectHandler) NewQuerySpec() (factory.QuerySpec, factory.QuerySpec, error) {
 	var originSpec, targetSpec factory.QuerySpec
 	var hasAgg, hasGroupBy, hasOrderBy bool
 	var err error

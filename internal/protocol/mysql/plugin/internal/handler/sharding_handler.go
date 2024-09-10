@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/meoying/dbproxy/internal/datasource"
 	"github.com/meoying/dbproxy/internal/datasource/transaction"
@@ -42,6 +43,14 @@ func (h *ShardingHandler) Handle(ctx *pcontext.Context) (*plugin.Result, error) 
 	switch sqlTypeName {
 	case vparser.SelectStmt, vparser.InsertStmt, vparser.UpdateStmt, vparser.DeleteStmt:
 		return h.handleCRUDStmt(ctx, sqlTypeName)
+	case vparser.PrepareStmt:
+		return h.handlePrepareStmt(ctx, datasource.Query{
+			SQL: ctx.Query,
+		})
+	case vparser.ExecutePrepareStmt:
+		return h.handleExecutePrepareStmt(ctx)
+	case vparser.DeallocatePrepareStmt:
+		return h.handleDeallocatePrepareStmt(ctx)
 	case vparser.StartTransactionStmt:
 		return h.handleStartTransactionStmt(ctx)
 	case vparser.CommitStmt:
@@ -67,6 +76,33 @@ func (h *ShardingHandler) handleCRUDStmt(ctx *pcontext.Context, sqlName string) 
 	if err != nil {
 		return nil, err
 	}
+	r.InTransactionState = h.isInTransaction(ctx.ConnID)
+	return (*plugin.Result)(r), nil
+}
+
+func (h *ShardingHandler) handleExecutePrepareStmt(ctx *pcontext.Context) (*plugin.Result, error) {
+	// ctx.Args应该是传递过来的参数列表
+	stmt, err := h.getStmtByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	c, err := h.getPrepareContextByStmtID(ctx.StmtID)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("handleExecutePrepareStmt: type = %#v, query = %#v, args = %#v", c.ParsedQuery.Type(), c.Query, ctx.Args)
+
+	prepareHandler, err := shardinghandler.NewPrepareHandler(stmt, h.algorithm, h.getDatasource(ctx), c, ctx.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := prepareHandler.QueryOrExec(ctx.Context)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("handleExecutePrepareStmt: result : %#v, rows : %#v\n", r.Result, r.Rows)
+
 	r.InTransactionState = h.isInTransaction(ctx.ConnID)
 	return (*plugin.Result)(r), nil
 }

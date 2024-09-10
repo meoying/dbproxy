@@ -12,3 +12,4 @@ func NewErrUnKnowSelectCol(col string) error {
 }
 
 var ErrInsertShardingKeyNotFound = errors.New(" insert语句中未包含sharding key")
+var ErrPrepareArgsNoEqual = errors.New("prepare语句占位符数量和传入参数不等")
