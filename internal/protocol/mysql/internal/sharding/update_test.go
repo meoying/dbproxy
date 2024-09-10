@@ -54,6 +54,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `order_id` = 1 , `content` = '1' , `account` = 1.0 WHERE `user_id` = 1 ; ", "`order_db_1`", "`order_tab_1`"),
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -71,6 +72,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -85,11 +87,13 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` = 123 ) OR ( `user_id` = 234 ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` = 123 ) OR ( `user_id` = 234 ) ; ", "`order_db_0`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -107,6 +111,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -121,11 +126,13 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( ( `user_id` = 123 ) AND ( `order_id` = 12 ) ) OR ( `user_id` = 234 ) ; ", "`order_db_0`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -137,6 +144,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` = 123 ) OR ( ( `user_id` = 181 ) AND ( `user_id` = 234 ) ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -154,6 +162,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -174,6 +183,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -194,6 +204,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -214,6 +225,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -234,6 +246,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -248,11 +261,13 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE `user_id` IN ( 12 , 35 , 101 ) ; ", "`order_db_1`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE `user_id` IN ( 12 , 35 , 101 ) ; ", "`order_db_0`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -263,8 +278,8 @@ func TestUpdateHandler_Build(t *testing.T) {
 			sql:  "UPDATE order  SET `content`='1',`account`=1.0 WHERE (`user_id` IN (12,35,101)) AND (`user_id`=234);",
 			wantQs: []sharding.Query{
 				{
-					SQL: fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) AND ( `user_id` = 234 ) ; ", "`order_db_0`", "`order_tab_0`"),
-
+					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) AND ( `user_id` = 234 ) ; ", "`order_db_0`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -276,16 +291,19 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        "UPDATE `order_db_1`.`order_tab_2` SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "UPDATE `order_db_1`.`order_tab_0` SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "UPDATE `order_db_0`.`order_tab_0` SET `content` = '1' , `account` = 1.0 WHERE ( `user_id` IN ( 12 , 35 , 101 ) ) OR ( `user_id` = 531 ) ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -302,8 +320,8 @@ func TestUpdateHandler_Build(t *testing.T) {
 					for j := 0; j < tableBase; j++ {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
-							SQL: fmt.Sprintf(sql, dbName, tableName),
-
+							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -324,6 +342,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -344,6 +363,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -364,6 +384,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -384,6 +405,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -398,6 +420,7 @@ func TestUpdateHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("UPDATE %s.%s SET `content` = '1' , `account` = 1.0 WHERE NOT ( `user_id` != 101 ) ; ", "`order_db_1`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},

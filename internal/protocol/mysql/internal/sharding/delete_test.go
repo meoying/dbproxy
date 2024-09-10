@@ -54,6 +54,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        "DELETE FROM `order_db_1`.`order_tab_1` WHERE `user_id` = 1 ; ",
+					Table:      "order_tab_1",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -71,6 +72,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -85,11 +87,13 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        "DELETE FROM `order_db_1`.`order_tab_0` WHERE `user_id` = 123 OR `user_id` = 234 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "DELETE FROM `order_db_0`.`order_tab_0` WHERE `user_id` = 123 OR `user_id` = 234 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -107,6 +111,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -126,11 +131,12 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE ( `user_id` = 123 AND `order_id` = 12 ) OR `user_id` = 234 ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
-					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE ( `user_id` = 123 AND `order_id` = 12 ) OR `user_id` = 234 ; ", "`order_db_0`", "`order_tab_0`"),
+					SQL: fmt.Sprintf("DELETE FROM %s.%s WHERE ( `user_id` = 123 AND `order_id` = 12 ) OR `user_id` = 234 ; ", "`order_db_0`", "`order_tab_0`"), Table: "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -142,6 +148,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE `user_id` = 123 OR ( `user_id` = 181 AND `user_id` = 234 ) ; ", "`order_db_1`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -159,6 +166,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -179,6 +187,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -193,11 +202,13 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE `user_id` IN ( 12 , 35 , 101 ) ; ", "`order_db_1`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE `user_id` IN ( 12 , 35 , 101 ) ; ", "`order_db_0`", "`order_tab_0`"),
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -209,16 +220,19 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        "DELETE FROM `order_db_1`.`order_tab_2` WHERE `user_id` IN ( 12 , 35 , 101 ) OR `user_id` = 531 ; ",
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "DELETE FROM `order_db_1`.`order_tab_0` WHERE `user_id` IN ( 12 , 35 , 101 ) OR `user_id` = 531 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
 				{
 					SQL:        "DELETE FROM `order_db_0`.`order_tab_0` WHERE `user_id` IN ( 12 , 35 , 101 ) OR `user_id` = 531 ; ",
+					Table:      "order_tab_0",
 					DB:         "order_db_0",
 					Datasource: "0.db.cluster.company.com:3306",
 				},
@@ -236,6 +250,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -256,6 +271,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -276,6 +292,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 						tableName := fmt.Sprintf(orderTablePattern, j)
 						res = append(res, sharding.Query{
 							SQL:        fmt.Sprintf(sql, dbName, tableName),
+							Table:      tableName,
 							DB:         dbName,
 							Datasource: dsPattern,
 						})
@@ -290,6 +307,7 @@ func TestDeleteHandler_Build(t *testing.T) {
 			wantQs: []sharding.Query{
 				{
 					SQL:        fmt.Sprintf("DELETE FROM %s.%s WHERE NOT ( user_id != 101 ) ; ", "`order_db_1`", "`order_tab_2`"),
+					Table:      "order_tab_2",
 					DB:         "order_db_1",
 					Datasource: "0.db.cluster.company.com:3306",
 				},

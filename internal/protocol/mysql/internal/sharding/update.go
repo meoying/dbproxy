@@ -51,6 +51,7 @@ func (u *UpdateHandler) Build(ctx context.Context) ([]sharding.Query, error) {
 		}
 		res = append(res, sharding.Query{
 			SQL:        sql,
+			Table:      dst.Table,
 			DB:         dst.DB,
 			Datasource: dst.Name,
 		})

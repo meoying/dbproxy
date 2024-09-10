@@ -83,6 +83,12 @@ const dsn = "root:root@tcp(local.ubuntu:13316)/webook?interpolateParams=true"
 ### AutoCommit 
 为了兼容 MySQL 协议，因此我们网关会假装自己处于一种 auto commit 状态
 
+### Prepare使用注意
+- Prepare的insert语句目前只支持插入一个value，暂不支持多个。例如：
+```sql
+INSERT INTO order(`id`,`name`) VALUES (?,?),(?,?) /* 暂不支持 */
+```
+
 ### MySQL 服务器发起 handshake 的数据例子
 
 原始数据：
