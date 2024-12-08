@@ -743,7 +743,7 @@ LIMIT 10;
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := ast.Parse(tc.sql)
+			root := ast.Parse(tc.sql).Root
 			selectV := &SelectVisitor{
 				BaseVisitor: &BaseVisitor{},
 			}
